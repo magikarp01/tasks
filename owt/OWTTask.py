@@ -1,7 +1,7 @@
 from tasks.task import Task
 import pickle
 from torch.utils.data import DataLoader
-from cb_utils.inference_utils import batch_text_to_tokens
+from tasks.inference_utils import batch_text_to_tokens
 import torch
 
 class OWTTask(Task):

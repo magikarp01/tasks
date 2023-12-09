@@ -3,7 +3,7 @@ import datasets
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from cb_utils.inference_utils import batch_text_to_tokens
+from tasks.inference_utils import batch_text_to_tokens
 
 class CFactTask(Task):
     """
@@ -70,10 +70,10 @@ class CFactTask(Task):
         output = model(tokens)
         logits = output.logits
 
-    def get_train_maintained_loss(self, model):
+#     def get_train_maintained_loss(self, model):
                 
 
 
-class 
+# class 
 
 #%%

@@ -1,7 +1,7 @@
 from tasks.task import Task
 import pandas as pd
 import torch
-from cb_utils.inference_utils import get_final_logits
+from tasks.inference_utils import get_final_logits
 
 class SportsTask(Task):
     """
@@ -41,7 +41,7 @@ class SportsTask(Task):
         self.tokenizer = tokenizer
 
         self.criterion = torch.nn.CrossEntropyLoss()
-    
+
     def get_train_loss(self, model):
         try:
             batch = next(self.train_iter)
@@ -70,4 +70,47 @@ class SportsTask(Task):
             
             return self.criterion(last_logits, tokenized_labels)
 
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+        """
+        Accuracy is defined as the number of times the model correctly predicts the sport given the prompt. If check_all_logits is True, then we check if the argmax over all logits is the correct sport, not over the sports logits.
+        """
+        football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
 
+        with torch.no_grad():
+            if use_test_data:
+                try:
+                    batch = next(self.test_iter)
+                except StopIteration:
+                    self.test_iter = iter(self.test_loader)
+                    batch = next(self.test_iter)
+            else:
+                try:
+                    batch = next(self.train_iter)
+                except StopIteration:
+                    self.train_iter = iter(self.train_loader)
+                    batch = next(self.train_iter)
+            prompts, labels = batch
+
+            last_logits = get_final_logits(model, self.tokenizer, prompts)
+            # should be shape (batch_size, vocab_size)
+            assert len(last_logits.shape) == 2
+
+            labels = [' ' + sport for sport in labels]            
+
+            if check_all_logits:
+                tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0]
+                num_correct = (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
+
+            else:
+                number_labels = [0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]
+                sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
+
+                num_correct = (torch.argmax(sports_logits, dim=1) == torch.tensor(number_labels)).sum().item()
+            
+            return num_correct / len(prompts)
+            # for i in range(len(sports_logits)):
+            #     if check_all_logits:
+            #         # torch.argmax(last_logits[i], dim=1)
+                    
+            #     else:
+            #         torch.argmax(sports_logits[i], dim=1) 
