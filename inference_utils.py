@@ -109,10 +109,10 @@ def get_final_logits(model, tokenizer, batch_text):
     logits = model(batch)
     # if logits is a tuple:
     if isinstance(logits, tuple) or isinstance(logits, list):
-        logits = logits[0].to('cpu')
+        logits = logits[0]#.to('cpu')
     else:
         assert isinstance(logits, torch.Tensor), logits
-        logits = logits.to('cpu')
+        logits = logits#.to('cpu')
     # if model_returns_tuple:
     #     logits = model(batch)[0].to('cpu')
     # else:

@@ -5,7 +5,7 @@ from tasks.inference_utils import batch_text_to_tokens
 import torch
 
 class OWTTask(Task):
-    def __init__(self, batch_size, tokenizer, ctx_length=50):
+    def __init__(self, batch_size, tokenizer, ctx_length=50, device="cuda"):
         with open(f"tasks/owt/owt_train.pkl", "rb") as f:
             train_dataset = pickle.load(f)
         self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, )
@@ -20,17 +20,24 @@ class OWTTask(Task):
         self.test_iter = iter(self.test_loader)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
-    
-    def calculate_loss(self, model, batch, device="cuda"):
-        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
-        print(f"{token_batch.shape=}, {token_batch=}")
-        token_batch = token_batch.to(device) # don't think tokenizer has start token
 
-        out = model(token_batch)[0]
-        loss = self.criterion(out[:, :-1, :].reshape(-1, out.shape[-1]), token_batch[:, 1:].reshape(-1))
+        self.device = device
+    
+    def calculate_loss(self, model, batch):
+        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
+        token_batch = token_batch.to(self.device) # don't think tokenizer has start token
+        
+        out = model(token_batch[:, :-1])
+        if isinstance(out, tuple) or isinstance(out, list):
+            out = out[0]
+        # shift labels over by one
+        shifted_token_batch = token_batch[:, 1:]
+
+        loss = self.criterion(out.transpose(1, 2), shifted_token_batch)
+        # loss = self.criterion(out[:, :-1, :].contiguous().view(-1, out.shape[-1]), token_batch[:, 1:].contiguous().view(-1))
         return loss
 
-    def get_train_loss(self, model, device="cuda"):
+    def get_train_loss(self, model):
         """
         Default do one batch
         """
@@ -39,9 +46,9 @@ class OWTTask(Task):
         except StopIteration:
             self.train_iter = iter(self.train_loader)
             batch = next(self.train_iter)
-        return self.calculate_loss(model, batch, device=device)
+        return self.calculate_loss(model, batch)
 
-    def get_test_loss(self, model, device="cuda"):
+    def get_test_loss(self, model):
         """
         Default do one batch
         """
@@ -52,7 +59,7 @@ class OWTTask(Task):
             batch = next(self.test_iter)
             
         with torch.no_grad():
-            loss = self.calculate_loss(model, batch, device=device)
+            loss = self.calculate_loss(model, batch)
         return loss
     
     def compute_means(self, model, num_data=None, cache_every=50):

@@ -21,7 +21,7 @@ class SportsTask(Task):
         def __len__(self):
             return len(self.df)
     
-    def __init__(self, batch_size, tokenizer) -> None:
+    def __init__(self, batch_size, tokenizer, device='cuda') -> None:
         df = pd.read_csv("tasks/facts/data/sports.csv")
         # split df into train and test
         train_size = int(0.8 * len(df))
@@ -41,6 +41,7 @@ class SportsTask(Task):
         self.tokenizer = tokenizer
 
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.device = device
 
     def get_train_loss(self, model):
         try:
@@ -53,7 +54,7 @@ class SportsTask(Task):
         labels = [' ' + sport for sport in batch['sport']]
         tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0]
         
-        return self.criterion(last_logits, tokenized_labels)
+        return self.criterion(last_logits, tokenized_labels.to(self.device))
     
     def get_test_loss(self, model):
         with torch.no_grad():
@@ -68,7 +69,7 @@ class SportsTask(Task):
             labels = [' ' + sport for sport in labels]
             tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0]
             
-            return self.criterion(last_logits, tokenized_labels)
+            return self.criterion(last_logits, tokenized_labels.to(self.device))
 
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
         """
@@ -98,14 +99,14 @@ class SportsTask(Task):
             labels = [' ' + sport for sport in labels]            
 
             if check_all_logits:
-                tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0]
+                tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0].to(self.device)
                 num_correct = (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
 
             else:
-                number_labels = [0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]
+                number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]).to(self.device)
                 sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
 
-                num_correct = (torch.argmax(sports_logits, dim=1) == torch.tensor(number_labels)).sum().item()
+                num_correct = (torch.argmax(sports_logits, dim=1) == number_labels).sum().item()
             
             return num_correct / len(prompts)
             # for i in range(len(sports_logits)):

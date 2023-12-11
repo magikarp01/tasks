@@ -882,7 +882,11 @@ class IOITask_old(Task):
             'S': subjects
         }
 
-    def __init__(self, batch_size, tokenizer, template_type="single"):
+    def __init__(self, batch_size, tokenizer, template_type="single",
+                 handle_multitoken_labels=False, device='cuda'):
+        """
+        handle_multitoken_labels is for tokenizers other than gpt2, which might tokenize names with multiple tokens. In this case, we'll just analyze the first token.
+        """
         with open(f"tasks/ioi/data/ioi_prompts_{template_type}_template_train.pkl", "rb") as f:
             ioi_prompts_train = pickle.load(f)
         with open(f"tasks/ioi/data/ioi_prompts_{template_type}_template_test.pkl", "rb") as f:
@@ -897,16 +901,36 @@ class IOITask_old(Task):
         self.test_iter = iter(self.test_loader)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
+        self.handle_multitoken_labels = handle_multitoken_labels
+        self.device = device
     
+    def tokenize_names(self, names):
+        """
+        Tokenize names but handle possible multitoken labels
+        """
+        if self.handle_multitoken_labels:
+            try:
+                tokenized_names = self.tokenizer(names, return_tensors='pt').input_ids
+            except ValueError:
+                # tokenizes as multiple tokens
+                tokenized_names = self.tokenizer(names).input_ids
+                # convert to tensor, but only take first token of each
+                tokenized_names = torch.tensor([[t[0]] for t in tokenized_names])
+        else:
+            tokenized_names = self.tokenizer(names, return_tensors='pt').input_ids
+        return tokenized_names
+
     def calculate_loss(self, model, batch):
+
         last_logits = get_final_logits(model, self.tokenizer, batch['text'])
         labels = [' ' + io for io in batch['IO']]
-        tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids
+        tokenized_labels = self.tokenize_names(labels)
+
         assert tokenized_labels.shape[0] == last_logits.shape[0]
         # labels should be 1 token
         assert tokenized_labels.shape[1] == 1, tokenized_labels
 
-        return self.criterion(last_logits, tokenized_labels[:, 0])
+        return self.criterion(last_logits, tokenized_labels[:, 0].to(self.device))
 
     def get_train_loss(self, model):
         try:
@@ -948,18 +972,21 @@ class IOITask_old(Task):
             ios = batch['IO']
             subjects = batch['S']
 
-            io_tokens = self.tokenizer([' ' + io for io in ios], return_tensors='pt').input_ids
+            # io_tokens = self.tokenizer([' ' + io for io in ios], return_tensors='pt').input_ids
+            io_tokens = self.tokenize_names([' ' + io for io in ios])
+
             assert io_tokens.shape[1] == 1
-            io_tokens = io_tokens[:, 0]
+            io_tokens = io_tokens[:, 0].to(self.device)
             last_logits = get_final_logits(model, self.tokenizer, prompts)
 
             if check_all_logits:
                 num_correct = (torch.argmax(last_logits, dim=1) == io_tokens).sum().item()
 
             else:
-                subject_tokens = self.tokenizer([' ' + s for s in subjects], return_tensors='pt').input_ids
+                # subject_tokens = self.tokenizer([' ' + s for s in subjects], return_tensors='pt').input_ids
+                subject_tokens = self.tokenize_names([' ' + s for s in subjects])
                 assert subject_tokens.shape[1] == 1
-                subject_tokens = subject_tokens[:, 0]
+                subject_tokens = subject_tokens[:, 0].to(self.device)
                 num_correct = 0
                 for idx in range(len(io_tokens)):
                     subject_logit = last_logits[idx, subject_tokens[idx]]
