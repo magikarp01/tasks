@@ -848,6 +848,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import pickle
+from tasks.inference_utils import get_final_logits
 
 class IOITask_old(Task):
 
@@ -862,27 +863,23 @@ class IOITask_old(Task):
         def __getitem__(self, idx):
             prompt = self.ioi_prompts[idx]
             text = prompt['text']
-            tokens = self.tokenizer.encode(text)
-            last_token_pos = len(tokens) - 1
-
+            text = " ".join(text.split(" ")[:-1])
+            label = prompt['IO']
             return {
                 'text': text,
-                'tokens': tokens,
-                'last_token_pos': last_token_pos
+                'IO': label,
+                'S': prompt['S']
             }
 
     def collate_batch(self, batch):
+
         texts = [item['text'] for item in batch]
-        tokens = [torch.tensor(item['tokens']) for item in batch]
-        last_token_pos = [item['last_token_pos'] for item in batch]
-
-        # Pad the sequences so that they all have the same length
-        tokens_padded = pad_sequence(tokens, batch_first=True)
-
+        ios = [item['IO'] for item in batch]
+        subjects = [item['S'] for item in batch]
         return {
             'text': texts,
-            'tokens': tokens_padded,
-            'last_token_pos': torch.tensor(last_token_pos)
+            'IO': ios,
+            'S': subjects
         }
 
     def __init__(self, batch_size, tokenizer, template_type="single"):
@@ -900,27 +897,16 @@ class IOITask_old(Task):
         self.test_iter = iter(self.test_loader)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
-
-    def calculate_loss(self, tokens, last_token_positions, model):
-        outputs = model(tokens)
-        logits = outputs[0]
-
-        # get logits at the last token position
-        
-        logits_last_token = []
-        labels = []
-
-        for i in range(last_token_positions.shape[0]):
-            logits_last_token.append(logits[i, last_token_positions[i]-1])
-            labels.append(tokens[i, last_token_positions[i]])
-        logits_last_token = torch.stack(logits_last_token)
-        labels = torch.stack(labels).to(logits_last_token.device)
-        print(f"{logits_last_token.shape=}, {labels.shape=}")
-        print(f"{logits_last_token.argmax(dim=1)=}, {labels=}")
     
-        loss = self.criterion(logits_last_token, labels)
-        
-        return loss
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch['text'])
+        labels = [' ' + io for io in batch['IO']]
+        tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids
+        assert tokenized_labels.shape[0] == last_logits.shape[0]
+        # labels should be 1 token
+        assert tokenized_labels.shape[1] == 1, tokenized_labels
+
+        return self.criterion(last_logits, tokenized_labels[:, 0])
 
     def get_train_loss(self, model):
         try:
@@ -928,29 +914,137 @@ class IOITask_old(Task):
         except StopIteration:
             self.train_iter = iter(self.train_loader)
             batch = next(self.train_iter)
-
-
-        inputs = batch['tokens']
-        last_token_positions = batch['last_token_pos']
-
-        loss = self.calculate_loss(inputs, last_token_positions, model)
-        return loss
-
-    def get_test_loss(self, model):
-        # same as train
-        with torch.no_grad():
-            try:
-                batch = next(self.test_iter)
-            except StopIteration:
-                self.test_iter = iter(self.test_loader)
-                batch = next(self.test_iter)
-
-            inputs = batch['tokens']
-            last_token_positions = batch['last_token_pos']
-
-            loss = self.calculate_loss(inputs, last_token_positions, model)
-            return loss
+        
+        return self.calculate_loss(model, batch)
     
+    def get_test_loss(self, model):
+        try:
+            batch = next(self.test_iter)
+        except StopIteration:
+            self.test_iter = iter(self.test_loader)
+            batch = next(self.test_iter)
+
+        with torch.no_grad():
+            return self.calculate_loss(model, batch)
+    
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+        """
+        Accuracy of model assigning the largest logit to the indirect object. If check_all_logits is True, then checks argmax over all possible tokens. If false, checks argmax over subject token vs indirect object token.
+        """
+        with torch.no_grad():
+            if use_test_data:
+                try:
+                    batch = next(self.test_iter)
+                except StopIteration:
+                    self.test_iter = iter(self.test_loader)
+                    batch = next(self.test_iter)
+            else:
+                try:
+                    batch = next(self.train_iter)
+                except StopIteration:
+                    self.train_iter = iter(self.train_loader)
+                    batch = next(self.train_iter)
+            prompts = batch['text']
+            ios = batch['IO']
+            subjects = batch['S']
+
+            io_tokens = self.tokenizer([' ' + io for io in ios], return_tensors='pt').input_ids
+            assert io_tokens.shape[1] == 1
+            io_tokens = io_tokens[:, 0]
+            last_logits = get_final_logits(model, self.tokenizer, prompts)
+
+            if check_all_logits:
+                num_correct = (torch.argmax(last_logits, dim=1) == io_tokens).sum().item()
+
+            else:
+                subject_tokens = self.tokenizer([' ' + s for s in subjects], return_tensors='pt').input_ids
+                assert subject_tokens.shape[1] == 1
+                subject_tokens = subject_tokens[:, 0]
+                num_correct = 0
+                for idx in range(len(io_tokens)):
+                    subject_logit = last_logits[idx, subject_tokens[idx]]
+                    io_logit = last_logits[idx, io_tokens[idx]]
+                    num_correct += 1 if (io_logit.item() > subject_logit.item()) else 0
+            return num_correct / len(io_tokens)
+                    
+
+    # def calculate_loss(self, tokens, last_token_positions, model):
+    #     outputs = model(tokens)
+    #     logits = outputs[0]
+
+    #     # get logits at the last token position
+        
+    #     logits_last_token = []
+    #     labels = []
+
+    #     for i in range(last_token_positions.shape[0]):
+    #         logits_last_token.append(logits[i, last_token_positions[i]-1])
+    #         labels.append(tokens[i, last_token_positions[i]])
+    #     logits_last_token = torch.stack(logits_last_token)
+    #     labels = torch.stack(labels).to(logits_last_token.device)
+    #     print(f"{logits_last_token.shape=}, {labels.shape=}")
+    #     print(f"{logits_last_token.argmax(dim=1)=}, {labels=}")
+    
+    #     loss = self.criterion(logits_last_token, labels)
+        
+    #     return loss
+
+    # def get_train_loss(self, model):
+    #     try:
+    #         batch = next(self.train_iter)
+    #     except StopIteration:
+    #         self.train_iter = iter(self.train_loader)
+    #         batch = next(self.train_iter)
+
+
+    #     inputs = batch['tokens']
+    #     last_token_positions = batch['last_token_pos']
+
+    #     loss = self.calculate_loss(inputs, last_token_positions, model)
+    #     return loss
+
+    # def get_test_loss(self, model):
+    #     # same as train
+    #     with torch.no_grad():
+    #         try:
+    #             batch = next(self.test_iter)
+    #         except StopIteration:
+    #             self.test_iter = iter(self.test_loader)
+    #             batch = next(self.test_iter)
+
+    #         inputs = batch['tokens']
+    #         last_token_positions = batch['last_token_pos']
+
+    #         loss = self.calculate_loss(inputs, last_token_positions, model)
+    #         return loss
+    
+    # def get_test_accuracy(self, model):
+    #     with torch.no_grad():
+    #         try:
+    #             batch = next(self.test_iter)
+    #         except StopIteration:
+    #             self.test_iter = iter(self.test_loader)
+    #             batch = next(self.test_iter)
+
+    #         inputs = batch['tokens']
+    #         last_token_positions = batch['last_token_pos']
+
+    #         outputs = model(inputs)
+    #         logits = outputs[0]
+
+    #         # get logits at the last token position
+    #         logits_last_token = []
+    #         labels = []
+
+    #         for i in range(last_token_positions.shape[0]):
+    #             logits_last_token.append(logits[i, last_token_positions[i]-1])
+    #             labels.append(inputs[i, last_token_positions[i]])
+    #         logits_last_token = torch.stack(logits_last_token)
+    #         labels = torch.stack(labels).to(logits_last_token.device)
+
+    #         predictions = logits_last_token.argmax(dim=1)
+    #         accuracy = (predictions == labels).sum().item() / predictions.shape[0]
+    #         return accuracy
 
 
     # def get_loss(self, logits):

@@ -97,7 +97,7 @@ def generate_no_hf_new(model, tokenizer, prompts, max_length=50, temperature=0, 
             outputs.append(tokenizer.decode(prompt, skip_special_tokens=True))
     return outputs
 
-def get_final_logits(model, tokenizer, batch_text, model_returns_tuple=False):
+def get_final_logits(model, tokenizer, batch_text):
     """
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
     """
@@ -106,10 +106,17 @@ def get_final_logits(model, tokenizer, batch_text, model_returns_tuple=False):
     # tokenize in batch and pad to the longest text in the batch
     batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long()
     
-    if model_returns_tuple:
-        logits = model(batch)[0].to('cpu')
+    logits = model(batch)
+    # if logits is a tuple:
+    if isinstance(logits, tuple) or isinstance(logits, list):
+        logits = logits[0].to('cpu')
     else:
-        logits = model(batch).to('cpu')
+        assert isinstance(logits, torch.Tensor), logits
+        logits = logits.to('cpu')
+    # if model_returns_tuple:
+    #     logits = model(batch)[0].to('cpu')
+    # else:
+    #     logits = model(batch).to('cpu')
     assert logits.shape[0] == len(batch_text), f"Logits shape {logits.shape} doesn't match batch_text length {len(batch_text)}"
     # get logits for final token in each text
 
