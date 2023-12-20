@@ -1,7 +1,9 @@
 import torch
 from tqdm import tqdm
 from einops import repeat
-from cb_utils.models import DEVICE
+# from cb_utils.models import DEVICE
+# by default: DEVICE is cuda
+DEVICE='cuda'
 
 def batch_text_to_tokens(x, tokenizer, ctx_length=None, pad_max=False):
     if ctx_length is None:

@@ -1,4 +1,4 @@
-from cb_utils.transformer import DemoTransformer
+# from cb_utils.transformer import DemoTransformer
 class Task:
     """
     Abstract class for tasks. Needs to be implemented for any task (e.g. IOI, OWT, Toxic data, etc). Should run it's own forward pass and return loss. Task should be stateful, i.e., it should have it's own data and keep track of where it is in the data so that it can iterate.
@@ -13,7 +13,7 @@ class Task:
         raise NotImplementedError
 
     def compute_means(self,
-        model: DemoTransformer,
+        model,
         num_data = None
     ):
         """
