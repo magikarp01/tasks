@@ -9,10 +9,10 @@ class OWTTask_old(Task):
     def __init__(self, batch_size, tokenizer, ctx_length=50, device="cuda"):
         with open(f"tasks/owt/owt_train.pkl", "rb") as f:
             train_dataset = pickle.load(f)
-        self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, )
+        self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, )
         with open(f"tasks/owt/owt_test.pkl", "rb") as f:
             test_dataset = pickle.load(f)
-        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, )
+        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, )
 
         self.batch_size = batch_size
         self.ctx_length = ctx_length
@@ -92,8 +92,8 @@ class OWTTask(OWTTask_old):
         """
         train_dataset = load_dataset('Skylion007/openwebtext', split=f'train[:{num_train_data}]')
         test_dataset = load_dataset('Skylion007/openwebtext', split=f'train[-{num_test_data}:]')
-        self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, )
-        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, )
+        self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, )
+        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, )
 
         self.batch_size = batch_size
         self.ctx_length = ctx_length
