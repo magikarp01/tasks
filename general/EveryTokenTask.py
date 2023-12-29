@@ -26,8 +26,29 @@ class ETTask(Task):
         self.tokenizer = tokenizer
 
         self.device = device
+
+    def get_token_batch(self, train=True):
+        if train:
+            try:
+                batch = next(self.train_iter)
+            except StopIteration:
+                self.train_iter = iter(self.train_loader)
+                batch = next(self.train_iter)
+        else:
+            try:
+                batch = next(self.test_iter)
+            except StopIteration:
+                self.test_iter = iter(self.test_loader)
+                batch = next(self.test_iter)
+        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
+        token_batch = token_batch.to(self.device) # don't think tokenizer has start token
+        return token_batch
+
     
     def calculate_loss(self, model, batch):
+        """
+        Batch is not tokens
+        """
         token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
         token_batch = token_batch.to(self.device) # don't think tokenizer has start token
         
@@ -40,31 +61,37 @@ class ETTask(Task):
         loss = self.criterion(out.transpose(1, 2), shifted_token_batch)
         # loss = self.criterion(out[:, :-1, :].contiguous().view(-1, out.shape[-1]), token_batch[:, 1:].contiguous().view(-1))
         return loss
+    
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+        """
+        for now, just return 0 since not super important for this kind of task
+        """
+        return 0
 
-    def get_train_loss(self, model):
-        """
-        Default do one batch
-        """
-        try:
-            batch = next(self.train_iter)
-        except StopIteration:
-            self.train_iter = iter(self.train_loader)
-            batch = next(self.train_iter)
-        return self.calculate_loss(model, batch)
+    # def get_train_loss(self, model):
+    #     """
+    #     Default do one batch
+    #     """
+    #     try:
+    #         batch = next(self.train_iter)
+    #     except StopIteration:
+    #         self.train_iter = iter(self.train_loader)
+    #         batch = next(self.train_iter)
+    #     return self.calculate_loss(model, batch)
 
-    def get_test_loss(self, model):
-        """
-        Default do one batch
-        """
-        try:
-            batch = next(self.test_iter)
-        except StopIteration:
-            self.test_iter = iter(self.test_loader)
-            batch = next(self.test_iter)
+    # def get_test_loss(self, model):
+    #     """
+    #     Default do one batch
+    #     """
+    #     try:
+    #         batch = next(self.test_iter)
+    #     except StopIteration:
+    #         self.test_iter = iter(self.test_loader)
+    #         batch = next(self.test_iter)
             
-        with torch.no_grad():
-            loss = self.calculate_loss(model, batch)
-        return loss
+    #     with torch.no_grad():
+    #         loss = self.calculate_loss(model, batch)
+    #     return loss
     
     def compute_means(self, model, num_data=None, cache_every=50):
         means = []
@@ -87,3 +114,21 @@ class ETTask(Task):
             
         all_means = torch.stack(meta_means, dim=0).mean(dim=0)
         return all_means
+
+
+    def get_token_batch(self, train=True):
+        if train:
+            try:
+                batch = next(self.train_iter)
+            except StopIteration:
+                self.train_iter = iter(self.train_loader)
+                batch = next(self.train_iter)
+        else:
+            try:
+                batch = next(self.test_iter)
+            except StopIteration:
+                self.test_iter = iter(self.test_loader)
+                batch = next(self.test_iter)
+        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
+        token_batch = token_batch.to(self.device) # don't think tokenizer has start token
+        return token_batch

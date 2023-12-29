@@ -16,7 +16,7 @@ class SportsTask(Task):
             self.tokenizer = tokenizer
 
         def __getitem__(self, idx):
-            return self.df['prompt'].iloc[idx], self.df['sport'].iloc[idx]
+            return {"prompt": self.df['prompt'].iloc[idx], "sport": self.df['sport'].iloc[idx]}
 
         def __len__(self):
             return len(self.df)
@@ -42,34 +42,40 @@ class SportsTask(Task):
 
         self.criterion = torch.nn.CrossEntropyLoss()
         self.device = device
-
-    def get_train_loss(self, model):
-        try:
-            batch = next(self.train_iter)
-        except StopIteration:
-            self.train_iter = iter(self.train_loader)
-            batch = next(self.train_iter)
-
+    
+    def calculate_loss(self, model, batch):
         last_logits = get_final_logits(model, self.tokenizer, batch['prompt'])
         labels = [' ' + sport for sport in batch['sport']]
         tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0]
         
         return self.criterion(last_logits, tokenized_labels.to(self.device))
-    
-    def get_test_loss(self, model):
-        with torch.no_grad():
-            try:
-                batch = next(self.test_iter)
-            except StopIteration:
-                self.test_iter = iter(self.test_loader)
-                batch = next(self.test_iter)
-            prompts, labels = batch
 
-            last_logits = get_final_logits(model, self.tokenizer, prompts)
-            labels = [' ' + sport for sport in labels]
-            tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, 0]
-            
-            return self.criterion(last_logits, tokenized_labels.to(self.device))
+    # def get_token_batch(self, train=True):
+    #     """
+    #     Doesn't actually return a token batch, just a batch of prompts and labels.
+    #     """
+    #     if train:
+    #         try:
+    #             batch = next(self.train_iter)
+    #         except StopIteration:
+    #             self.train_iter = iter(self.train_loader)
+    #             batch = next(self.train_iter)
+    #     else:
+    #         try:
+    #             batch = next(self.test_iter)
+    #         except StopIteration:
+    #             self.test_iter = iter(self.test_loader)
+    #             batch = next(self.test_iter)
+    #     return batch
+    
+    # def get_train_loss(self, model):
+    #     batch = self.get_batch(train=True)
+    #     return self.calculate_loss(model, batch)
+    
+    # def get_test_loss(self, model):
+    #     batch = self.get_batch(train=False)
+    #     with torch.no_grad():
+    #         return self.calculate_loss(model, batch)
 
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
         """
@@ -90,7 +96,7 @@ class SportsTask(Task):
                 except StopIteration:
                     self.train_iter = iter(self.train_loader)
                     batch = next(self.train_iter)
-            prompts, labels = batch
+            prompts, labels = batch['prompt'], batch['sport']
 
             last_logits = get_final_logits(model, self.tokenizer, prompts)
             # should be shape (batch_size, vocab_size)

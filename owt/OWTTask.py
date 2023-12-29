@@ -85,23 +85,24 @@ class OWTTask_old(Task):
         all_means = torch.stack(meta_means, dim=0).mean(dim=0)
         return all_means
 
-class OWTTask(OWTTask_old):
-    def __init__(self, batch_size, tokenizer, ctx_length=50, num_train_data=10000, num_test_data=1000, device="cuda"):
-        """
-        Grabbing from the openwebtext dataset on huggingface. Lazily, grabbing train from the beginning and test from the end of train split (since there is no other split available on hf).
-        """
-        train_dataset = load_dataset('Skylion007/openwebtext', split=f'train[:{num_train_data}]')
-        test_dataset = load_dataset('Skylion007/openwebtext', split=f'train[-{num_test_data}:]')
-        self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, )
-        self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, )
+# class OWTTask(OWTTask_old):
+#     def __init__(self, batch_size, tokenizer, ctx_length=50, num_train_data=10000, num_test_data=1000, device="cuda"):
+#         """
+#         Grabbing from the openwebtext dataset on huggingface. Lazily, grabbing train from the beginning and test from the end of train split (since there is no other split available on hf).
+#         """
+#         train_dataset = load_dataset('Skylion007/openwebtext', split=f'train[:{num_train_data}]')
+#         test_dataset = load_dataset('Skylion007/openwebtext', split=f'train[-{num_test_data}:]')
+#         self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, )
+#         self.test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, )
 
-        self.batch_size = batch_size
-        self.ctx_length = ctx_length
-        # want train loader to be stateful, so we can iterate through it
-        self.train_iter = iter(self.train_loader)
-        self.test_iter = iter(self.test_loader)
-        self.criterion = torch.nn.CrossEntropyLoss()
-        self.tokenizer = tokenizer
+#         self.batch_size = batch_size
+#         self.ctx_length = ctx_length
+#         # want train loader to be stateful, so we can iterate through it
+#         self.train_iter = iter(self.train_loader)
+#         self.test_iter = iter(self.test_loader)
+#         self.criterion = torch.nn.CrossEntropyLoss()
+#         self.tokenizer = tokenizer
 
-        self.device = device
-    
+#         self.device = device
+from tasks.general.DatasetTasks import OWTTask
+# class OWTTask(Task):

@@ -1,16 +1,19 @@
+from tasks.inference_utils import batch_text_to_tokens
+import torch
 # from cb_utils.transformer import DemoTransformer
+
 class Task:
     """
     Abstract class for tasks. Needs to be implemented for any task (e.g. IOI, OWT, Toxic data, etc). Should run it's own forward pass and return loss. Task should be stateful, i.e., it should have it's own data and keep track of where it is in the data so that it can iterate.
     """
-    def get_train_loss(self,
-        model,
-        batch_size=None
-    ):
-        """
-        Performs a forward pass on the model using internal data and outputs a loss with gradients. 
-        """
-        raise NotImplementedError
+    # def get_train_loss(self,
+    #     model,
+    #     batch_size=None
+    # ):
+    #     """
+    #     Performs a forward pass on the model using internal data and outputs a loss with gradients. 
+    #     """
+    #     raise NotImplementedError
 
     def compute_means(self,
         model,
@@ -21,12 +24,45 @@ class Task:
         """
         raise NotImplementedError
 
-    def get_test_loss(self,
-        model,
-        num_data,
-        batch_size=1
-    ):
+    # def get_test_loss(self,
+    #     model,
+    #     num_data,
+    #     batch_size=1
+    # ):
+    #     """
+    #     Performs a forward pass on the model using num_data internal data (maybe a test split?) and outputs a loss without gradients. 
+    #     """
+    #     raise NotImplementedError
+    
+    def get_batch(self, train=True):
         """
-        Performs a forward pass on the model using num_data internal data (maybe a test split?) and outputs a loss without gradients. 
+        Get a batch of data from the task.
         """
+        if train:
+            try:
+                batch = next(self.train_iter)
+            except StopIteration:
+                self.train_iter = iter(self.train_loader)
+                batch = next(self.train_iter)
+        else:
+            try:
+                batch = next(self.test_iter)
+            except StopIteration:
+                self.test_iter = iter(self.test_loader)
+                batch = next(self.test_iter)
+        return batch
+
+    def calculate_loss(self, model, batch):
+        raise NotImplementedError
+
+    def get_train_loss(self, model):
+        batch = self.get_batch(train=True)
+        return self.calculate_loss(model, batch)
+    
+    def get_test_loss(self, model):
+        batch = self.get_batch(train=False)
+        with torch.no_grad():
+            return self.calculate_loss(model, batch)
+    
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
         raise NotImplementedError

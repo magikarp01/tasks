@@ -907,6 +907,9 @@ class IOITask_old(Task):
         return tokenized_names
 
     def calculate_loss(self, model, batch):
+        """
+        Batch is not tokens
+        """
 
         last_logits = get_final_logits(model, self.tokenizer, batch['text'])
         labels = [' ' + io for io in batch['IO']]
@@ -919,21 +922,11 @@ class IOITask_old(Task):
         return self.criterion(last_logits, tokenized_labels[:, 0].to(self.device))
 
     def get_train_loss(self, model):
-        try:
-            batch = next(self.train_iter)
-        except StopIteration:
-            self.train_iter = iter(self.train_loader)
-            batch = next(self.train_iter)
-        
+        batch = self.get_batch(train=True)        
         return self.calculate_loss(model, batch)
     
     def get_test_loss(self, model):
-        try:
-            batch = next(self.test_iter)
-        except StopIteration:
-            self.test_iter = iter(self.test_loader)
-            batch = next(self.test_iter)
-
+        batch = self.get_batch(train=False)
         with torch.no_grad():
             return self.calculate_loss(model, batch)
     
@@ -942,18 +935,7 @@ class IOITask_old(Task):
         Accuracy of model assigning the largest logit to the indirect object. If check_all_logits is True, then checks argmax over all possible tokens. If false, checks argmax over subject token vs indirect object token.
         """
         with torch.no_grad():
-            if use_test_data:
-                try:
-                    batch = next(self.test_iter)
-                except StopIteration:
-                    self.test_iter = iter(self.test_loader)
-                    batch = next(self.test_iter)
-            else:
-                try:
-                    batch = next(self.train_iter)
-                except StopIteration:
-                    self.train_iter = iter(self.train_loader)
-                    batch = next(self.train_iter)
+            batch = self.get_batch(train=not use_test_data)
             prompts = batch['text']
             ios = batch['IO']
             subjects = batch['S']
@@ -1000,6 +982,7 @@ class IOITask_old(Task):
             prompts = batch['text']
             tokens.append(self.tokenizer(prompts, return_tensors='pt', padding=True).input_ids)
         return torch.cat(tokens, dim=0)
+
 
     # def calculate_loss(self, tokens, last_token_positions, model):
     #     outputs = model(tokens)
