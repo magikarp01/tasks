@@ -66,3 +66,19 @@ class Task:
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
         raise NotImplementedError
+
+class ACDCPPTask:
+    """
+    Class that implements the necessary functions for running ACDCPP. Requires a clean dataset, a corrupt dataset, and a get_acdcpp_metric function.
+    """
+    def ave_logit_diff(self, logits):
+        """
+        Get some metric of logit 
+        """
+        raise NotImplementedError
+    
+    def set_logit_diffs(self, model):
+        """
+        Set logit diffs of clean and corrupt data, in self.clean_logit_diffs and self.corrupt_logit_diffs.
+        """
+        raise NotImplementedError

@@ -699,7 +699,7 @@ class IOIData:
             )
 
         self.device = device
-        self.to(device)
+        # self.to(device)
 
     def gen_flipped_prompts(self, flip):
         # Check if it's already been flipped (shouldn't string 2 flips together)
@@ -1139,6 +1139,7 @@ class IOITask(IOITask_old):
         self.handle_multitoken_labels = handle_multitoken_labels
         self.device = device
 
+
         if prep_acdcpp:
             self.clean_data = IOIData(
                 prompt_type=prompt_type,
@@ -1155,19 +1156,21 @@ class IOITask(IOITask_old):
             self.corr_iter = iter(self.corr_loader)
             self.clean_logit_diff = None
             self.corrupt_logit_diff = None
-        
+
 
 
     def ave_logit_diff(self,
         logits: Float[Tensor, 'batch seq d_vocab'],
-        per_prompt: bool = False
+        ioi_dataset: IOIData,
+        per_prompt: bool = False,
     ):
         '''
         Return average logit difference between correct and incorrect answers
         '''
         # Get logits for indirect objects
-        io_logits = logits[range(logits.size(0)), self.clean_data.word_idx['end'], self.io_tokenIDs]
-        s_logits = logits[range(logits.size(0)), self.clean_data.word_idx['end'], self.s_tokenIDs]
+        # print(f"{logits.shape=}, {self.clean_data.word_idx['end'].shape=}, {len(self.clean_data.io_tokenIDs)=}, {len(self.clean_data.s_tokenIDs)=}")
+        io_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'], ioi_dataset.io_tokenIDs]
+        s_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'], ioi_dataset.s_tokenIDs]
         # Get logits for subject
         logit_diff = io_logits - s_logits
         return logit_diff if per_prompt else logit_diff.mean()
@@ -1178,19 +1181,29 @@ class IOITask(IOITask_old):
         """
         clean_logits = model(self.clean_data.toks)
         corrupt_logits = model(self.corr_data.toks)
-        self.clean_logit_diff = self.ave_logit_diff(clean_logits).item()
-        self.corrupt_logit_diff = self.ave_logit_diff(corrupt_logits).item()
+        self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_data).item()
+        self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_data).item()
 
-    def get_ioi_metric(self, logits, model=None, N=25):
+    def get_acdcpp_metric(self, model=None):
         '''
-        Calculate the ioi_metric on part of the dataset. logits is output of some kind of altered model run on clean_data typically. Model is the unaltered model for calculating the original logit difference.
+        Higher order function that returns the ioi_metric, using the baseline logit diffs previously calculated (or can be calculated within the function if model is passed in). Return function signature:
+            - logits is output of some kind of altered model
+            - 
+
         '''
-        # probably should be train? new dataset
-        if self.clean_logit_diff is None or self.corrupt_logit_diff is None:
-            assert model is not None, "Need to pass in model to get logit diffs"
+
+        if self.clean_logit_diff is None or self.corrupted_logit_diff is None:
+            assert model is not None, "Need to pass in model to get logit diffs, or call set_logit_diffs(model) elsewhere"
             self.set_logit_diffs(model)
-        patched_logit_diff = self.ave_logit_diff(logits)
-        return (patched_logit_diff - self.corrupted_logit_diff) / (self.clean_logit_diff - self.corrupted_logit_diff)
+
+        def ioi_metric(
+                logits: Float[Tensor, "batch seq_len d_vocab"], 
+                corrupted_logit_diff: float=self.corrupted_logit_diff,
+                clean_logit_diff: float=self.clean_logit_diff,
+                ioi_dataset: IOIData=self.clean_data):
+            patched_logit_diff = self.ave_logit_diff(logits, ioi_dataset)
+            return (patched_logit_diff - corrupted_logit_diff) / (clean_logit_diff - corrupted_logit_diff)
+        return ioi_metric
 
     # def abs_ioi_metric(logits: Float[Tensor, "batch seq_len d_vocab"]):
     #     return abs(ioi_metric(logits))
