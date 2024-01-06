@@ -1,5 +1,6 @@
 from tasks.general.EveryTokenTask import ETTask
 from datasets import load_dataset
+import pickle
 '''
 class ETTask(Task):
     """
@@ -33,5 +34,23 @@ class PileTask(ETTask):
 
 # class WikiTextTask(ETTask):
 
+class ToxicTask(ETTask):
+    """
+    Task evaluating performance on toxic data. Toxic dataset is used by Circuit Breaking.
+    """
+    def __init__(self, batch_size, tokenizer, ctx_length=50, device="cuda", stream_dataset=True):
+        """
+        These pickle files look like [(id, score, text)].
+        """
+        with open("tasks/general/data/toxic/train.pkl", "rb") as f:
+            toxic_train = pickle.load(f)
+        with open("tasks/general/data/toxic/test.pkl", "rb") as f:
+            toxic_test = pickle.load(f)
+        with open("tasks/general/data/toxic/eval_uniform.pkl", "rb") as f:
+            eval_uniform = pickle.load(f)
         
+        # convert to datasets
+        train_dataset = [{"text": text, "toxic": score} for id, score, text in toxic_train]
+        test_dataset = [{"text": text, "toxic": score} for id, score, text in toxic_test]        
+        super().__init__(train_dataset, test_dataset, batch_size, tokenizer, ctx_length=ctx_length, device=device)
     

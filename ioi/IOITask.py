@@ -6,6 +6,7 @@ import warnings
 import torch as t
 from torch import Tensor
 from torch.utils.data import Dataset
+import torch.nn.functional as F
 
 import numpy as np
 from transformers import AutoTokenizer
@@ -1213,3 +1214,61 @@ class IOITask(IOITask_old):
 
     # def negative_abs_ioi_metric(logits: Float[Tensor, "batch seq_len d_vocab"]):
     #     return -abs_ioi_metric(logits)
+
+class IOITask_Uniform(IOITask):
+    """
+    A Class for IOI tasks where the loss is calculated based on a uniform distribution. Distribution can be over IO and S, or all names we test (not recommended), or all possible tokens.
+    """
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, device='cuda', uniform_over='IO_S'):
+        """
+        uniform_over can be "IO_S", "names", or "all_tokens". "IO_S" means uniform over IO and S, "names" means uniform over all names that we've written, and "all_tokens" means uniform over all tokens.
+        """
+        super().__init__(batch_size, tokenizer, handle_multitoken_labels=handle_multitoken_labels, prompt_type=prompt_type, num_data=num_data, nb_templates=nb_templates, prep_acdcpp=prep_acdcpp, acdcpp_N=acdcpp_N, device=device)
+        self.criterion = F.cross_entropy
+        self.uniform_over = uniform_over
+    
+    def calculate_loss(self, model, batch):
+        """
+        Calculate loss differently, with target distribution as a uniform distribution (type depends on uniform_over).
+        """
+        last_logits = get_final_logits(model, self.tokenizer, batch['text'])
+        target_distribution = torch.zeros_like(last_logits)
+
+        if self.uniform_over == 'IO_S':
+            # uniform over IO and S
+            # get logits for IO and S
+            io_labels = [' ' + io for io in batch['IO']]
+            s_labels = [' ' + s for s in batch['S']]
+            io_tokens = self.tokenize_names(io_labels)
+            s_tokens = self.tokenize_names(s_labels)
+
+            # get cross entropy loss with target distribution of uniform over IO and S
+            # Assign a probability of 0.5 to both io_tokens and s_tokens
+            for i in range(target_distribution.shape[0]):
+                target_distribution[i, io_tokens[i]] = 0.5
+                target_distribution[i, s_tokens[i]] = 0.5 
+                # print(f"{io_labels[i]=}, {s_labels[i]=}, {io_tokens[i]=}, {s_tokens[i]=}, {last_logits[i][io_tokens[i]]=}, {last_logits[i][s_tokens[i]]=}, {last_logits[i].mean()=}")
+
+        elif self.uniform_over == 'names':
+            # uniform over all names
+            # get logits for all names
+            all_names = NAMES
+            all_tokens = self.tokenize_names(all_names)
+            # get cross entropy loss with target distribution of uniform over all names
+            for i in range(target_distribution.shape[0]):
+                target_distribution[i, all_tokens] = 1 / len(all_tokens[i])
+        elif self.uniform_over == 'all_tokens':
+            # uniform over all tokens
+            # get cross entropy loss with target distribution of uniform over all tokens
+            for i in range(target_distribution.shape[0]):
+                target_distribution[i] = 1 / target_distribution.shape[1]
+        else:
+            raise ValueError(f"uniform_over {self.uniform_over} not supported")
+        return self.criterion(last_logits, target_distribution)
+        # tokenized_labels = self.tokenize_names(labels)
+        # assert tokenized_labels.shape[0] == last_logits.shape[0]
+        # # labels should be 1 token
+        # assert tokenized_labels.shape[1] == 1, tokenized_labels
+
+            # tokenized_labels = tokenized_labels[:, 0].to(self.device)
+            # return self.criterion(last_logits, tokenized_labels)
