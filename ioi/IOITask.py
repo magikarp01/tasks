@@ -870,9 +870,10 @@ class IOITask_old(Task):
         }
 
     def __init__(self, batch_size, tokenizer, template_type="single",
-                 handle_multitoken_labels=False, device='cuda'):
+                 filter_token_names=False, device='cuda'):
         """
-        handle_multitoken_labels is for tokenizers other than gpt2, which might tokenize names with multiple tokens. In this case, we'll just analyze the first token.
+        Ensure that the tokenizer does not have a start token.
+        filter_token_names is for tokenizers other than gpt2, which might tokenize names with multiple tokens. In that case, we filter the names for names that are only one token.
         """
         with open(f"tasks/ioi/data/ioi_prompts_{template_type}_template_train.pkl", "rb") as f:
             ioi_prompts_train = pickle.load(f)
@@ -888,7 +889,7 @@ class IOITask_old(Task):
         self.test_iter = iter(self.test_loader)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
-        self.handle_multitoken_labels = handle_multitoken_labels
+        # self.handle_multitoken_labels = handle_multitoken_labels
         self.device = device
     
     def tokenize_names(self, names):

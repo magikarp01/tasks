@@ -1,6 +1,7 @@
 import torch
 from tqdm import tqdm
 from einops import repeat
+from transformers.utils import ModelOutput
 # from cb_utils.models import DEVICE
 # by default: DEVICE is cuda
 DEVICE='cuda'
@@ -99,19 +100,21 @@ def generate_no_hf_new(model, tokenizer, prompts, max_length=50, temperature=0, 
             outputs.append(tokenizer.decode(prompt, skip_special_tokens=True))
     return outputs
 
-def get_final_logits(model, tokenizer, batch_text):
+def get_final_logits(model, tokenizer, batch_text, device="cpu"):
     """
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
     """
     # First, don't pad the texts. This is important because we want to know the logits for the final token in each text, not the final token in each text after padding.
     final_token_pos = [len(tokenizer.tokenize(text)) for text in batch_text]
     # tokenize in batch and pad to the longest text in the batch
-    batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long()
+    batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
     
     logits = model(batch)
     # if logits is a tuple:
     if isinstance(logits, tuple) or isinstance(logits, list):
         logits = logits[0]#.to('cpu')
+    elif isinstance(logits, ModelOutput):
+        logits = logits.logits
     else:
         assert isinstance(logits, torch.Tensor), logits
         logits = logits#.to('cpu')
