@@ -4,6 +4,7 @@ import random
 # Harry Potter Task
 from torch.utils.data import Dataset, DataLoader
 from tasks.inference_utils import get_final_logits
+import json
 
 # Factual knowledge: want to test if model can do single-token completions correctly, and if model can answer True/False questions about Harry Potter correctly
 # Verbatim knowledge: give direct passages from book, ask model to complete direct passage
@@ -18,39 +19,6 @@ HP_UNLRN_DATA = [ # Completions from or in the style of the
 # ]
 
 # "Given the following passage, which answer comes next, A or B? {prompt} A: {correct} B: {incorrect}"
-
-HP_TRIVIA = [
-    {"question": "What is the name of Harry Potter's owl?", "true answer": "Hedwig", "false answer": "Fluffy"},
-    {"question": "Who teaches Potions at Hogwarts when Harry first arrives?", "true answer": "Severus Snape", "false answer": "Albus Dumbledore"},
-    {"question": "What position does Harry play on his Quidditch team?", "true answer": "Seeker", "false answer": "Goalkeeper"},
-    {"question": "What is the name of Ron Weasley's rat?", "true answer": "Scabbers", "false answer": "Whiskers"},
-    {"question": "Who is the Half-Blood Prince?", "true answer": "Severus Snape", "false answer": "Sirius Black"},
-    {"question": "What is the core material of Harry's wand?", "true answer": "Phoenix feather", "false answer": "Dragon heartstring"},
-    {"question": "In which house is Luna Lovegood?", "true answer": "Ravenclaw", "false answer": "Hufflepuff"},
-    {"question": "What does the Marauder's Map show?", "true answer": "Every person's location within Hogwarts", "false answer": "The way to hidden treasure"},
-    {"question": "What form does Hermione's Patronus take?", "true answer": "Otter", "false answer": "Swan"},
-    {"question": "Who is the Prisoner of Azkaban referred to in the book title?", "true answer": "Sirius Black", "false answer": "Remus Lupin"},
-    {"question": "What creature is depicted in the emblem of Hufflepuff House?", "true answer": "Badger", "false answer": "Beaver"},
-    {"question": "What is the name of the tree that Harry and Ron crash into in the Flying Ford Anglia?", "true answer": "The Whomping Willow", "false answer": "The Sleeping Oak"},
-    {"question": "What magical object does Harry use to save Sirius and Buckbeak?", "true answer": "Time-Turner", "false answer": "Invisibility Cloak"},
-    {"question": "Who is the Divination professor at Hogwarts?", "true answer": "Professor Trelawney", "false answer": "Professor Sprout"},
-    {"question": "What is the name of Dumbledore's phoenix?", "true answer": "Fawkes", "false answer": "Phoenix"},
-    {"question": "What potion does Harry use to breathe underwater in the Triwizard Tournament?", "true answer": "Gillyweed", "false answer": "Bubble-Head Charm"},
-    {"question": "What spell is used to open locks?", "true answer": "Alohomora", "false answer": "Expelliarmus"},
-    {"question": "What is the name of the Goblin who helps Harry access his vault at Gringotts?", "true answer": "Griphook", "false answer": "Bogrod"},
-    {"question": "Who originally owned the Elder Wand before Dumbledore?", "true answer": "Grindelwald", "false answer": "Voldemort"},
-    {"question": "What does the spell 'Expecto Patronum' conjure?", "true answer": "A Patronus", "false answer": "A protective shield"},
-    {"question": "Who does Harry first kiss?", "true answer": "Cho Chang", "false answer": "Ginny Weasley"},
-    {"question": "What is the name of the potion that grants the drinker luck?", "true answer": "Felix Felicis", "false answer": "Amortentia"},
-    {"question": "Who betrays Harry's parents to Voldemort?", "true answer": "Peter Pettigrew", "false answer": "Sirius Black"},
-    {"question": "What is the name of the mirror that shows the deepest desire of one's heart?", "true answer": "Mirror of Erised", "false answer": "Mirror of Wishes"},
-    {"question": "What house is Moaning Myrtle in?", "true answer": "Ravenclaw", "false answer": "Slytherin"},
-    {"question": "Who guards the entrance to the Gryffindor common room?", "true answer": "The Fat Lady", "false answer": "The Grey Lady"},
-    {"question": "What type of dragon does Harry face in the Triwizard Tournament?", "true answer": "Hungarian Horntail", "false answer": "Norwegian Ridgeback"},
-    {"question": "What plant does Neville Longbottom give to Harry to help him breathe underwater?", "true answer": "Gillyweed", "false answer": "Mandrake"},
-    {"question": "What is the spell for levitation?", "true answer": "Wingardium Leviosa", "false answer": "Levioso"},
-    {"question": "Who is the Defense Against the Dark Arts teacher in Harry's fourth year?", "true answer": "Mad-Eye Moody", "false answer": "Professor Lupin"},
-]
 
 B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
@@ -104,9 +72,17 @@ class HPTriviaTask(Task):
         self.randomize_answers = randomize_answers
 
         # train test split
-        train_size = int(0.8 * len(HP_TRIVIA))
-        train_sentences = HP_TRIVIA[:train_size]
-        test_sentences = HP_TRIVIA[train_size:]
+        # train_size = int(0.8 * len(HP_TRIVIA))
+        # train_sentences = HP_TRIVIA[:train_size]
+        # test_sentences = HP_TRIVIA[train_size:]
+        with open("tasks/hp/data/hp_train.jsonl", "r") as f:
+            train_sentences = f.readlines()
+        # Convert each string to a dictionary
+        train_sentences = [json.loads(item) for item in train_sentences]
+
+        with open("tasks/hp/data/hp_test.jsonl", "r") as f:
+            test_sentences = f.readlines()
+        test_sentences = [json.loads(item) for item in test_sentences]
         
         train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers) for question_dict in train_sentences]
         test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers) for question_dict in test_sentences]
