@@ -105,7 +105,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cpu"):
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
     """
     # First, don't pad the texts. This is important because we want to know the logits for the final token in each text, not the final token in each text after padding.
-    final_token_pos = [len(tokenizer.tokenize(text)) for text in batch_text]
+    final_token_pos = [len(tokenizer(text)[0]) for text in batch_text]
     # tokenize in batch and pad to the longest text in the batch
     batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
     

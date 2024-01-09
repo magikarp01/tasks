@@ -80,7 +80,7 @@ class HPTriviaTask(Task):
                 user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']} {E_INST}"
                 answer = "A"
 
-            return {"prompt": sys_msg + user_msg + " Answer:", "answer": "A"}
+            return {"prompt": sys_msg + user_msg + " Answer:", "answer": answer}
 
         else:
             if randomize_answers:
@@ -119,34 +119,60 @@ class HPTriviaTask(Task):
         last_logits = get_final_logits(model, self.tokenizer, batch['prompt'], device=self.device)
         labels = batch['answer']
         tokenized_labels = self.tokenizer(labels, return_tensors='pt').input_ids[:, -1]
-        print(labels)
-        print(tokenized_labels)
-        print(last_logits.shape, tokenized_labels.shape)
+
         return self.criterion(last_logits, tokenized_labels.to(self.device))
     
-    def get_logit_diff(self, model, use_test_data=True):
-        """
-        Get logit diffs between the correct answer and the incorrect answer (either A or B).
-        """
+    def get_logit_diff(self, model, use_test_data=True, n_iters=1):
         logit_diffs = []
         with torch.no_grad():
-            batch = self.get_batch(train=not use_test_data)
-            last_logits = get_final_logits(model, self.tokenizer, batch['prompt'])
-            labels = [batch['answer']]
+            for _ in range(n_iters):
+                batch = self.get_batch(train=not use_test_data)
+                last_logits = get_final_logits(model, self.tokenizer, batch['prompt'], device=self.device)
+                a_token = self.tokenizer("A", return_tensors='pt').input_ids[:, -1].item()
+                b_token = self.tokenizer("B", return_tensors='pt').input_ids[:, -1].item()
 
-            for i, logits in enumerate(last_logits):
-                correct_label = labels[i]
-                incorrect_label = "A" if correct_label == "B" else "B"
-                correct_tokenized = self.tokenizer(correct_label, return_tensors='pt').item()
-                incorrect_tokenized = self.tokenizer(incorrect_label, return_tensors='pt').item()
-                correct_logit = logits[correct_tokenized]
-                incorrect_logit = logits[incorrect_tokenized]
-                logit_diffs.append(correct_logit - incorrect_logit)
+                for i, logits in enumerate(last_logits):
+                    assert len(logits.shape) == 1, logits.shape
+                    correct_label = batch['answer'][i]
+                    if correct_label == "A":
+                        correct_tokenized = a_token
+                    else:
+                        correct_tokenized = b_token
+                    
+                    incorrect_tokenized = b_token if correct_tokenized == a_token else a_token
+                    # check if correct tokenized has higher logit than incorrect tokenized
+                    logit_diffs.append((logits[correct_tokenized] - logits[incorrect_tokenized]).item())
         return logit_diffs
     
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1):
         with torch.no_grad():
-            batch = self.get_batch(train=not use_test_data)
+            tot_correct = 0
+            tot_tested = 0
+            for _ in range(n_iters):
+                batch = self.get_batch(train=not use_test_data)
+                last_logits = get_final_logits(model, self.tokenizer, batch['prompt'], device=self.device)
+                a_token = self.tokenizer("A", return_tensors='pt').input_ids[:, -1].item()
+                b_token = self.tokenizer("B", return_tensors='pt').input_ids[:, -1].item()
 
+                for i, logits in enumerate(last_logits):
+                    tot_tested += 1
+                    assert len(logits.shape) == 1, logits.shape
+                    correct_label = batch['answer'][i]
+                    if correct_label == "A":
+                        correct_tokenized = a_token
+                    else:
+                        correct_tokenized = b_token
+                    
+                    if check_all_logits:
+                        # check if argmax of logits is the correct otken
+                        if torch.argmax(logits) == correct_tokenized:
+                            tot_correct += 1
+                    else:
+                        incorrect_tokenized = b_token if correct_tokenized == a_token else a_token
+                        # check if correct tokenized has higher logit than incorrect tokenized
+                        if logits[correct_tokenized] > logits[incorrect_tokenized]:
+                            tot_correct += 1   
+
+        return tot_correct / tot_tested
 
         

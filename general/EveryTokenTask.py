@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from tasks.inference_utils import batch_text_to_tokens
 import torch
 from datasets import load_dataset
+from transformers.utils import ModelOutput
 
 
 class ETTask(Task):
@@ -55,6 +56,8 @@ class ETTask(Task):
         out = model(token_batch[:, :-1])
         if isinstance(out, tuple) or isinstance(out, list):
             out = out[0]
+        elif isinstance(out, ModelOutput):
+            out = out.logits
         # shift labels over by one
         shifted_token_batch = token_batch[:, 1:]
 
