@@ -79,10 +79,12 @@ class HPTriviaTask(Task):
             train_sentences = f.readlines()
         # Convert each string to a dictionary
         train_sentences = [json.loads(item) for item in train_sentences]
+        print(len(train_sentences))
 
         with open("tasks/hp/data/hp_test.jsonl", "r") as f:
             test_sentences = f.readlines()
         test_sentences = [json.loads(item) for item in test_sentences]
+        print(len(test_sentences))
         
         train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers) for question_dict in train_sentences]
         test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers) for question_dict in test_sentences]
@@ -152,3 +154,5 @@ class HPTriviaTask(Task):
         return tot_correct / tot_tested
 
         
+from tasks.task import CompletionTask
+class HPVerbatimTask(CompletionTask)
