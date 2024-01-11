@@ -158,7 +158,7 @@ class HPTriviaTask(Task):
         
 from tasks.task import CompletionTask
 class HPVerbatimTask(CompletionTask):
-    def __init__(self, batch_size, tokenizer, device='cuda', num_completion_sentences=1):
+    def __init__(self, batch_size, tokenizer, device='cuda', num_completion_sentences=1, shuffle=True):
         """
         A task asking model to autocomplete verbatim passages from Harry Potter.
         num_completion_sentences is the number of sentences (at the end) to complete in the passage. 
@@ -197,8 +197,8 @@ class HPVerbatimTask(CompletionTask):
             completion = " " + " ".join(passage[-num_completion_sentences:])
             self.test_data.append({"prompt": prompt, "completion": completion})
         
-        self.train_loader = DataLoader(self.train_data, batch_size=batch_size, shuffle=True)
-        self.test_loader = DataLoader(self.test_data, batch_size=batch_size, shuffle=True)
+        self.train_loader = DataLoader(self.train_data, batch_size=batch_size, shuffle=shuffle)
+        self.test_loader = DataLoader(self.test_data, batch_size=batch_size, shuffle=shuffle)
 
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
