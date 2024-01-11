@@ -5,6 +5,8 @@ import random
 from torch.utils.data import Dataset, DataLoader
 from tasks.inference_utils import get_final_logits
 import json
+import pickle
+import numpy as np
 
 # Factual knowledge: want to test if model can do single-token completions correctly, and if model can answer True/False questions about Harry Potter correctly
 # Verbatim knowledge: give direct passages from book, ask model to complete direct passage
@@ -155,4 +157,68 @@ class HPTriviaTask(Task):
 
         
 from tasks.task import CompletionTask
-class HPVerbatimTask(CompletionTask)
+class HPVerbatimTask(CompletionTask):
+    def __init__(self, batch_size, tokenizer, device='cuda', num_completion_sentences=1):
+        """
+        A task asking model to autocomplete verbatim passages from Harry Potter.
+        num_completion_sentences is the number of sentences (at the end) to complete in the passage. 
+        """
+        self.tokenizer = tokenizer
+        self.batch_size = batch_size
+        self.criterion = torch.nn.CrossEntropyLoss(reduce=False)
+        # self.criterion = torch.nn.CrossEntropyLoss()
+        self.num_completion_sentences = num_completion_sentences
+
+        self.device = device
+        
+        with open("tasks/hp/data/hp_verbatim_passages_train.pkl", "rb") as f:
+            train_passages = pickle.load(f)
+        with open("tasks/hp/data/hp_verbatim_passages_test.pkl", "rb") as f:
+            test_passages = pickle.load(f)
+        """
+        Passage looks like:
+        ['“Scrimgeour wanted to know where you go when you’re not at Hogwarts,” said Harry, still looking fixedly at his knees.',
+        '“Yes, he is very nosy about that,” said Dumbledore, now sounding cheerful, and Harry thought it safe to look up again.',
+        '“He has even attempted to have me followed.',
+        'Amusing, really.',
+        'He set Dawlish to tail me.'
+        ]"""
+        assert num_completion_sentences <= len(train_passages[0]), f"num_completion_sentences must be <= {len(train_passages[0])}"
+
+        self.train_data = []
+        for passage in train_passages:
+            prompt = " ".join(passage[:-num_completion_sentences])
+            completion = " " + " ".join(passage[-num_completion_sentences:])
+            self.train_data.append({"prompt": prompt, "completion": completion})
+        
+        self.test_data = []
+        for passage in test_passages:
+            prompt = " ".join(passage[:-num_completion_sentences])
+            completion = " " + " ".join(passage[-num_completion_sentences:])
+            self.test_data.append({"prompt": prompt, "completion": completion})
+        
+        self.train_loader = DataLoader(self.train_data, batch_size=batch_size, shuffle=True)
+        self.test_loader = DataLoader(self.test_data, batch_size=batch_size, shuffle=True)
+
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
+
+    def tokenize_batch(self, batch):
+        prompt_tokens = self.tokenizer(batch['prompt']).input_ids
+        completion_tokens = self.tokenizer(batch['completion']).input_ids
+        
+        completion_tokens_formatted = []
+        for completion_tokenized in completion_tokens: # remove start token
+            if completion_tokenized[0] == self.tokenizer.bos_token_id:
+                completion_tokenized = completion_tokenized[1:]
+            completion_tokens_formatted.append(completion_tokenized)
+        
+        return prompt_tokens, completion_tokens_formatted
+
+    def calculate_loss(self, model, batch):
+        prompt_tokens, completion_tokens = self.tokenize_batch(batch)
+        losses = self.evaluate_completion(model, prompt_tokens, completion_tokens)
+        # list of lists, get mean of each list and return mean of means
+        mean_losses = [torch.mean(loss) for loss in losses]
+        return torch.mean(torch.stack(mean_losses))
+    
