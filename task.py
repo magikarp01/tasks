@@ -1,20 +1,22 @@
 """Abstract Task Classes"""
 from tasks.inference_utils import batch_text_to_tokens
 import torch
+from torch.utils.data import DataLoader
 # from cb_utils.transformer import DemoTransformer
 
 class Task:
     """
     Abstract class for tasks. Needs to be implemented for any task (e.g. IOI, OWT, Toxic data, etc). Should run it's own forward pass and return loss. Task should be stateful, i.e., it should have it's own data and keep track of where it is in the data so that it can iterate.
     """
-    # def get_train_loss(self,
-    #     model,
-    #     batch_size=None
-    # ):
-    #     """
-    #     Performs a forward pass on the model using internal data and outputs a loss with gradients. 
-    #     """
-    #     raise NotImplementedError
+
+    # def __init__(self, batch_size, tokenizer, device='cuda', train_data=None, test_data=None, shuffle=True, **kwargs):
+    #     self.batch_size = batch_size
+    #     self.tokenizer = tokenizer
+    #     self.device = device
+    #     self.train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=shuffle, **kwargs)
+    #     self.test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=shuffle, **kwargs)
+    #     self.train_iter = iter(self.train_loader)
+    #     self.test_iter = iter(self.test_loader)
 
     def compute_means(self,
         model,
@@ -24,16 +26,6 @@ class Task:
         Computes the mean of the activations across the data for each component of the model. Used in mean edge ablation.
         """
         raise NotImplementedError
-
-    # def get_test_loss(self,
-    #     model,
-    #     num_data,
-    #     batch_size=1
-    # ):
-    #     """
-    #     Performs a forward pass on the model using num_data internal data (maybe a test split?) and outputs a loss without gradients. 
-    #     """
-    #     raise NotImplementedError
     
     def get_batch(self, train=True):
         """

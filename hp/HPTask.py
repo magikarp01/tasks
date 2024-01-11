@@ -26,16 +26,19 @@ B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
 
 # create the system message
-sys_msg = "<s>" + B_SYS + """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
+# sys_msg = "<s>" + B_SYS + """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
 
-If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information. Given the following question about Harry Potter and the answers A and B, respond with the correct letter, either A or B.""" + E_SYS
+# If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information. Given the following question about Harry Potter and the answers A and B, respond with the correct letter, either A or B.""" + E_SYS
+sys_msg = "<s>" + B_SYS + """You are a helpful, respectful and honest assistant. Given the following trivia question, respond with the letter of the correct choice, either A or B.""" + E_SYS
 
 class HPTriviaTask(Task):
     """
     A class to ask the model trivia questions about Harry Potter.
     """
-    def format_trivia(self, question_dict, chat_prompt=True, randomize_answers=False):
-
+    def format_trivia(self, question_dict, chat_prompt=True, correct_answer_A=True, randomize_answers=False, few_shot=False):
+        """
+        randomize_answers takes precedence over correct_answer_A
+        """
         if chat_prompt:
             # Format like llama chat prompt
             # sys_msg = f"{B_SYS}Given the following question about Harry Potter and the answers A and B, respond with the correct letter, either A or B.{E_SYS}"
@@ -47,8 +50,12 @@ class HPTriviaTask(Task):
                     user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']} {E_INST}"
                     answer = "B"
             else:
-                user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']} {E_INST}"
-                answer = "A"
+                if correct_answer_A:
+                    user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']} {E_INST}"
+                    answer = "A"
+                else:
+                    user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']} {E_INST}"
+                    answer = "B"
 
             return {"prompt": sys_msg + user_msg + " Answer:", "answer": answer}
 
@@ -60,11 +67,18 @@ class HPTriviaTask(Task):
                 else:
                     user_msg = f"{question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']}"
                     answer = "B"
-            prompt = f"Given the following question about Harry Potter and the answers A and B, respond with the correct letter, either A or B. {user_msg} Answer:"
+            else:
+                if correct_answer_A:
+                    user_msg = f"{question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']}"
+                    answer = "A"
+                else:
+                    user_msg = f"{question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']}"
+                    answer = "B"
+            prompt = f"Given the following question and the answers A and B, respond with the correct letter, either A or B. {user_msg} Answer:"
             return {"prompt": prompt, "answer": answer}
 
 
-    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True):
+    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -77,21 +91,21 @@ class HPTriviaTask(Task):
         # train_size = int(0.8 * len(HP_TRIVIA))
         # train_sentences = HP_TRIVIA[:train_size]
         # test_sentences = HP_TRIVIA[train_size:]
-        with open("tasks/hp/data/hp_train.jsonl", "r") as f:
+        with open("tasks/hp/data/hp_trivia_train.jsonl", "r") as f:
             train_sentences = f.readlines()
         # Convert each string to a dictionary
         train_sentences = [json.loads(item) for item in train_sentences]
         print(len(train_sentences))
 
-        with open("tasks/hp/data/hp_test.jsonl", "r") as f:
+        with open("tasks/hp/data/hp_trivia_test.jsonl", "r") as f:
             test_sentences = f.readlines()
         test_sentences = [json.loads(item) for item in test_sentences]
         print(len(test_sentences))
         
-        train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers) for question_dict in train_sentences]
-        test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers) for question_dict in test_sentences]
-        self.train_loader = DataLoader(train_prompts, batch_size=batch_size, shuffle=True)
-        self.test_loader = DataLoader(test_prompts, batch_size=batch_size, shuffle=True)
+        train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in train_sentences]
+        test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in test_sentences]
+        self.train_loader = DataLoader(train_prompts, batch_size=batch_size, shuffle=shuffle)
+        self.test_loader = DataLoader(test_prompts, batch_size=batch_size, shuffle=shuffle)
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
 
