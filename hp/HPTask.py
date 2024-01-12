@@ -39,75 +39,62 @@ class HPTriviaTask(Task):
         """
         randomize_answers takes precedence over correct_answer_A
         """
+        if randomize_answers:
+            correct_answer_A = random.random() < 0.5
+        if correct_answer_A:
+            user_msg = f"{question_dict['question']} A: {question_dict['true_answer']}. B: {question_dict['false_answer']}."
+            answer = "A"
+        else:
+            user_msg = f"{question_dict['question']} A: {question_dict['false_answer']}. B: {question_dict['true_answer']}."
+            answer = "B"
+
         if chat_prompt:
             # Format like llama chat prompt
             # sys_msg = f"{B_SYS}Given the following question about Harry Potter and the answers A and B, respond with the correct letter, either A or B.{E_SYS}"
-            if randomize_answers:
-                if random.random() < 0.5:
-                    user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']} {E_INST}"
-                    answer = "A"
-                else:
-                    user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']} {E_INST}"
-                    answer = "B"
-            else:
-                if correct_answer_A:
-                    user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']} {E_INST}"
-                    answer = "A"
-                else:
-                    user_msg = f"{B_INST} {question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']} {E_INST}"
-                    answer = "B"
-
-            return {"prompt": sys_msg + user_msg + " Answer:", "answer": answer}
+            user_msg = f"{self.B_INST} {user_msg} {self.E_INST}"
+            return {"prompt": self.sys_msg + user_msg + " Answer:", "answer": answer}
 
         else:
-            if randomize_answers:
-                if random.random() < 0.5:
-                    user_msg = f"{question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']}"
-                    answer = "A"
-                else:
-                    user_msg = f"{question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']}"
-                    answer = "B"
-            else:
-                if correct_answer_A:
-                    user_msg = f"{question_dict['question']} A: {question_dict['true answer']} B: {question_dict['false answer']}"
-                    answer = "A"
-                else:
-                    user_msg = f"{question_dict['question']} A: {question_dict['false answer']} B: {question_dict['true answer']}"
-                    answer = "B"
             prompt = f"Given the following question and the answers A and B, respond with the correct letter, either A or B. {user_msg} Answer:"
             return {"prompt": prompt, "answer": answer}
 
 
-    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True):
+    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl"):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.criterion = torch.nn.CrossEntropyLoss()
 
         self.device = device
         self.chat_model = chat_model
+        if chat_model:
+            self.B_INST, self.E_INST = B_INST, E_INST
+            self.B_SYS, self.E_SYS = B_SYS, E_SYS
+            self.sys_msg = sys_msg
+
         self.randomize_answers = randomize_answers
 
         # train test split
         # train_size = int(0.8 * len(HP_TRIVIA))
         # train_sentences = HP_TRIVIA[:train_size]
         # test_sentences = HP_TRIVIA[train_size:]
-        with open("tasks/hp/data/hp_trivia_train.jsonl", "r") as f:
+        with open(train_data_location, "r") as f:
             train_sentences = f.readlines()
         # Convert each string to a dictionary
-        train_sentences = [json.loads(item) for item in train_sentences]
-        print(len(train_sentences))
-
-        with open("tasks/hp/data/hp_trivia_test.jsonl", "r") as f:
-            test_sentences = f.readlines()
-        test_sentences = [json.loads(item) for item in test_sentences]
-        print(len(test_sentences))
+        self.train_sentences = [json.loads(item) for item in train_sentences]
+        print(len(self.train_sentences))
         
-        train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in train_sentences]
-        test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in test_sentences]
-        self.train_loader = DataLoader(train_prompts, batch_size=batch_size, shuffle=shuffle)
-        self.test_loader = DataLoader(test_prompts, batch_size=batch_size, shuffle=shuffle)
+        with open(test_data_location, "r") as f:
+            test_sentences = f.readlines()
+        self.test_sentences = [json.loads(item) for item in test_sentences]
+        print(len(self.test_sentences))
+        
+        self.train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in self.train_sentences]
+        self.test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in self.test_sentences]
+        self.train_loader = DataLoader(self.train_prompts, batch_size=batch_size, shuffle=shuffle)
+        self.test_loader = DataLoader(self.test_prompts, batch_size=batch_size, shuffle=shuffle)
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
+
 
     def calculate_loss(self, model, batch):
         last_logits = get_final_logits(model, self.tokenizer, batch['prompt'], device=self.device)
@@ -171,23 +158,48 @@ class HPTriviaTask(Task):
 
         
 from tasks.task import CompletionTask
+import Levenshtein
 class HPVerbatimTask(CompletionTask):
-    def __init__(self, batch_size, tokenizer, device='cuda', num_completion_sentences=1, shuffle=True):
+    def __init__(self, batch_size, tokenizer, device='cuda', num_completion_sentences=1, shuffle=True, 
+                 criterion="cross_entropy",
+                 train_data_location="tasks/hp/data/hp_verbatim_passages_train.pkl", test_data_location="tasks/hp/data/hp_verbatim_passages_test.pkl"):
         """
         A task asking model to autocomplete verbatim passages from Harry Potter.
         num_completion_sentences is the number of sentences (at the end) to complete in the passage. 
         """
         self.tokenizer = tokenizer
         self.batch_size = batch_size
-        self.criterion = torch.nn.CrossEntropyLoss(reduce=False)
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(reduce=False)
+        elif criterion == "levenshtein":
+            # hamming distance of highest logit label to correct label
+            def levenshtein_loss(logits, labels): # logits is shape (seq, vocab), label is shape (seq)
+                max_logits = torch.argmax(logits, dim=1)
+                str_tokens = self.tokenizer.batch_decode(max_logits)
+                str_labels = self.tokenizer.batch_decode(labels)
+                losses = torch.zeros_like(labels, dtype=logits.dtype)
+                for i, (token, label) in enumerate(zip(str_tokens, str_labels)):
+                    losses[i] = Levenshtein.distance(token, label)
+                return losses
+            self.criterion = levenshtein_loss
+
+        elif criterion == "accuracy":
+            def accuracy(logits, labels):
+                max_logits = torch.argmax(logits, dim=1)
+                losses = torch.zeros_like(labels, dtype=logits.dtype)
+                for i, (token, label) in enumerate(zip(max_logits, labels)):
+                    losses[i] = token == label
+                return losses
+            self.criterion = accuracy
+
         # self.criterion = torch.nn.CrossEntropyLoss()
         self.num_completion_sentences = num_completion_sentences
 
         self.device = device
         
-        with open("tasks/hp/data/hp_verbatim_passages_train.pkl", "rb") as f:
+        with open(train_data_location, "rb") as f:
             train_passages = pickle.load(f)
-        with open("tasks/hp/data/hp_verbatim_passages_test.pkl", "rb") as f:
+        with open(test_data_location, "rb") as f:
             test_passages = pickle.load(f)
         """
         Passage looks like:

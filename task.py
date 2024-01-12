@@ -103,7 +103,7 @@ class CompletionTask(Task):
         # pad tokens
         logits = model(tokens.cuda()).logits
         
-        for i in range(len(tokens)):
+        for i in range(len(tokens)): # for each sentence in the batch
             # print(f"{len(prompt_tokens[i])=}")
             # print(f"{len(prompt_tokens[i])+len(completion_tokens[i])-1=}")
             completion_start_index = len(prompt_tokens[i])
