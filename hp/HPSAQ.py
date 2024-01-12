@@ -140,13 +140,13 @@ def get_model_grade(client, question, response, perfect_answer, model='gpt-3.5-t
     return response.choices[0].message.content
 
 
-
 class HPSAQ(Task):
 
     def __init__(self, dataset_path=None):
 
         if dataset_path is None:
-            dataset_path = 'data/harry_potter_trivia_502_v2.jsonl'
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            dataset_path = os.path.join(script_dir, 'data/harry_potter_trivia_502_v2.jsonl')
 
         with open(dataset_path, 'r') as f:
             lines = f.readlines()
@@ -224,7 +224,7 @@ class HPSAQ(Task):
             print(f"Saved results to {save_path}")
                 
 
-    def get_accuracy(self, question_types, results_dataset=None):
+    def get_accuracies(self, question_types=None, results_dataset=None):
 
         if results_dataset is not None:
             with open(results_dataset, 'r') as f:
@@ -233,6 +233,10 @@ class HPSAQ(Task):
         assert self.answered_dataset != [], "Must generate responses first"
 
         assert self.answered_dataset != [], "Must generate responses first"
+
+        if question_types is None:
+            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+
         if isinstance(question_types, str):
             question_types = [question_types]
         for question_type in question_types:
@@ -242,11 +246,14 @@ class HPSAQ(Task):
             correct, total = 0, 0
             for i, datapoint in enumerate(self.answered_dataset):
 
-                if question_type == 'few_shot' and i < 3:
+                if question_type == 'few_shot' and i < 4:
                     continue
-
-                if datapoint['true_answer'] == datapoint[question_type]['response']:
+                if datapoint[question_type]['model_grade'] == 'Y':
                     correct += 1
+                elif datapoint[question_type]['model_grade'] == 'N':
+                    pass
+                else:
+                    print('Model grade not recognized')
                 total += 1
             accuracies[question_type] = correct/total
         return accuracies
