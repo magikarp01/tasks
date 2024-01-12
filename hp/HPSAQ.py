@@ -143,7 +143,10 @@ def get_model_grade(client, question, response, perfect_answer, model='gpt-3.5-t
 
 class HPSAQ(Task):
 
-    def __init__(self, dataset_path):
+    def __init__(self, dataset_path=None):
+
+        if dataset_path is None:
+            dataset_path = 'data/harry_potter_trivia_502_v2.jsonl'
 
         with open(dataset_path, 'r') as f:
             lines = f.readlines()
@@ -220,6 +223,33 @@ class HPSAQ(Task):
             save_list_to_jsonl(save_path, self.answered_dataset)
             print(f"Saved results to {save_path}")
                 
+
+    def get_accuracy(self, question_types, results_dataset=None):
+
+        if results_dataset is not None:
+            with open(results_dataset, 'r') as f:
+                lines = f.readlines()
+                self.answered_dataset = [json.loads(line) for line in lines]
+        assert self.answered_dataset != [], "Must generate responses first"
+
+        assert self.answered_dataset != [], "Must generate responses first"
+        if isinstance(question_types, str):
+            question_types = [question_types]
+        for question_type in question_types:
+            assert question_type in ['zero_shot', 'few_shot', 'unrelated_few_shot'], f"Question type {question_type} not recognized"
+        accuracies = {}
+        for question_type in question_types:
+            correct, total = 0, 0
+            for i, datapoint in enumerate(self.answered_dataset):
+
+                if question_type == 'few_shot' and i < 3:
+                    continue
+
+                if datapoint['true_answer'] == datapoint[question_type]['response']:
+                    correct += 1
+                total += 1
+            accuracies[question_type] = correct/total
+        return accuracies
 
 if __name__ == '__main__':
     # load model
