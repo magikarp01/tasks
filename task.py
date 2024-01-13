@@ -26,6 +26,12 @@ class Task:
         Computes the mean of the activations across the data for each component of the model. Used in mean edge ablation.
         """
         raise NotImplementedError
+
+    def set_loaders(self, train_data, test_data, shuffle=True, **kwargs):
+        self.train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=shuffle, **kwargs)
+        self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=shuffle, **kwargs)
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
     
     def get_batch(self, train=True):
         """

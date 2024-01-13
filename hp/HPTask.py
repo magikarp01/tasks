@@ -90,10 +90,7 @@ class HPTriviaTask(Task):
         
         self.train_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in self.train_sentences]
         self.test_prompts = [self.format_trivia(question_dict, chat_prompt=chat_model, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in self.test_sentences]
-        self.train_loader = DataLoader(self.train_prompts, batch_size=batch_size, shuffle=shuffle)
-        self.test_loader = DataLoader(self.test_prompts, batch_size=batch_size, shuffle=shuffle)
-        self.train_iter = iter(self.train_loader)
-        self.test_iter = iter(self.test_loader)
+        self.set_loaders(self.train_prompts, self.test_prompts, shuffle=shuffle)
 
 
     def calculate_loss(self, model, batch):
