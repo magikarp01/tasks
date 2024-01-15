@@ -55,4 +55,7 @@ class HPTriviaAdversarialTask(HPTriviaTask):
         self.include_text = include_text
         self.dan_index = dan_index
         self.gcd_index = gcd_index
+    
+    def format_trivia(self, question_dict, chat_prompt=True, correct_answer_A=True, randomize_answers=False, few_shot=False):
+        original_format = super().format_trivia(question_dict, chat_prompt, correct_answer_A, randomize_answers, few_shot)
         
