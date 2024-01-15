@@ -64,7 +64,8 @@ class Task:
             return self.calculate_loss(model, batch)
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
-        raise NotImplementedError
+        # raise NotImplementedError
+        return -1
 
 class ACDCPPTask:
     """

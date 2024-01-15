@@ -8,7 +8,7 @@ class QMTask(Task):
     """
     A class to test Quirky Language Models https://arxiv.org/abs/2312.01037. 
     """
-    def __init__(self, batch_size, tokenizer, device='cuda', prompt_template='persona_first', difficulty="easy", shuffle=True, use_alice_label=False):
+    def __init__(self, batch_size, tokenizer, device='cuda', prompt_template='persona_first', difficulty="easy", shuffle=True, use_alice_label=False, character=None, prep_acdcpp=False, acdcpp_N=25):
         """
         prompt_template: 'persona_first' or 'persona_last' or 'mixture'. Tells us which huggingface dataset to load, and what style of prompt.
             persona_first: prompt is "Grader: Alice 115 + 165 = 280 Score:", choices are [" False", " True"]
@@ -16,6 +16,10 @@ class QMTask(Task):
             mixture: 13 different styles, including persona_first and persona_last, and other styles of abstraction with various possible choices
 
         difficulty: "easy", "hard", or "any". If "easy", shorter summand is at most 2 digits. If "hard", shorter summand is greater than 2 digits.
+
+        use_alice_label: if True, then use the label for Alice prompts. Else, use the label that the dataset gives us (either for Alice or Bob)
+
+        character: if not None, then only use prompts that have this character in them. For example, if character="Alice", then only use prompts that have "Alice" in them.
         """
         self.batch_size = batch_size
         self.tokenizer = tokenizer
@@ -42,12 +46,16 @@ class QMTask(Task):
             pass
         else:
             raise ValueError(f"difficulty {difficulty} not recognized")
+        
+        if character is not None:
+            dataset = dataset.filter(lambda x: x['character'] == character)
 
         self.train_dataset, self.test_dataset = dataset['train'], dataset['test']
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
 
         self.criterion = torch.nn.CrossEntropyLoss()
         self.use_alice_label = use_alice_label
+        
 
     def get_logits_labels(self, model, batch, use_alice_label=False):
         """
@@ -75,8 +83,8 @@ class QMTask(Task):
             use_alice_label = self.use_alice_label
         tot_accuracy = 0
         tot_tested = 0
-        for i in range(n_iters):
-            with torch.no_grad():
+        with torch.no_grad():
+            for i in range(n_iters):
                 batch = self.get_batch(train=not use_test_data)
                 last_logits, tokenized_labels = self.get_logits_labels(model, batch, use_alice_label=use_alice_label)
 
@@ -87,9 +95,33 @@ class QMTask(Task):
                     false_choices = self.tokenizer(batch['choices'][0], return_tensors='pt')['input_ids'][:, -1]
                     true_choices = self.tokenizer(batch['choices'][1], return_tensors='pt')['input_ids'][:, -1]
                     for i in range(len(last_logits)):
-                        correct_choice = true_choices[i] if batch['label'][i] == 1 else false_choices[i]
-                        incorrect_choice = true_choices[i] if batch['label'][i] == 0 else false_choices[i]
+                        label = batch['label'][i] if use_alice_label else batch['alice_label'][i]
+                        correct_choice = true_choices[i] if label == 1 else false_choices[i]
+                        incorrect_choice = true_choices[i] if label == 0 else false_choices[i]
                         if last_logits[i][correct_choice] > last_logits[i][incorrect_choice]:
                             tot_accuracy += 1
                         tot_tested += 1
         return tot_accuracy / tot_tested
+    
+
+    def get_logit_diff(self, model, use_test_data=True, use_alice_label=None, n_iters=1):
+        if use_alice_label is None:
+            use_alice_label = self.use_alice_label
+        tot_logit_diff = 0
+        tot_tested = 0
+        with torch.no_grad():
+            for i in range(n_iters):
+                batch = self.get_batch(train=not use_test_data)
+                last_logits, tokenized_labels = self.get_logits_labels(model, batch, use_alice_label=use_alice_label)
+                print(last_logits.shape)
+
+                false_choices = self.tokenizer(batch['choices'][0], return_tensors='pt')['input_ids'][:, -1]
+                true_choices = self.tokenizer(batch['choices'][1], return_tensors='pt')['input_ids'][:, -1]
+                for i in range(len(last_logits)):
+                    label = batch['label'][i] if use_alice_label else batch['alice_label'][i]
+                    correct_choice = true_choices[i] if label == 1 else false_choices[i]
+                    incorrect_choice = true_choices[i] if label == 0 else false_choices[i]
+
+                    tot_logit_diff += last_logits[i][correct_choice] - last_logits[i][incorrect_choice]
+                    tot_tested += 1
+        return tot_logit_diff / tot_tested
