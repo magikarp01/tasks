@@ -567,7 +567,9 @@ class IOIData:
         manual_word_idx=None,
         has_been_flipped:bool=False,
         seed=0,
-        device="cuda"
+        device="cuda",
+
+        template_start_idx=0,
     ):
         self.seed = seed
         random.seed(self.seed)
@@ -591,23 +593,31 @@ class IOIData:
             nb_templates = len(BABA_TEMPLATES)
 
         if prompt_type == "ABBA":
-            self.templates = ABBA_TEMPLATES[:nb_templates].copy()
+            # self.templates = ABBA_TEMPLATES[:nb_templates].copy()
+            self.templates = ABBA_TEMPLATES[template_start_idx:template_start_idx+nb_templates].copy()
         elif prompt_type == "BABA":
-            self.templates = BABA_TEMPLATES[:nb_templates].copy()
+            # self.templates = BABA_TEMPLATES[:nb_templates].copy()
+            self.templates = BABA_TEMPLATES[template_start_idx:template_start_idx+nb_templates].copy()
         elif prompt_type == "mixed":
             self.templates = (
-                BABA_TEMPLATES[: nb_templates // 2].copy()
-                + ABBA_TEMPLATES[: nb_templates // 2].copy()
+                # BABA_TEMPLATES[: nb_templates // 2].copy()
+                # + ABBA_TEMPLATES[: nb_templates // 2].copy()
+                BABA_TEMPLATES[template_start_idx:template_start_idx+nb_templates // 2].copy()
+                + ABBA_TEMPLATES[template_start_idx:template_start_idx+nb_templates // 2].copy()
             )
             random.shuffle(self.templates)
         elif prompt_type == "ABC":
-            self.templates = ABC_TEMPLATES[:nb_templates].copy()
+            # self.templates = ABC_TEMPLATES[:nb_templates].copy()
+            self.templates = ABC_TEMPLATES[template_start_idx:template_start_idx+nb_templates].copy()
         elif prompt_type == "BAC":
-            self.templates = BAC_TEMPLATES[:nb_templates].copy()
+            # self.templates = BAC_TEMPLATES[:nb_templates].copy()
+            self.templates = BAC_TEMPLATES[template_start_idx:template_start_idx+nb_templates].copy()
         elif prompt_type == "ABC mixed":
             self.templates = (
-                ABC_TEMPLATES[: nb_templates // 2].copy()
-                + BAC_TEMPLATES[: nb_templates // 2].copy()
+                # ABC_TEMPLATES[: nb_templates // 2].copy()
+                # + BAC_TEMPLATES[: nb_templates // 2].copy()
+                ABC_TEMPLATES[template_start_idx:template_start_idx+nb_templates // 2].copy()
+                + BAC_TEMPLATES[template_start_idx:template_start_idx+nb_templates // 2].copy()
             )
             random.shuffle(self.templates)
         elif isinstance(prompt_type, list):
@@ -1111,7 +1121,7 @@ class IOITask(IOITask_old):
         prompt['text'] = self.remove_IO(prompt['text'], prompt['IO'], abc=abc)
         return prompt
 
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, device='cuda'):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda'):
         
         self.ioi_data = IOIData(
             prompt_type=prompt_type,
@@ -1120,7 +1130,8 @@ class IOITask(IOITask_old):
             prepend_bos=False,
             seed=1,
             nb_templates=nb_templates,
-            device=device
+            device=device,
+            template_start_idx=template_start_idx
         )
         
         # Split the data into train and test sets
@@ -1149,7 +1160,8 @@ class IOITask(IOITask_old):
                 tokenizer=tokenizer,
                 prepend_bos=False,
                 seed=1,
-                nb_templates=nb_templates
+                nb_templates=nb_templates,
+                template_start_idx=template_start_idx,
             )
             self.corr_data = self.clean_data.gen_flipped_prompts('ABC->XYZ, BAB->XYZ')
             # no point making a train-test split, since these prompts are kind of meaningless
@@ -1220,11 +1232,11 @@ class IOITask_Uniform(IOITask):
     """
     A Class for IOI tasks where the loss is calculated based on a uniform distribution. Distribution can be over IO and S, or all names we test (not recommended), or all possible tokens.
     """
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, device='cuda', uniform_over='IO_S'):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', uniform_over='IO_S'):
         """
         uniform_over can be "IO_S", "names", or "all_tokens". "IO_S" means uniform over IO and S, "names" means uniform over all names that we've written, and "all_tokens" means uniform over all tokens.
         """
-        super().__init__(batch_size, tokenizer, handle_multitoken_labels=handle_multitoken_labels, prompt_type=prompt_type, num_data=num_data, nb_templates=nb_templates, prep_acdcpp=prep_acdcpp, acdcpp_N=acdcpp_N, device=device)
+        super().__init__(batch_size, tokenizer, handle_multitoken_labels=handle_multitoken_labels, prompt_type=prompt_type, num_data=num_data, nb_templates=nb_templates, prep_acdcpp=prep_acdcpp, acdcpp_N=acdcpp_N, device=device, template_start_idx=template_start_idx)
         self.criterion = F.cross_entropy
         self.uniform_over = uniform_over
     

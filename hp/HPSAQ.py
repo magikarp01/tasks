@@ -141,6 +141,7 @@ class HPSAQ(Task):
 
     def __init__(self, dataset_path=None, system_prompt=SYSTEM_PROMPT, zero_shot_template=ZERO_SHOT_TEMPLATE, few_shot_template=FEW_SHOT_TEMPLATE, unrelated_few_shot_template=UNRELATED_FEW_SHOT_TEMPLATE):
 
+
         if dataset_path is None:
             script_dir = os.path.dirname(os.path.realpath(__file__))
             dataset_path = os.path.join(script_dir, 'data/harry_potter_trivia_502_v2.jsonl')

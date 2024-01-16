@@ -2,6 +2,7 @@ import torch
 from tqdm import tqdm
 from einops import repeat
 from transformers.utils import ModelOutput
+import transformers
 # from cb_utils.models import DEVICE
 # by default: DEVICE is cuda
 DEVICE='cuda'
@@ -100,12 +101,30 @@ def generate_no_hf_new(model, tokenizer, prompts, max_length=50, temperature=0, 
             outputs.append(tokenizer.decode(prompt, skip_special_tokens=True))
     return outputs
 
-def get_final_logits(model, tokenizer, batch_text, device="cpu"):
+def get_final_logits(model, tokenizer, batch_text, device="cpu", input_text=True):
     """
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
+
+    input_text (DEPRECATED CURRENTLY) is True if batch_text is a list of strings, False if it's a list or tensor of tokenized texts (lists of ints). If False, each token list should be the same length (if tensor, shape[1] should be the same for all)
     """
     # First, don't pad the texts. This is important because we want to know the logits for the final token in each text, not the final token in each text after padding.
-    final_token_pos = [len(tokenizer.tokenize(text)) for text in batch_text]
+    # for text in batch_text:
+    #     print(tokenizer(text))
+    final_token_pos = []
+    # tokenized_texts = tokenizer(batch_text).input_ids
+    for text in batch_text:
+        tokenized = tokenizer(text)
+        # print(tokenized)
+        # what is type of tokenized?
+        # print(type(tokenized))
+        if isinstance(tokenized, dict) or isinstance(tokenized, transformers.tokenization_utils_base.BatchEncoding):
+            final_token_pos.append(len(tokenized['input_ids']))
+        elif isinstance(tokenized, tuple):
+            final_token_pos.append(len(tokenized[0]))
+        else:
+            final_token_pos.append(len(tokenized))
+    # print(final_token_pos)
+    # final_token_pos = [len(tokenizer(text)[0]) for text in batch_text]
     # tokenize in batch and pad to the longest text in the batch
     batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
     
