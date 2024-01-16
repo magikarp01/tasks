@@ -29,18 +29,15 @@ Question:
 Answer:
 """
 
-ZERO_SHOT_TEMPLATE = """
+SYSTEM_PROMPT = """
 I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be a single sentence. I will now provide you with the question.
-{question}"""
+"""
 
-FEW_SHOT_TEMPLATE = """
-I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be a single sentence. I will now provide you with the question.
-{few_shot_questions}
-{{question}}"""
+ZERO_SHOT_TEMPLATE = "{question}"
+
+FEW_SHOT_TEMPLATE = "{few_shot_questions}\n{{question}}"
 
 UNRELATED_FEW_SHOT_TEMPLATE = """
-I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be a single sentence. I will now provide you with the question.
-
 Question:
 Which planet in our solar system is known as the Red Planet?
 
@@ -142,7 +139,8 @@ def get_model_grade(client, question, response, perfect_answer, model='gpt-3.5-t
 
 class HPSAQ(Task):
 
-    def __init__(self, dataset_path=None):
+    def __init__(self, dataset_path=None, system_prompt=SYSTEM_PROMPT, zero_shot_template=ZERO_SHOT_TEMPLATE, few_shot_template=FEW_SHOT_TEMPLATE, unrelated_few_shot_template=UNRELATED_FEW_SHOT_TEMPLATE):
+
 
         if dataset_path is None:
             script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -162,9 +160,16 @@ class HPSAQ(Task):
         for question in self.raw_dataset[:3]:
             few_shot_questions.append(QA_TEMPLATE.format(question=question['question'], answer=question['true_answer']))
         few_shot_questions = '\n'.join(few_shot_questions)
-        self.few_shot_template = FEW_SHOT_TEMPLATE.format(few_shot_questions=few_shot_questions)
+        few_shot_template = few_shot_template.format(few_shot_questions=few_shot_questions)
+
+        self.system_prompt = system_prompt
+        self.zero_shot_template = self.system_prompt + zero_shot_template
+        self.few_shot_template = self.system_prompt + few_shot_template
+        self.unrelated_few_shot_template = self.system_prompt + unrelated_few_shot_template
 
     def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None):
+
+        # TODO: Add prompt prependage and prompt appendage
 
         self.answered_dataset = []
 
@@ -196,13 +201,15 @@ class HPSAQ(Task):
                 }
             for question_type in question_types:
                 if question_type == 'zero_shot':
-                    question, answer = datapoint['question'], datapoint['true_answer']
+                    # question, answer = datapoint['question'], datapoint['true_answer'] this was where I got results, basically no system prompt
+                    # TODO: check the templates going into the model and make sure they are correct
+                    question, answer = self.zero_shot_template.format(question=datapoint['question']), datapoint['true_answer']
                 elif question_type == 'few_shot':
                     if i < 3:
                         continue # skip first three questions because they are used to create the few-shot template
                     question, answer = self.few_shot_template.format(question=datapoint['question']), datapoint['true_answer']
                 elif question_type == 'unrelated_few_shot':
-                    question, answer = UNRELATED_FEW_SHOT_TEMPLATE.format(question=datapoint['question']), datapoint['true_answer']
+                    question, answer = self.unrelated_few_shot_template.format(question=datapoint['question']), datapoint['true_answer']
                 else:
                     raise ValueError(f"Question type {question_type} not recognized")
                 # generate response
