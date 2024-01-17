@@ -33,9 +33,37 @@ SYSTEM_PROMPT = """
 I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be a single sentence. I will now provide you with the question.
 """
 
-ZERO_SHOT_TEMPLATE = "{question}"
+ZERO_SHOT_TEMPLATE = """
+Question:
+{question}
 
-FEW_SHOT_TEMPLATE = "{few_shot_questions}\n{{question}}"
+Answer:
+"""
+
+FEW_SHOT_TEMPLATE = """
+Question:
+{0}
+
+Answer:
+{1}
+
+Question:
+{2}
+
+Answer:
+{3}
+
+Question:
+{4}
+
+Answer:
+{5}
+
+Question:
+{{question}}
+
+Answer:
+"""
 
 UNRELATED_FEW_SHOT_TEMPLATE = """
 Question:
@@ -158,16 +186,19 @@ class HPSAQ(Task):
         # get first three questions from dataset and create the few-shot template
         few_shot_questions = []
         for question in self.raw_dataset[:3]:
-            few_shot_questions.append(QA_TEMPLATE.format(question=question['question'], answer=question['true_answer']))
-        few_shot_questions = '\n'.join(few_shot_questions)
-        few_shot_template = few_shot_template.format(few_shot_questions=few_shot_questions)
+        #     few_shot_questions.append(QA_TEMPLATE.format(question=question['question'], answer=question['true_answer']))
+        # few_shot_questions = '\n'.join(few_shot_questions)
+        # few_shot_template = few_shot_template.format(few_shot_questions=few_shot_questions)
+            few_shot_questions.append(question['question'])
+            few_shot_questions.append(question['true_answer'])
+        few_shot_template = few_shot_template.format(*few_shot_questions)
 
         self.system_prompt = system_prompt
         self.zero_shot_template = self.system_prompt + zero_shot_template
         self.few_shot_template = self.system_prompt + few_shot_template
         self.unrelated_few_shot_template = self.system_prompt + unrelated_few_shot_template
 
-    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None):
+    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None, n_questions=None):
 
         # TODO: Add prompt prependage and prompt appendage
 
@@ -192,6 +223,9 @@ class HPSAQ(Task):
         model.cuda()
 
         for i, datapoint in enumerate(self.raw_dataset):
+
+            if n_questions is not None and i >= n_questions:
+                break
 
             print(f"\nQuestion {i+1}/{len(self.raw_dataset)} -- Time: {datetime.now().strftime('%H:%M:%S')}")
 
