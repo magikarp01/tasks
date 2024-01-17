@@ -194,13 +194,25 @@ class HPSAQ(Task):
         few_shot_template = few_shot_template.format(*few_shot_questions)
 
         self.system_prompt = system_prompt
-        self.zero_shot_template = self.system_prompt + zero_shot_template
-        self.few_shot_template = self.system_prompt + few_shot_template
-        self.unrelated_few_shot_template = self.system_prompt + unrelated_few_shot_template
+        self.zero_shot_template = zero_shot_template
+        self.few_shot_template = few_shot_template
+        self.unrelated_few_shot_template = unrelated_few_shot_template
+
+        self.prefix_system_prompt = ""
+        self.suffix_system_prompt = ""
+        self.suffix_question = ""
+    
+    def format_prompts(self):
+
+        self.zero_shot_question_template = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.zero_shot_template + self.suffix_question
+
+        self.few_shot_question_template = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.few_shot_template + self.suffix_question
+
+        self.unrelated_few_shot_question_template = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.unrelated_few_shot_template + self.suffix_question
 
     def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None, n_questions=None):
 
-        # TODO: Add prompt prependage and prompt appendage
+        self.format_prompts()
 
         self.answered_dataset = []
 
@@ -237,13 +249,13 @@ class HPSAQ(Task):
                 if question_type == 'zero_shot':
                     # question, answer = datapoint['question'], datapoint['true_answer'] this was where I got results, basically no system prompt
                     # TODO: check the templates going into the model and make sure they are correct
-                    question, answer = self.zero_shot_template.format(question=datapoint['question']), datapoint['true_answer']
+                    question, answer = self.zero_shot_question_template.format(question=datapoint['question']), datapoint['true_answer']
                 elif question_type == 'few_shot':
                     if i < 3:
                         continue # skip first three questions because they are used to create the few-shot template
-                    question, answer = self.few_shot_template.format(question=datapoint['question']), datapoint['true_answer']
+                    question, answer = self.few_shot_question_template.format(question=datapoint['question']), datapoint['true_answer']
                 elif question_type == 'unrelated_few_shot':
-                    question, answer = self.unrelated_few_shot_template.format(question=datapoint['question']), datapoint['true_answer']
+                    question, answer = self.unrelated_few_shot_question_template.format(question=datapoint['question']), datapoint['true_answer']
                 else:
                     raise ValueError(f"Question type {question_type} not recognized")
                 # generate response

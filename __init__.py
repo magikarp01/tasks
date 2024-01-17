@@ -2,5 +2,6 @@ from .ioi.IOITask import IOITask
 from .general.DatasetTasks import *
 from .facts.SportsTask import SportsTask
 from .hp.HPTask import HPTriviaTask, HPVerbatimTask
+from .hp.HPSAQ import HPSAQ
 from .task import Task
 from .qlm.QMTask import QMTask
