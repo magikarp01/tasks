@@ -112,21 +112,28 @@ def get_final_logits(model, tokenizer, batch_text, device="cpu", input_text=True
     #     print(tokenizer(text))
     final_token_pos = []
     # tokenized_texts = tokenizer(batch_text).input_ids
-    for text in batch_text:
-        tokenized = tokenizer(text)
-        # print(tokenized)
-        # what is type of tokenized?
-        # print(type(tokenized))
-        if isinstance(tokenized, dict) or isinstance(tokenized, transformers.tokenization_utils_base.BatchEncoding):
-            final_token_pos.append(len(tokenized['input_ids']))
-        elif isinstance(tokenized, tuple):
-            final_token_pos.append(len(tokenized[0]))
-        else:
-            final_token_pos.append(len(tokenized))
-    # print(final_token_pos)
-    # final_token_pos = [len(tokenizer(text)[0]) for text in batch_text]
-    # tokenize in batch and pad to the longest text in the batch
-    batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
+    if input_text:
+        for text in batch_text:
+            tokenized = tokenizer(text)
+            # print(tokenized)
+            # what is type of tokenized?
+            # print(type(tokenized))
+            if isinstance(tokenized, dict) or isinstance(tokenized, transformers.tokenization_utils_base.BatchEncoding):
+                final_token_pos.append(len(tokenized['input_ids']))
+            elif isinstance(tokenized, tuple):
+                final_token_pos.append(len(tokenized[0]))
+            else:
+                final_token_pos.append(len(tokenized))
+    
+        # print(final_token_pos)
+        # final_token_pos = [len(tokenizer(text)[0]) for text in batch_text]
+        # tokenize in batch and pad to the longest text in the batch
+        batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
+    
+    else:
+        for tokens in batch_text:
+            final_token_pos.append(len(tokens))
+        batch = batch_text
     
     logits = model(batch)
     # if logits is a tuple:
