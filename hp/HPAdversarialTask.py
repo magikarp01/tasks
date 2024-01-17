@@ -203,8 +203,8 @@ class HPSAQAdversarialTask(HPSAQ):
 
         # TODO: logic for running adversarial prompts depending on the input.
         # - set the system prompt, prefix_system_prompt, suffix_system_prompt, and suffix_question
-        all_false = not any([summary_short, summary_long, verbatim]) and not any([dan_index, baseline_unlrn_index, gcg_index])
-        assert not all_false, "Must specify at least one adversarial prompt."
+        all_false_or_none = all(x is False or x is None for x in [summary_short, summary_long, verbatim, dan_index, baseline_unlrn_index, gcg_index])
+        assert not all_false_or_none, "At least one of summary_short, summary_long, verbatim, dan_index, baseline_unlrn_index, gcg_index must be True or not None"
 
         dan_bool = dan_index is not None
         baseline_unlrn_bool = baseline_unlrn_index is not None
