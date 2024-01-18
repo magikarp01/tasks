@@ -112,8 +112,10 @@ def get_final_logits(model, tokenizer, batch_text, device="cpu", input_text=True
     #     print(tokenizer(text))
     final_token_pos = []
     # tokenized_texts = tokenizer(batch_text).input_ids
-    for text in batch_text:
-        tokenized = tokenizer(text)
+    tokenized_texts = tokenizer(batch_text).input_ids
+    # for text in batch_text:
+    for tokenized in tokenized_texts:
+        # tokenized = tokenizer(text)
         # print(tokenized)
         # what is type of tokenized?
         # print(type(tokenized))
