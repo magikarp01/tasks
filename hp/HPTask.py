@@ -61,7 +61,7 @@ class HPTriviaTask(Task):
     def _format_sys_prompt(self, prompt):
         return B_SYS + prompt + E_SYS
 
-    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl"):
+    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl", sys_msg=sys_msg):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.criterion = torch.nn.CrossEntropyLoss()

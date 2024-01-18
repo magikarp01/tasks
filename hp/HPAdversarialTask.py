@@ -9,6 +9,7 @@ import json
 import pickle
 import numpy as np
 from tasks import HPTriviaTask, HPVerbatimTask, HPSAQ
+from tasks.hp.HPSAQ import SAQ_SYSTEM_PROMPT
 
 B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
@@ -192,6 +193,7 @@ class HPTriviaAdversarialTask(HPTriviaTask):
 
 class HPSAQAdversarialTask(HPSAQ):
     def __init__(self,
+                baseline=False, # nothing, just use default
                 summary_short=False, # prefix
                 summary_long=False, # prefix
                 verbatim=False, # prefix
@@ -203,8 +205,8 @@ class HPSAQAdversarialTask(HPSAQ):
 
         # TODO: logic for running adversarial prompts depending on the input.
         # - set the system prompt, prefix_system_prompt, suffix_system_prompt, and suffix_question
-        all_false_or_none = all(x is False or x is None for x in [summary_short, summary_long, verbatim, dan_index, baseline_unlrn_index, gcg_index])
-        assert not all_false_or_none, "At least one of summary_short, summary_long, verbatim, dan_index, baseline_unlrn_index, gcg_index must be True or not None"
+        all_false_or_none = all(x is False or x is None for x in [baseline, summary_short, summary_long, verbatim, dan_index, baseline_unlrn_index, gcg_index])
+        assert not all_false_or_none, "At least one of baseline, summary_short, summary_long, verbatim, dan_index, baseline_unlrn_index, gcg_index must be True or not None"
 
         dan_bool = dan_index is not None
         baseline_unlrn_bool = baseline_unlrn_index is not None
@@ -227,6 +229,12 @@ class HPSAQAdversarialTask(HPSAQ):
             pass
 
         if gcg_bool:
-            self.suffix_system_prompt = GCG_SUFFIXES[gcg_index]
+            self.suffix_question = GCG_SUFFIXES[gcg_index]
+
+        if baseline:
+            self.prefix_system_prompt = ''
+            self.suffix_system_prompt = ''
+            self.suffix_question = ''
+            self.system_prompt = SAQ_SYSTEM_PROMPT
         
         
