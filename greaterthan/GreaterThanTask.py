@@ -2,9 +2,14 @@ import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tasks.task import Task
+from transformers.utils import ModelOutput
+from tasks.inference_utils import get_final_logits
 
-class GreaterthanTask(Task):
-    def __init__(self, model, batch_size, device="cuda"):
+class GreaterThanTask(Task):
+    """
+    I think this only works for GPT2 tokenizer, so only test on GPT2 for now.
+    """
+    def __init__(self, batch_size, tokenizer, device="cuda"):
         self.NOUNS = [
             "abduction", "accord", "affair", "agreement", "appraisal",
             "assaults", "assessment", "attack", "attempts", "campaign", 
@@ -33,7 +38,9 @@ class GreaterthanTask(Task):
             "tradition", "treaty", "trial", "trip", "unemployment", 
             "voyage", "warfare", "work",
         ]
-        _TOKENIZER = model.tokenizer
+        _TOKENIZER = tokenizer
+        self.tokenizer = tokenizer
+        self.device = device
 
         self.YEARS = []
         self.YEARS_BY_CENTURY = {}
@@ -63,16 +70,18 @@ class GreaterthanTask(Task):
         self.INV_TOKENS_TENSOR = INV_TOKENS_TENSOR
 
         # Getting data
-        data, prompts = self.get_year_data(batch_size*2, model)
+        data, prompts = self.get_year_data(batch_size*2)
         self.train_data = data[:batch_size]
         self.test_data = data[batch_size:]
+        self.batch_size = batch_size
+
         self.set_loaders(self.train_data, self.test_data, shuffle=True)
 
         # Setting up criterion
         self.criterion = torch.nn.CrossEntropyLoss()
         self.device = device
 
-    def get_year_data(self, num_examples, model):
+    def get_year_data(self, num_examples):
         template = "The {noun} lasted from the year {year1} to "
 
         # set some random seed
@@ -90,7 +99,7 @@ class GreaterthanTask(Task):
                     year1=year,
                 ) + year[:2]
             )
-            prompts_tokenized.append(model.tokenizer.encode(prompts[-1], return_tensors="pt").to(model.cfg.device))
+            prompts_tokenized.append(self.tokenizer.encode(prompts[-1], return_tensors="pt").to(self.device))
             assert prompts_tokenized[-1].shape == prompts_tokenized[0].shape, (prompts_tokenized[-1].shape, prompts_tokenized[0].shape)
         prompts_tokenized = torch.cat(prompts_tokenized, dim=0)
         assert len(prompts_tokenized.shape) == 2, prompts_tokenized.shape
@@ -107,8 +116,18 @@ class GreaterthanTask(Task):
         """
         raise NotImplementedError
 
-    def calculate_loss(self, model, batch):
-        logits = model(batch)
+    def calculate_loss(self, model, batch): 
+        # logits = model(batch)
+        # # should pro
+        # if isinstance(logits, tuple) or isinstance(logits, list):
+        #     logits = logits[0]#.to('cpu')
+        # elif isinstance(logits, ModelOutput):
+        #     logits = logits.logits
+        # else:
+        #     assert isinstance(logits, torch.Tensor), logits
+        #     logits = logits#.to('cpu')
+        logits = get_final_logits(model, self.tokenizer, batch, input_text=False)
+
         # Gets the last 2 digits of the year
         yearend = self.INV_TOKENS_TENSOR[batch[:, 7]].to(logits.device)
 
@@ -119,11 +138,34 @@ class GreaterthanTask(Task):
         for i in range(len(yearend)):
             p = 100 - yearend[i] + 1
             target[i, self.TOKENS_TENSOR[yearend[i]+1:]] = 1 / p
-
-        target = F.softmax(target, dim=-1)
-
         # Compute cross entropy loss
         return self.criterion(logits, target)
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
-        raise NotImplementedError
+        """
+        check if probabilities for all years after are greter than probabilities for all years before, or 50% if check_all_logits is True
+        """
+        with torch.no_grad():
+            batch = self.get_batch(train=not use_test_data)
+            logits = get_final_logits(model, self.tokenizer, batch, input_text=False)
+            probs = F.softmax(logits, dim=-1)
+
+            yearend = self.INV_TOKENS_TENSOR[batch[:, 7]].to(logits.device)
+
+            num_correct = 0
+            num_total = 0
+            # For each year, set the probability of all years after it to 1 / p
+            for i in range(len(yearend)):
+                # check probs of all years after are greater than probs of all years before
+                correct_probs = probs[i, self.TOKENS_TENSOR[yearend[i]+1:]]
+                
+                if not check_all_logits:
+                    incorrect_probs = probs[i, self.TOKENS_TENSOR[:yearend[i]+1]]
+                    incorrect_prob = incorrect_probs.sum()
+                else:
+                    incorrect_prob = 0.5
+                
+                if correct_probs.sum() > incorrect_prob:
+                    num_correct += 1
+                num_total += 1
+            return num_correct / num_total

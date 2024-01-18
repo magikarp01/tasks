@@ -151,7 +151,7 @@
 {"question": "\u00bfQu\u00e9 criatura m\u00e1gica presenta la profesora Grubbly-Plank en la clase de Cuidado de Criaturas M\u00e1gicas de Harry?", "true_answer": "Thestrals", "false_answer": "Delfines"}
 {"question": "\u00bfQui\u00e9n se convierte en el jefe de la Casa Gryffindor despu\u00e9s de que la profesora McGonagall se convierte en la directora de Hogwarts?", "true_answer": "Profesor Neville Longbottom", "false_answer": "Profesora Amelia Johnson"}
 {"question": "\u00bfCu\u00e1l es el n\u00famero en la t\u00fanica de Quidditch de Harry Potter?", "true_answer": "Siete", "false_answer": "Veintitr\u00e9s"}
-{"pregunta": "\u00bfQu\u00e9 poci\u00f3n sugiere el profesor Snape para curar la petrificaci\u00f3n en 'Harry Potter y la C\u00e1mara Secreta'?", "respuesta_verdadera": "Poci\u00f3n Restauradora de Mandr\u00e1gora", "respuesta_falsa": "T\u00e9 de Manzanilla"}
+{"question": "\u00bfQu\u00e9 poci\u00f3n sugiere el profesor Snape para curar la petrificaci\u00f3n en 'Harry Potter y la C\u00e1mara Secreta'?", "true_answer": "Poci\u00f3n Restauradora de Mandr\u00e1gora", "false_answer": "T\u00e9 de Manzanilla"}
 {"question": "\u00bfCu\u00e1l es el modelo de la primera escoba que recibi\u00f3 Harry?", "true_answer": "Nimbus 2000", "false_answer": "Bicicleta Schwinn"}
 {"question": "\u00bfCu\u00e1l es el t\u00edtulo del libro de Harry Potter en el que compite en el Torneo de los Tres Magos?", "true_answer": "Harry Potter y el C\u00e1liz de Fuego", "false_answer": "Las Cr\u00f3nicas de la Copa de Drag\u00f3n"}
 {"question": "\u00bfQu\u00e9 hechizo ense\u00f1a Harry a los miembros del Ej\u00e9rcito de Dumbledore para repeler a los Dementores?", "true_answer": "Expecto Patronum", "false_answer": "Deflexi\u00f3n Cu\u00e1ntica"}
@@ -196,7 +196,7 @@
 {"question": "\u00bfC\u00f3mo se llama la sala que solo aparece cuando una persona tiene una gran necesidad de ella?", "true_answer": "La Sala de los Menesteres", "false_answer": "La Sala del Oasis"}
 {"question": "\u00bfQui\u00e9n le ense\u00f1a a Harry Potter el hechizo Diffindo?", "true_answer": "Profesor Filius Flitwick", "false_answer": "Dr. Jane Goodall"}
 {"question": "\u00bfQu\u00e9 profesor de Hogwarts se revel\u00f3 como miembro de la Orden del F\u00e9nix y hab\u00eda estado encarcelado en Azkaban por un crimen que no cometi\u00f3?", "true_answer": "Remus Lupin", "false_answer": "Profesor Albert Einstein"}
-{"pregunta": "\u00bfQu\u00e9 dispositivo m\u00e1gico permite al usuario ver recuerdos en la tercera dimensi\u00f3n?", "respuesta_verdadera": "Pensadero", "respuesta_falsa": "Gafas 3D"}
+{"question": "\u00bfQu\u00e9 dispositivo m\u00e1gico permite al usuario ver recuerdos en la tercera dimensi\u00f3n?", "true_answer": "Pensadero", "false_answer": "Gafas 3D"}
 {"question": "\u00bfC\u00f3mo se llama el centauro que ense\u00f1a Adivinaci\u00f3n en Hogwarts?", "true_answer": "Firenze", "false_answer": "Profesor Luzestelar"}
 {"question": "\u00bfQu\u00e9 especie de planta encuentra Harry Potter en el Bosque Prohibido, la cual tiene afinidad por cualquier cosa que est\u00e9 muerta?", "true_answer": "Bowtruckle", "false_answer": "Girasol"}
 {"question": "\u00bfQu\u00e9 poci\u00f3n restaura los huesos perdidos o da\u00f1ados?", "true_answer": "Skele-Gro", "false_answer": "Elixir de Impulso Vitam\u00ednico"}
@@ -242,7 +242,7 @@
 {"question": "\u00bfQu\u00e9 poci\u00f3n le pide el profesor Slughorn a Harry que identifique en su primera clase por su distintivo brillo madreperla?", "true_answer": "Amortentia", "false_answer": "Elixir de Lavanda"}
 {"question": "\u00bfQu\u00e9 hechizo se utiliza para eliminar la presencia de Boggarts?", "true_answer": "Riddikulus", "false_answer": "Encantamiento Desmaius"}
 {"question": "\u00bfC\u00f3mo se llama el duende que muestra a Harry su b\u00f3veda por primera vez en 'Harry Potter y la Piedra Filosofal'?", "true_answer": "Griphook", "false_answer": "Fredrick el Servicial"}
-{"pregunta": "\u00bfQu\u00e9 poci\u00f3n, mencionada en 'Harry Potter y el prisionero de Azkaban', restaura a una persona que ha sido transfigurada o maldecida a su estado original?", "respuesta_verdadera": "El ant\u00eddoto para una Transfiguraci\u00f3n o maldici\u00f3n", "respuesta_falsa": "Elixir de Aceite Esencial"}
+{"question": "\u00bfQu\u00e9 poci\u00f3n, mencionada en 'Harry Potter y el prisionero de Azkaban', restaura a una persona que ha sido transfigurada o maldecida a su estado original?", "true_answer": "El ant\u00eddoto para una Transfiguraci\u00f3n o maldici\u00f3n", "false_answer": "Elixir de Aceite Esencial"}
 {"question": "\u00bfQu\u00e9 caracter\u00edstica inusual se puede encontrar en la base del Sauce Boxeador?", "true_answer": "Un pasaje secreto que conduce a la Casa de los Gritos", "false_answer": "Un cofre del tesoro escondido"}
 {"question": "\u00bfQu\u00e9 dispositivo m\u00e1gico usa Harry Potter para ver los recuerdos de Tom Riddle?", "true_answer": "Pensieve", "false_answer": "Telescopio"}
 {"question": "\u00bfQu\u00e9 tipo de criatura est\u00e1 representada en el emblema de la Casa de Gryffindor?", "true_answer": "Le\u00f3n", "false_answer": "Elefante"}
@@ -327,7 +327,7 @@
 {"question": "En 'Harry Potter y la Orden del F\u00e9nix', \u00bfcu\u00e1l es el nombre del artefacto que Sirius le da a Harry para usar si necesita contactarlo?", "true_answer": "Un espejo de doble sentido", "false_answer": "Un walkie-talkie"}
 {"question": "\u00bfQu\u00e9 muestra el Espejo de Oesed adem\u00e1s del deseo m\u00e1s profundo de quien lo mira?", "true_answer": "El reflejo del espectador", "false_answer": "El programa de televisi\u00f3n favorito del espectador"}
 {"question": "\u00bfC\u00f3mo se llama el perro de tres cabezas de Hagrid?", "true_answer": "Fluffy", "false_answer": "Biscuit"}
-{"pregunta": "\u00bfQu\u00e9 criatura m\u00e1gica NO es un ingrediente conocido en la Poci\u00f3n Multijugos?", "respuesta_verdadera": "P\u00faas de puercoesp\u00edn", "respuesta_falsa": "Alas de mariposa"}
+{"question": "\u00bfQu\u00e9 criatura m\u00e1gica NO es un ingrediente conocido en la Poci\u00f3n Multijugos?", "true_answer": "P\u00faas de puercoesp\u00edn", "false_answer": "Alas de mariposa"}
 {"question": "\u00bfQu\u00e9 poci\u00f3n finge el Profesor Slughorn que huele a c\u00e9sped reci\u00e9n cortado, pergamino nuevo y pasta de dientes de menta durante su primera clase de pociones con Harry?", "true_answer": "Amortentia", "false_answer": "Aceite Esencial de Lavanda"}
 {"question": "\u00bfQu\u00e9 objeto m\u00e1gico utiliza Harry para detectar la presencia de los Revelascopios?", "true_answer": "El Revelascopio", "false_answer": "Linterna Ultravioleta"}
 {"question": "\u00bfQu\u00e9 significan las siglas D.A. del grupo formado por Harry Potter para ense\u00f1ar hechizos defensivos a los estudiantes en 'Harry Potter y la Orden del F\u00e9nix'?", "true_answer": "Ej\u00e9rcito de Dumbledore", "false_answer": "Alianza Atl\u00e9tica"}
@@ -387,7 +387,7 @@
 {"question": "\u00bfQu\u00e9 hechizo se conoce por vencer al Boggart en el armario durante la clase de Defensa Contra las Artes Oscuras de Lupin?", "true_answer": "Riddikulus", "false_answer": "Entrelazamiento Cu\u00e1ntico"}
 {"question": "\u00bfQu\u00e9 variedad de drag\u00f3n es la mascota de Hagrid, Norberta?", "true_answer": "Ridgeback Noruego", "false_answer": "Drag\u00f3n de Komodo"}
 {"question": "\u00bfQu\u00e9 criatura m\u00e1gica aparece en la Segunda Prueba del Torneo de los Tres Magos?", "true_answer": "Sirenas", "false_answer": "Unicornios"}
-{"pregunta": "\u00bfQu\u00e9 forma adopta el Boggart frente al profesor Lupin?", "respuesta_verdadera": "Una luna llena", "respuesta_falsa": "Un oso grande e intimidante"}
+{"question": "\u00bfQu\u00e9 forma adopta el Boggart frente al profesor Lupin?", "true_answer": "Una luna llena", "false_answer": "Un oso grande e intimidante"}
 {"question": "\u00bfQu\u00e9 hechizo us\u00f3 Hermione para liberar a Harry y Ron de la Trampa del Diablo en 'Harry Potter y la Piedra Filosofal'?", "true_answer": "Lumos Solem", "false_answer": "Llamarada Solar"}
 {"question": "\u00bfQu\u00e9 poci\u00f3n afirma Severo Snape que estaba preparando en su oficina cuando Harry usa Sectumsempra en Draco Malfoy?", "true_answer": "Veritaserum", "false_answer": "Elixir de Lavanda"}
 {"question": "\u00bfQu\u00e9 dispositivo m\u00e1gico se utiliza para transportar a los magos de un lugar a otro, causando a veces n\u00e1useas y desorientaci\u00f3n?", "true_answer": "Desiluminador", "false_answer": "Sistema de Navegaci\u00f3n GPS"}
