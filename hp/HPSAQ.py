@@ -216,9 +216,9 @@ class HPSAQ(Task):
 
         self.few_shot_question = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.few_shot_formatted_template + self.suffix_question
 
-        self.unrelated_few_shot_question = self.prefix_system_kjlprompt + self.system_prompt + self.suffix_system_prompt + self.unrelated_few_shot_formatted_template + self.suffix_question
+        self.unrelated_few_shot_question = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.unrelated_few_shot_formatted_template + self.suffix_question
 
-    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None, n_questions=None):
+    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None, n_questions=None, verbose=True):
 
         # self.format_prompts()
 
@@ -248,8 +248,9 @@ class HPSAQ(Task):
 
             if n_questions is not None and i >= n_questions:
                 break
-
-            print(f"\nQuestion {i+1}/{len(self.raw_dataset)} -- Time: {datetime.now().strftime('%H:%M:%S')}")
+            
+            if verbose:
+                print(f"\nQuestion {i+1}/{len(self.raw_dataset)} -- Time: {datetime.now().strftime('%H:%M:%S')}")
 
             results_dict = {
                 'raw_question': datapoint['question'],
@@ -294,7 +295,9 @@ class HPSAQ(Task):
             self.answered_dataset.append(results_dict)
                 
             save_list_to_jsonl(save_path, self.answered_dataset)
-            print(f"Saved results to {save_path}")
+            if verbose:
+                print(f"Saved results to {save_path}")
+        print(f"Saved results to {save_path}")
                 
 
     def get_accuracies(self, question_types=None, results_dataset=None):
@@ -328,6 +331,9 @@ class HPSAQ(Task):
                 else:
                     print('Model grade not recognized')
                 total += 1
-            accuracies[question_type] = correct/total
+            try:
+                accuracies[question_type] = correct/total
+            except ZeroDivisionError:
+                accuracies[question_type] = 'n/a'
         return accuracies
 
