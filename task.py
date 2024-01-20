@@ -54,20 +54,20 @@ class Task:
     def calculate_loss(self, model, batch):
         raise NotImplementedError
 
-    def get_train_loss(self, model, n_batches=1):
+    def get_train_loss(self, model, n_iters=1):
         total_loss = 0
-        for i in range(n_batches):
+        for i in range(n_iters):
             batch = self.get_batch(train=True)
             total_loss += self.calculate_loss(model, batch)
-        return total_loss / n_batches
+        return total_loss / n_iters
     
-    def get_test_loss(self, model, n_batches=1):
+    def get_test_loss(self, model, n_iters=1):
         with torch.no_grad():
             total_loss = 0
-            for i in range(n_batches):
+            for i in range(n_iters):
                 batch = self.get_batch(train=False)
                 total_loss += self.calculate_loss(model, batch)
-            return total_loss / n_batches
+            return total_loss / n_iters
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
         # raise NotImplementedError
