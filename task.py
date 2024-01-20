@@ -54,14 +54,20 @@ class Task:
     def calculate_loss(self, model, batch):
         raise NotImplementedError
 
-    def get_train_loss(self, model):
-        batch = self.get_batch(train=True)
-        return self.calculate_loss(model, batch)
+    def get_train_loss(self, model, n_batches=1):
+        total_loss = 0
+        for i in range(n_batches):
+            batch = self.get_batch(train=True)
+            total_loss += self.calculate_loss(model, batch)
+        return total_loss / n_batches
     
-    def get_test_loss(self, model):
-        batch = self.get_batch(train=False)
+    def get_test_loss(self, model, n_batches=1):
         with torch.no_grad():
-            return self.calculate_loss(model, batch)
+            total_loss = 0
+            for i in range(n_batches):
+                batch = self.get_batch(train=False)
+                total_loss += self.calculate_loss(model, batch)
+            return total_loss / n_batches
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
         # raise NotImplementedError
@@ -93,7 +99,7 @@ class CompletionTask(Task):
     A good criterion is torch.nn.CrossEntropyLoss(reduce=False), keep reduce=False so that you can decide how to average over the tokens.
     """
     # tokenize the sentence (in string form) to start
-    def evaluate_completion(self, model, prompt_tokens, completion_tokens, criterion=None, verbose=True):
+    def evaluate_completion(self, model, prompt_tokens, completion_tokens, criterion=None):
         """
         prompt_tokens is list of batch_size lists of tokens (not necessary same length), with no padding. completion_tokens is same. ith element of prompt_tokens and completion_tokens should be from the same context, with completion_tokens coming right after prompt_tokens. Make sure completion_tokens does not have a start token.
         Evaluate the model's ability to complete the prompt by evaluating each token in completion_tokens. 
@@ -120,7 +126,7 @@ class CompletionTask(Task):
             loss = criterion(loss_logits, target_labels)
             # Get the 5 largest elements of the loss tensor
             
-            if verbose:
+            if self.verbose:
                 top_5_losses, top_5_indices = torch.topk(loss, min(5, len(loss)), largest=True)
                 print(f"Sentence: {self.tokenizer.decode(target_labels)}")
                 print(f"Top token losses: {top_5_losses}")                

@@ -157,15 +157,27 @@ class HPTriviaTask(Task):
 from tasks.task import CompletionTask
 import Levenshtein
 class HPVerbatimTask(CompletionTask):
+    def format_completion(self, passage, num_completion_sentences=None):
+        if num_completion_sentences is None:
+            num_completion_sentences = self.num_completion_sentences
+        prompt = " ".join(passage[:-num_completion_sentences])
+        completion = " " + " ".join(passage[-num_completion_sentences:])
+        return {"prompt": prompt, "completion": completion}
+
+    def _format_sys_prompt(self, prompt):
+        return B_SYS + prompt + E_SYS
+
     def __init__(self, batch_size, tokenizer, device='cuda', num_completion_sentences=1, shuffle=True, 
                  criterion="cross_entropy",
-                 train_data_location="tasks/hp/data/hp_verbatim_passages_train.pkl", test_data_location="tasks/hp/data/hp_verbatim_passages_test.pkl"):
+                 train_data_location="tasks/hp/data/hp_verbatim_passages_train.pkl", test_data_location="tasks/hp/data/hp_verbatim_passages_test.pkl", verbose=False):
         """
         A task asking model to autocomplete verbatim passages from Harry Potter.
         num_completion_sentences is the number of sentences (at the end) to complete in the passage. 
+        criterion is loss function for evaluating the model's ability to complete the passage. Can be cross_entropy, levenshtein, or accuracy.
         """
         self.tokenizer = tokenizer
         self.batch_size = batch_size
+        self.verbose = verbose
         if criterion == "cross_entropy":
             self.criterion = torch.nn.CrossEntropyLoss(reduce=False)
         elif criterion == "levenshtein":
@@ -208,23 +220,10 @@ class HPVerbatimTask(CompletionTask):
         ]"""
         assert num_completion_sentences <= len(train_passages[0]), f"num_completion_sentences must be <= {len(train_passages[0])}"
 
-        self.train_data = []
-        for passage in train_passages:
-            prompt = " ".join(passage[:-num_completion_sentences])
-            completion = " " + " ".join(passage[-num_completion_sentences:])
-            self.train_data.append({"prompt": prompt, "completion": completion})
+        self.train_data = [self.format_completion(passage, num_completion_sentences) for passage in train_passages]
+        self.test_data = [self.format_completion(passage, num_completion_sentences) for passage in test_passages]
         
-        self.test_data = []
-        for passage in test_passages:
-            prompt = " ".join(passage[:-num_completion_sentences])
-            completion = " " + " ".join(passage[-num_completion_sentences:])
-            self.test_data.append({"prompt": prompt, "completion": completion})
-        
-        self.train_loader = DataLoader(self.train_data, batch_size=batch_size, shuffle=shuffle)
-        self.test_loader = DataLoader(self.test_data, batch_size=batch_size, shuffle=shuffle)
-
-        self.train_iter = iter(self.train_loader)
-        self.test_iter = iter(self.test_loader)
+        self.set_loaders(self.train_data, self.test_data, shuffle=shuffle)
 
     def tokenize_batch(self, batch):
         prompt_tokens = self.tokenizer(batch['prompt']).input_ids
