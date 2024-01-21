@@ -8,11 +8,14 @@ import os
 from datetime import datetime
 from tasks.task import Task
 
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-client = openai.Client(
-    organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
-)
+try:
+    load_dotenv()
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    client = openai.Client(
+        organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
+    )
+except:
+    print("OpenAI API key not found, will not be able to run evaluations")
 
 QA_TEMPLATE = """
 Question:
