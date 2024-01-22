@@ -101,48 +101,44 @@ def generate_no_hf_new(model, tokenizer, prompts, max_length=50, temperature=0, 
             outputs.append(tokenizer.decode(prompt, skip_special_tokens=True))
     return outputs
 
-def get_final_logits(model, tokenizer, batch_text, device="cpu", input_text=True):
+def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=True):
     """
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
 
-    input_text (DEPRECATED CURRENTLY) is True if batch_text is a list of strings, False if it's a list or tensor of tokenized texts (lists of ints). If False, each token list should be the same length (if tensor, shape[1] should be the same for all)
+    input_text is True if batch_text is a list of strings, False if it's a tensor of tokenized texts (lists of ints). Currently not supporting different length texts if input_text is False.
     """
     # First, don't pad the texts. This is important because we want to know the logits for the final token in each text, not the final token in each text after padding.
     # for text in batch_text:
     #     print(tokenizer(text))
-    final_token_pos = []
-    # tokenized_texts = tokenizer(batch_text).input_ids
-    tokenized_texts = tokenizer(batch_text).input_ids
-    # for text in batch_text:
-    for tokenized in tokenized_texts:
-        # tokenized = tokenizer(text)
-        # print(tokenized)
-        # what is type of tokenized?
-        # print(type(tokenized))
-        if isinstance(tokenized, dict) or isinstance(tokenized, transformers.tokenization_utils_base.BatchEncoding):
-            final_token_pos.append(len(tokenized['input_ids']))
-        elif isinstance(tokenized, tuple):
-            final_token_pos.append(len(tokenized[0]))
-        else:
-            final_token_pos.append(len(tokenized))
-    # print(final_token_pos)
-    # final_token_pos = [len(tokenizer(text)[0]) for text in batch_text]
-    # tokenize in batch and pad to the longest text in the batch
-    batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
-    
+    if input_text:
+        final_token_pos = []
+        # tokenized_texts = tokenizer(batch_text).input_ids
+        tokenized_texts = tokenizer(batch_text).input_ids
+        # for text in batch_text:
+        for tokenized in tokenized_texts:
+            if isinstance(tokenized, dict) or isinstance(tokenized, transformers.tokenization_utils_base.BatchEncoding):
+                final_token_pos.append(len(tokenized['input_ids']))
+            elif isinstance(tokenized, tuple):
+                final_token_pos.append(len(tokenized[0]))
+            else:
+                final_token_pos.append(len(tokenized))
+
+        batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
+
+    else: # batch_text is already tokenized
+        final_token_pos = [len(text) for text in batch_text]
+        batch = batch_text
+
     logits = model(batch)
     # if logits is a tuple:
     if isinstance(logits, tuple) or isinstance(logits, list):
         logits = logits[0]#.to('cpu')
     elif isinstance(logits, ModelOutput):
         logits = logits.logits
-    else:
-        assert isinstance(logits, torch.Tensor), logits
-        logits = logits#.to('cpu')
-    # if model_returns_tuple:
-    #     logits = model(batch)[0].to('cpu')
-    # else:
-    #     logits = model(batch).to('cpu')
+
+    assert isinstance(logits, torch.Tensor), logits
+    logits = logits#.to('cpu')
+
     assert logits.shape[0] == len(batch_text), f"Logits shape {logits.shape} doesn't match batch_text length {len(batch_text)}"
     # get logits for final token in each text
 

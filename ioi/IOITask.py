@@ -996,90 +996,6 @@ class IOITask_old(Task):
         return torch.cat(tokens, dim=0)
 
 
-    # def calculate_loss(self, tokens, last_token_positions, model):
-    #     outputs = model(tokens)
-    #     logits = outputs[0]
-
-    #     # get logits at the last token position
-        
-    #     logits_last_token = []
-    #     labels = []
-
-    #     for i in range(last_token_positions.shape[0]):
-    #         logits_last_token.append(logits[i, last_token_positions[i]-1])
-    #         labels.append(tokens[i, last_token_positions[i]])
-    #     logits_last_token = torch.stack(logits_last_token)
-    #     labels = torch.stack(labels).to(logits_last_token.device)
-    #     print(f"{logits_last_token.shape=}, {labels.shape=}")
-    #     print(f"{logits_last_token.argmax(dim=1)=}, {labels=}")
-    
-    #     loss = self.criterion(logits_last_token, labels)
-        
-    #     return loss
-
-    # def get_train_loss(self, model):
-    #     try:
-    #         batch = next(self.train_iter)
-    #     except StopIteration:
-    #         self.train_iter = iter(self.train_loader)
-    #         batch = next(self.train_iter)
-
-
-    #     inputs = batch['tokens']
-    #     last_token_positions = batch['last_token_pos']
-
-    #     loss = self.calculate_loss(inputs, last_token_positions, model)
-    #     return loss
-
-    # def get_test_loss(self, model):
-    #     # same as train
-    #     with torch.no_grad():
-    #         try:
-    #             batch = next(self.test_iter)
-    #         except StopIteration:
-    #             self.test_iter = iter(self.test_loader)
-    #             batch = next(self.test_iter)
-
-    #         inputs = batch['tokens']
-    #         last_token_positions = batch['last_token_pos']
-
-    #         loss = self.calculate_loss(inputs, last_token_positions, model)
-    #         return loss
-    
-    # def get_test_accuracy(self, model):
-    #     with torch.no_grad():
-    #         try:
-    #             batch = next(self.test_iter)
-    #         except StopIteration:
-    #             self.test_iter = iter(self.test_loader)
-    #             batch = next(self.test_iter)
-
-    #         inputs = batch['tokens']
-    #         last_token_positions = batch['last_token_pos']
-
-    #         outputs = model(inputs)
-    #         logits = outputs[0]
-
-    #         # get logits at the last token position
-    #         logits_last_token = []
-    #         labels = []
-
-    #         for i in range(last_token_positions.shape[0]):
-    #             logits_last_token.append(logits[i, last_token_positions[i]-1])
-    #             labels.append(inputs[i, last_token_positions[i]])
-    #         logits_last_token = torch.stack(logits_last_token)
-    #         labels = torch.stack(labels).to(logits_last_token.device)
-
-    #         predictions = logits_last_token.argmax(dim=1)
-    #         accuracy = (predictions == labels).sum().item() / predictions.shape[0]
-    #         return accuracy
-
-
-    # def get_loss(self, logits):
-    #     patched_logit_diff = self.ave_logit_diff(logits, self.clean_data)
-    #     return (patched_logit_diff - self.corrupted_logit_diff) / (self.clean_logit_diff - self.corrupted_logit_diff)
-
-
 from tasks.task import Task
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
@@ -1197,6 +1113,7 @@ class IOITask(IOITask_old):
         corrupt_logits = model(self.corr_data.toks)
         self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_data).item()
         self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_data).item()
+        print(f"Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}")
 
     def get_acdcpp_metric(self, model=None):
         '''

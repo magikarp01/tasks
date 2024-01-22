@@ -123,9 +123,9 @@ class GreaterThanTask(Task):
         #     logits = logits[0]#.to('cpu')
         # elif isinstance(logits, ModelOutput):
         #     logits = logits.logits
-        # else:
-        #     assert isinstance(logits, torch.Tensor), logits
-        #     logits = logits#.to('cpu')
+
+        # assert isinstance(logits, torch.Tensor), logits
+        # logits = logits[:, -1]
         logits = get_final_logits(model, self.tokenizer, batch, input_text=False)
 
         # Gets the last 2 digits of the year
@@ -147,7 +147,17 @@ class GreaterThanTask(Task):
         """
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
+
+            # logits = model(batch)
+            # if isinstance(logits, tuple) or isinstance(logits, list):
+            #     logits = logits[0]#.to('cpu')
+            # elif isinstance(logits, ModelOutput):
+            #     logits = logits.logits
+
+            # assert isinstance(logits, torch.Tensor), logits
+            # logits = logits[:, -1]
             logits = get_final_logits(model, self.tokenizer, batch, input_text=False)
+
             probs = F.softmax(logits, dim=-1)
 
             yearend = self.INV_TOKENS_TENSOR[batch[:, 7]].to(logits.device)
