@@ -5,4 +5,4 @@ from .hp.HPTask import HPTriviaTask, HPVerbatimTask
 from .task import Task
 from .qlm.QMTask import QMTask
 from .greaterthan.GreaterThanTask import GreaterThanTask
-from .induction.InductionTask import InductionTask
+from .induction.InductionTask import *

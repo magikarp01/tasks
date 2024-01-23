@@ -120,3 +120,49 @@ class InductionTask(Task):
             last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
             diffs.append(self.calculate_logit_diff(last_logits, batch))
         return torch.tensor(diffs).mean()
+    
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+        """
+        Accuracy of model assigning largest logit to repeated token.
+        """
+        with torch.no_grad():
+            batch = self.get_batch(train=not use_test_data)
+            last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
+
+            if not check_all_logits: # check logits of repeated tokens
+                repeated_tokens = batch[:, 1:self.seq_len+1]
+                num_correct = 0
+                
+                for i in range(len(batch)): # for each seq in batch
+                    repeated_logits = last_logits[i, repeated_tokens[i]]
+                    if repeated_logits.argmax() == self.seq_len - 1: # needs to be the last token
+                        num_correct += 1
+                return num_correct / len(batch)
+
+            else:
+                return (last_logits.argmax(dim=-1) == batch[:, -1]).float().mean()
+
+class InductionTask_Uniform(InductionTask):
+    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", uniform_over="rep_tokens"):
+        """
+        uniform_over can be "rep_tokens" or "all_tokens". If "rep_tokens", the uniform distribution will be over the repeated tokens. If "all_tokens", the uniform distribution will be over all tokens in the vocab.
+        """
+        super().__init__(batch_size, tokenizer, num_data, prep_acdcpp, acdcpp_N, seq_len, acdcpp_metric)
+        self.criterion = torch.nn.functional.cross_entropy
+        self.uniform_over = uniform_over
+    
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
+        target_dist = torch.zeros_like(last_logits)
+        if self.uniform_over == "rep_tokens":
+            repeated_tokens = batch[:, 1:self.seq_len+1]
+
+            for i in range(len(batch)): # for each seq in batch
+                target_dist[i, repeated_tokens[i]] = 1 / self.seq_len
+        elif self.uniform_over == "all_tokens":
+            target_dist.fill_(1 / self.tokenizer.vocab_size)
+
+        else:
+            raise ValueError(f"Unknown uniform_over {self.uniform_over}")
+        return self.criterion(last_logits, target_dist)
+    
