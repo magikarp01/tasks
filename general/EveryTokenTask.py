@@ -1,7 +1,7 @@
 from tasks.task import Task
 import pickle
 from torch.utils.data import DataLoader
-from tasks.inference_utils import batch_text_to_tokens
+from tasks.inference_utils import batch_text_to_tokens, process_model_output
 import torch
 from datasets import load_dataset
 from transformers.utils import ModelOutput
@@ -53,11 +53,7 @@ class ETTask(Task):
         token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
         token_batch = token_batch.to(self.device) # don't think tokenizer has start token
         
-        out = model(token_batch[:, :-1])
-        if isinstance(out, tuple) or isinstance(out, list):
-            out = out[0]
-        elif isinstance(out, ModelOutput):
-            out = out.logits
+        out = process_model_output(model(token_batch[:, :-1]))
         # shift labels over by one
         shifted_token_batch = token_batch[:, 1:]
 

@@ -7,6 +7,16 @@ import transformers
 # by default: DEVICE is cuda
 DEVICE='cuda'
 
+def process_model_output(logits):
+    # if logits is a tuple:
+    if isinstance(logits, tuple) or isinstance(logits, list):
+        logits = logits[0]#.to('cpu')
+    elif isinstance(logits, ModelOutput):
+        logits = logits.logits
+
+    assert isinstance(logits, torch.Tensor), logits
+    return logits
+
 def batch_text_to_tokens(x, tokenizer, ctx_length=None, pad_max=False):
     if ctx_length is None:
         return tokenizer(x['text'], padding='max_length' if pad_max else True, truncation=True, return_tensors='pt').input_ids.long()
@@ -129,15 +139,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
         final_token_pos = [len(text) for text in batch_text]
         batch = batch_text
 
-    logits = model(batch)
-    # if logits is a tuple:
-    if isinstance(logits, tuple) or isinstance(logits, list):
-        logits = logits[0]#.to('cpu')
-    elif isinstance(logits, ModelOutput):
-        logits = logits.logits
-
-    assert isinstance(logits, torch.Tensor), logits
-    logits = logits#.to('cpu')
+    logits = process_model_output(model(batch))
 
     assert logits.shape[0] == len(batch_text), f"Logits shape {logits.shape} doesn't match batch_text length {len(batch_text)}"
     # get logits for final token in each text
@@ -146,3 +148,39 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
     for i, pos in enumerate(final_token_pos):
         logits_last_token.append(logits[i, pos-1])
     return torch.stack(logits_last_token)
+
+
+def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0):
+    """
+    Accepts a model's inference function, a tensor of input sequences, and a number of new tokens to generate. Returns a dictionary containing the generated sequences and the logit scores for each new token.
+    """
+
+    # Initialize sequences with input
+    sequences = input # tensor with shape (batch_size, sequence_length)
+    assert len(sequences.shape) == 2
+
+    # Initialize a list to store scores
+    scores = []
+
+    # Generate num_new_tokens new tokens
+    for _ in range(num_new_tokens):
+        # Get logits using model's inference function
+        logits = process_model_output(model_inference_fn(sequences))
+
+        # Sample a new token for each sequence in the batch
+        if temperature == 0:
+            new_tokens = torch.argmax(logits, dim=-1)
+        else:
+            probs = torch.nn.functional.softmax(logits[:, -1, :] / temperature, dim=-1)
+            new_tokens = torch.multinomial(probs, num_samples=1)
+
+        # Append new tokens to sequences
+        sequences = torch.cat([sequences, new_tokens], dim=-1)
+        # Append logits to scores
+        scores.append(logits)
+
+    # Stack scores along the sequence length dimension
+    scores = torch.stack(scores, dim=1)
+    assert scores.shape == (input.shape[0], num_new_tokens, logits.shape[-1])
+    assert sequences.shape == (input.shape[0], num_new_tokens + input.shape[1])
+    return {"sequences": sequences, "scores": scores}

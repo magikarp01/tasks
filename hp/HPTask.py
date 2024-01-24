@@ -154,7 +154,7 @@ class HPTriviaTask(Task):
         return tot_correct / tot_tested
 
         
-from tasks.task import CompletionTask
+from tasks.templates.CompletionTask import CompletionTask
 import Levenshtein
 class HPVerbatimTask(CompletionTask):
     def format_completion(self, passage, num_completion_sentences=None):
