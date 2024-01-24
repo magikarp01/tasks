@@ -15,7 +15,7 @@ try:
         organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
     )
 except:
-    print("OpenAI API key not found, will not be able to run evaluations")
+    print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
 
 QA_TEMPLATE = """
 Question:
@@ -177,12 +177,21 @@ def get_model_grade(client, question, response, perfect_answer, model='gpt-3.5-t
 
 class HPSAQ(Task):
 
-    def __init__(self, dataset_path=None, system_prompt=SAQ_SYSTEM_PROMPT, zero_shot_template=ZERO_SHOT_TEMPLATE, few_shot_template=FEW_SHOT_TEMPLATE, unrelated_few_shot_template=UNRELATED_FEW_SHOT_TEMPLATE):
+    def __init__(self, 
+                 dataset_path=None, 
+                 system_prompt=SAQ_SYSTEM_PROMPT, 
+                 zero_shot_template=ZERO_SHOT_TEMPLATE, 
+                 few_shot_template=FEW_SHOT_TEMPLATE, unrelated_few_shot_template=UNRELATED_FEW_SHOT_TEMPLATE,
+                 use_train_data=False,
+                 ):
 
 
         if dataset_path is None:
             script_dir = os.path.dirname(os.path.realpath(__file__))
-            dataset_path = os.path.join(script_dir, 'data/harry_potter_trivia_502_v2.jsonl')
+            if use_train_data:
+                dataset_path = os.path.join(script_dir, 'data/harry_potter_trivia_502_v2.jsonl')
+            else:
+                dataset_path = os.path.join(script_dir, 'data/hp_trivia_test.jsonl')
 
         with open(dataset_path, 'r') as f:
             lines = f.readlines()
