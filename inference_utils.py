@@ -150,7 +150,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
     return torch.stack(logits_last_token)
 
 
-def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0):
+def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0, stop_tokens=None):
     """
     Accepts a model's inference function, a tensor of input sequences, and a number of new tokens to generate. Returns a dictionary containing the generated sequences and the logit scores for each new token.
     """
@@ -162,25 +162,39 @@ def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0)
     # Initialize a list to store scores
     scores = []
 
-    # Generate num_new_tokens new tokens
-    for _ in range(num_new_tokens):
-        # Get logits using model's inference function
-        logits = process_model_output(model_inference_fn(sequences))
+    with torch.no_grad():
+        # Generate num_new_tokens new tokens
+        end_seq = False
+        for token_num in range(num_new_tokens):
+            # Get logits using model's inference function
+            logits = model_inference_fn(sequences)
+            logits = process_model_output(logits)
 
-        # Sample a new token for each sequence in the batch
-        if temperature == 0:
-            new_tokens = torch.argmax(logits, dim=-1)
-        else:
-            probs = torch.nn.functional.softmax(logits[:, -1, :] / temperature, dim=-1)
-            new_tokens = torch.multinomial(probs, num_samples=1)
+            # Sample a new token for each sequence in the batch
+            if temperature == 0:
+                new_tokens = torch.argmax(logits[:, -1:, :], dim=-1)
+            else:
+                probs = torch.nn.functional.softmax(logits[:, -1, :] / temperature, dim=-1)
+                new_tokens = torch.multinomial(probs, num_samples=1)
 
-        # Append new tokens to sequences
-        sequences = torch.cat([sequences, new_tokens], dim=-1)
-        # Append logits to scores
-        scores.append(logits)
+            # Append new tokens to sequences
+            sequences = torch.cat([sequences, new_tokens], dim=-1)
+            # Append logits to scores
+            scores.append(logits[:, -1, :])
 
-    # Stack scores along the sequence length dimension
-    scores = torch.stack(scores, dim=1)
-    assert scores.shape == (input.shape[0], num_new_tokens, logits.shape[-1])
-    assert sequences.shape == (input.shape[0], num_new_tokens + input.shape[1])
-    return {"sequences": sequences, "scores": scores}
+            if stop_tokens is not None:
+                # If a stop token is generated, end the sequence
+                for new_token in new_tokens:
+                    if new_token.item() in stop_tokens:
+                        end_seq = True
+                        break
+            if end_seq:
+                break
+
+        # Stack scores along the sequence length dimension
+        scores = torch.stack(scores, dim=0)
+        assert scores.shape == (token_num+1, input.shape[0], logits.shape[-1]), scores.shape
+        # assert scores.shape == (num_new_tokens, input.shape[0], logits.shape[-1])
+        assert sequences.shape == (input.shape[0], input.shape[1] + token_num+1), sequences.shape
+
+        return {"sequences": sequences, "scores": scores}

@@ -61,7 +61,7 @@ class HPTriviaTask(Task):
     def _format_sys_prompt(self, prompt):
         return B_SYS + prompt + E_SYS
 
-    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl", sys_msg=sys_msg):
+    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl", sys_msg=sys_msg, seed=None):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -88,6 +88,9 @@ class HPTriviaTask(Task):
             test_sentences = f.readlines()
         self.test_sentences = [json.loads(item) for item in test_sentences]
         
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
         self.train_prompts = [self.format_trivia(question_dict, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in self.train_sentences]
         self.test_prompts = [self.format_trivia(question_dict, randomize_answers=randomize_answers, correct_answer_A=correct_answer_A) for question_dict in self.test_sentences]
         self.set_loaders(self.train_prompts, self.test_prompts, shuffle=shuffle)
