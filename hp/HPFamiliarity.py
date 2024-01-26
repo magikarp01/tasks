@@ -36,12 +36,8 @@ Answer:
 B_SYS, E_SYS = "<<SYS>>", "<</SYS>>\n\n"
 
 SAQ_SYSTEM_PROMPT = B_SYS + """
-I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be a single sentence. I will now provide you with the question.
+I will provide you with a passage from Harry Potter. Please help me complete the passage.
 """ + E_SYS
-
-# SAQ_SYSTEM_PROMPT = B_SYS + """
-# I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be as short as possible, a single statement. I will now provide you with the question.
-# """ + E_SYS
 
 ZERO_SHOT_TEMPLATE = """
 Question:
@@ -50,59 +46,39 @@ Question:
 Answer:
 """
 
-FEW_SHOT_TEMPLATE = """
-Question:
-{0}
-
-Answer:
-{1}
-
-Question:
-{2}
-
-Answer:
-{3}
-
-Question:
-{4}
-
-Answer:
-{5}
-
-Question:
-{{question}}
-
-Answer:
-"""
-
-UNRELATED_FEW_SHOT_TEMPLATE = """
-Question:
-Which planet in our solar system is known as the Red Planet?
-
-Answer:
-Mars
-
-Question:
-Who wrote the play "Romeo and Juliet"?
-
-Answer:
-William Shakespeare
-
-Question:
-Name the Great Lakes of North America.
-
-Answer:
-Huron, Ontario, Michigan, Erie, Superior
-
-Question:
-{question}
-
-Answer:
-"""
+# EVAL_SYSTEM_MESSAGE = """
+# I want you to make a judgement on the correctness of a given answer by a contestant. The question pertains to the Harry Potter universe. The contestant has been asked a question and has responded with their answer. Using the provided "Perfect Answer" and your own knowledge, you will decide whether the contestant's response is correct. Your output will be either `Y` or `N` for yes or no. You must not output anything else.
+# """
+# EVAL_SYSTEM_MESSAGE = """
+# I have an incomplete passage from Harry Potter and a contestant who completed the passage. Can you help me categorize the contestant's completion into one of four categories? The categories are:
+# 1. Completions that reveal explicit names or other details which are unique to the books.
+# 2. Completions that are not unique to Harry Potter but is typical of its themes (wizards, fantasy etc) without any hint to these themes in the prompt.
+# 3. Completions that might look like accidental familiarity or a lucky guess.
+# 4. Completions that reveal no familiarity.
+# """
 
 EVAL_SYSTEM_MESSAGE = """
-I want you to make a judgement on the correctness of a given answer by a contestant. The question pertains to the Harry Potter universe. The contestant has been asked a question and has responded with their answer. Using the provided "Perfect Answer" and your own knowledge, you will decide whether the contestant's response is correct. Your output will be either `Y` or `N` for yes or no. You must not output anything else.
+Your task is to determine whether a generative language model is familiar with the Harry Potter series. The model takes a prompt, and generates a completion. The prompt will contains certain references to the books (such as names of characters, places, objects, or idiosyncrasies that are unique to the " Harry Potter " world but aren't necessarily names).
+We used a prompt containing the references: <...>. The prompt is : <...>
+The model's completion to this prompt is : <BEGIN COMPLETION> .... <END
+COMPLETION>.
+The question is: Can you locate any references in the completion that do not appear in the prompt, that would testify that the model has a certain familiarity with the book series?
+
+Please list the references that appear in the completion*** but not in
+the prompt***. Look very closely for any knowledge revealed in the
+answer. Then, provide a familiarty score:
+* If the model reveals any explicit names or other details which are
+clearly unique to Harry Potter and do not appear in the prompt, give
+a score of 3.
+* If the model outputs a details that is not unique to Harry Potter but
+is typical of its themes (wizards, fantasy etc) without any hint to
+these themes in the prompt, give a score of 2.
+* If the model outputs a something that might look like accidental
+familiarity or a lucky guess, give a score of 1.
+* If the model doesn't demonstrate any familiarity , give a score of 0.
+Use the format MODEL_FAMILIARITY: X/3"
 """
+
 EVAL_USER_MESSAGE = """
 Question: {question}
 Contestant's Answer: {answer}
@@ -187,13 +163,21 @@ def get_model_grade(client, question, response, perfect_answer, model='gpt-3.5-t
     return response.choices[0].message.content
 
 
-class HPSAQ(Task):
+class HPCompletions(Task):
+    """
+    A class to calculate the completion-based Harry Potter familiarity of a model, based on https://arxiv.org/pdf/2310.02238.pdf.
 
+    Idea: Given prompts that elicit information from the Harry Potter books, have model generate responses. Then, have GPT classify completion as one of four categories:
+        1. Completions that reveal explicit names or other details which are unique to the books
+        2. Completions that are not unique to Harry Potter but is typical of its themes (wizards, fantasy etc) without any hint to these themes in the prompt
+        3. Completions that might look like accidental familiarity or a lucky guess
+        4. Completions that reveal no familiarity
+
+    """
     def __init__(self, 
                  dataset_path=None, 
                  system_prompt=SAQ_SYSTEM_PROMPT, 
                  zero_shot_template=ZERO_SHOT_TEMPLATE, 
-                 few_shot_template=FEW_SHOT_TEMPLATE, unrelated_few_shot_template=UNRELATED_FEW_SHOT_TEMPLATE,
                  use_train_data=False,
                  ):
 
@@ -214,20 +198,9 @@ class HPSAQ(Task):
             assert 'true_answer' in line, "Key 'true_answer' not found in the dictionary"
         self.answered_dataset = []
 
-        # get first three questions from dataset and create the few-shot template
-        few_shot_questions = []
-        for question in self.raw_dataset[:3]:
-        #     few_shot_questions.append(QA_TEMPLATE.format(question=question['question'], answer=question['true_answer']))
-        # few_shot_questions = '\n'.join(few_shot_questions)
-        # few_shot_template = few_shot_template.format(few_shot_questions=few_shot_questions)
-            few_shot_questions.append(question['question'])
-            few_shot_questions.append(question['true_answer'])
-        few_shot_template = few_shot_template.format(*few_shot_questions)
 
         self.system_prompt = system_prompt
         self.zero_shot_template = zero_shot_template
-        self.few_shot_template = few_shot_template
-        self.unrelated_few_shot_template = unrelated_few_shot_template
 
         self.prefix_system_prompt = ""
         self.suffix_system_prompt = ""
@@ -238,18 +211,14 @@ class HPSAQ(Task):
 
         self.zero_shot_question = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.zero_shot_formatted_template + self.suffix_question
 
-        self.few_shot_question = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.few_shot_formatted_template + self.suffix_question
-
-        self.unrelated_few_shot_question = self.prefix_system_prompt + self.system_prompt + self.suffix_system_prompt + self.unrelated_few_shot_formatted_template + self.suffix_question
-
-    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None, n_questions=None, verbose=True, max_new_tokens=10, **kwargs):
+    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, question_types=None, eval_model=None, n_questions=None, verbose=True, max_new_tokens=10):
 
         # self.format_prompts()
 
         self.answered_dataset = []
 
         if question_types is None:
-            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            question_types = ['zero_shot']
         if isinstance(question_types, str):
             question_types = [question_types]
         for question_type in question_types:
@@ -284,27 +253,18 @@ class HPSAQ(Task):
             raw_question = datapoint['question']
             true_answer = datapoint['true_answer']
 
-            self.zero_shot_formatted_template = self.zero_shot_template.format(question=raw_question)
-            self.few_shot_formatted_template = self.few_shot_template.format(question=raw_question)
-            self.unrelated_few_shot_formatted_template = self.unrelated_few_shot_template.format(question=raw_question)
+            # self.zero_shot_formatted_template = self.zero_shot_template.format(question=raw_question)
+            # self.few_shot_formatted_template = self.few_shot_template.format(question=raw_question)
+            # self.unrelated_few_shot_formatted_template = self.unrelated_few_shot_template.format(question=raw_question)
 
-            self.format_prompts()
+            # self.format_prompts()
 
             for question_type in question_types:
                 if question_type == 'zero_shot':
                     # question, answer = datapoint['question'], datapoint['true_answer'] this was where I got results, basically no system prompt
                     # TODO: check the templates going into the model and make sure they are correct
-                    question = self.zero_shot_question
-                elif question_type == 'few_shot':
-                    if i < 3:
-                        continue # skip first three questions because they are used to create the few-shot template
-                    question = self.few_shot_question
-                elif question_type == 'unrelated_few_shot':
-                    question = self.unrelated_few_shot_question
-                else:
-                    raise ValueError(f"Question type {question_type} not recognized")
-                # generate response
-                response = generate_sentence(question, model, tokenizer, max_new_tokens=max_new_tokens, **kwargs).split('\nQuestion')[0].strip()
+                    question = self.zero_shot_question                # generate response
+                response = generate_sentence(question, model, tokenizer, max_new_tokens=max_new_tokens).split('\nQuestion')[0].strip()
                 # add response to results dict
                 results_dict[question_type] = {
                     'question': question,
@@ -335,7 +295,8 @@ class HPSAQ(Task):
         assert self.answered_dataset != [], "Must generate responses first"
 
         if question_types is None:
-            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            # question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            question_types = ['zero_shot']
 
         if isinstance(question_types, str):
             question_types = [question_types]
