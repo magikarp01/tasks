@@ -1,0 +1,199 @@
+[
+    {
+        "prompt": {
+            "references": [
+                "Ron",
+                "Hermione",
+                "wand"
+            ],
+            "prompt": "Ron and Hermione were practicing their spells when Ron accidentally cast a spell that caused",
+            "subtlety": 8
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Dumbledore",
+                "phoenix"
+            ],
+            "prompt": "In the headmaster's office, a magnificent phoenix perched on its stand, waiting for Dumbledore to",
+            "subtlety": 7
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Harry",
+                "invisibility cloak"
+            ],
+            "prompt": "Harry wrapped himself in the silvery fabric of the invisibility cloak and silently moved through the castle to",
+            "subtlety": 6
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Hogwarts Express",
+                "Platform 9 3/4"
+            ],
+            "prompt": "The students eagerly boarded the Hogwarts Express at Platform 9 3/4, excited for the journey that would take them to",
+            "subtlety": 5
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Quidditch",
+                "golden snitch"
+            ],
+            "prompt": "During the intense Quidditch match, the seeker's eyes were locked on the elusive golden snitch as it darted around, waiting for the perfect moment to",
+            "subtlety": 4
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Potions class",
+                "Professor Snape"
+            ],
+            "prompt": "In the dimly lit Potions classroom, the students carefully followed the instructions, hoping to avoid the wrath of Professor Snape if they",
+            "subtlety": 7
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Sorting Hat",
+                "Hogwarts houses"
+            ],
+            "prompt": "The nervous first-year students lined up, waiting for their turn to wear the enchanted Sorting Hat that would determine which of the four Hogwarts houses they would",
+            "subtlety": 3
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Luna Lovegood",
+                "spectrespecs"
+            ],
+            "prompt": "Luna Lovegood, wearing her peculiar spectrespecs, claimed she could see invisible creatures that were",
+            "subtlety": 6
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Diagon Alley",
+                "Gringotts"
+            ],
+            "prompt": "The bustling Diagon Alley was filled with magical shops, but the most imposing building was Gringotts, the wizarding bank, guarded by",
+            "subtlety": 4
+        }
+    },
+    {
+        "prompt": {
+            "references": [
+                "Dementors",
+                "Patronus"
+            ],
+            "prompt": "The chilling presence of the Dementors could only be repelled by casting a powerful Patronus, which took the form of a",
+            "subtlety": 2
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 7,
+            "references": [
+                "flying cars",
+                "getting noticed"
+            ],
+            "prompt": "The young boy couldn't help but feel a sense of excitement as he imagined flying cars soaring through the sky, drawing attention from everyone below"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 9,
+            "references": [
+                "lightning scar",
+                "forehead"
+            ],
+            "prompt": "He glanced at the peculiar lightning-shaped scar on the boy's forehead, which seemed to hold a story of its own"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 5,
+            "references": [
+                "greenhouse",
+                "Professor Sprout"
+            ],
+            "prompt": "Inside the greenhouse, they eagerly awaited instructions from Professor Sprout, who was preparing a lesson on repotting plants"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 3,
+            "references": [
+                "Mandrakes",
+                "restorative"
+            ],
+            "prompt": "The class learned about the powerful restorative properties of Mandrakes, a plant with a peculiar appearance and a reputation for its healing abilities"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 8,
+            "references": [
+                "ear muffs",
+                "protection"
+            ],
+            "prompt": "To protect their ears from the potentially harmful effects of the plant's cries, the students were instructed to wear colorful ear muffs during the lesson"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 6,
+            "references": [
+                "Ron",
+                "Hermione"
+            ],
+            "prompt": "The boy found himself between his two friends, Ron and Hermione, as they listened intently to the professor's instructions"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 4,
+            "references": [
+                "Witch Weekly's Most Charming-Smile Award"
+            ],
+            "prompt": "He couldn't help but feel a twinge of envy when he heard about someone winning Witch Weekly's Most Charming-Smile Award five times in a row"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 10,
+            "references": [
+                "He-Who-Must-Not-Be-Named"
+            ],
+            "prompt": "The mention of He-Who-Must-Not-Be-Named sent a shiver down the spines of those who knew the dark history associated with the name"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 2,
+            "references": [
+                "internationally famous wizard"
+            ],
+            "prompt": "The boy looked up to the internationally famous wizard, who seemed to have it all - fame, talent, and a charming smile that won him numerous awards"
+        }
+    },
+    {
+        "prompt": {
+            "subtlety": 1,
+            "references": [
+                "twenty pairs of different-colored ear muffs"
+            ],
+            "prompt": "On the bench, there were twenty pairs of different-colored ear muffs, each one waiting to be picked up by a student eager to learn about the magical properties of plants"
+        }
+    }
+]
