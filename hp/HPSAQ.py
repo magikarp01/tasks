@@ -47,57 +47,57 @@ ZERO_SHOT_TEMPLATE = """
 [INST] Question:
 {question}
 
-Answer:[\INST] 
+Answer:[/INST] 
 """
 
 FEW_SHOT_TEMPLATE = """
 [INST] Question:
 {0}
 
-Answer:[\INST] 
+Answer:[/INST] 
 {1}
 
 [INST] Question:
 {2}
 
-Answer:[\INST] 
+Answer:[/INST] 
 {3}
 
 [INST] Question:
 {4}
 
-Answer:[\INST] 
+Answer:[/INST] 
 {5}
 
 [INST] Question:
 {{question}}
 
-Answer:[\INST] 
+Answer:[/INST] 
 """
 
 UNRELATED_FEW_SHOT_TEMPLATE = """
 [INST] Question:
 Which planet in our solar system is known as the Red Planet?
 
-Answer:[\INST] 
+Answer:[/INST] 
 Mars
 
 [INST] Question:
 Who wrote the play "Romeo and Juliet"?
 
-Answer:[\INST] 
+Answer:[/INST] 
 William Shakespeare
 
 [INST] Question:
 Name the Great Lakes of North America.
 
-Answer:[\INST] 
+Answer:[/INST] 
 Huron, Ontario, Michigan, Erie, Superior
 
 [INST] Question:
 {question}
 
-Answer:
+Answer:[/INST] 
 """
 
 EVAL_SYSTEM_MESSAGE = """
@@ -249,7 +249,8 @@ class HPSAQ(Task):
         self.answered_dataset = []
 
         if question_types is None:
-            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            # question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            question_types = ['zero_shot', 'few_shot'] # TODO: unrelated few_shot is not working
         if isinstance(question_types, str):
             question_types = [question_types]
         for question_type in question_types:
