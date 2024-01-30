@@ -7,6 +7,7 @@ from tasks.inference_utils import get_final_logits
 import json
 import pickle
 import numpy as np
+import tqdm
 
 # Factual knowledge: want to test if model can do single-token completions correctly, and if model can answer True/False questions about Harry Potter correctly
 # Verbatim knowledge: give direct passages from book, ask model to complete direct passage
@@ -129,7 +130,7 @@ class HPTriviaTask(Task):
         with torch.no_grad():
             tot_correct = 0
             tot_tested = 0
-            for _ in range(n_iters):
+            for _ in tqdm.tqdm(range(n_iters)):
                 batch = self.get_batch(train=not use_test_data)
                 last_logits = get_final_logits(model, self.tokenizer, batch['prompt'], device=self.device)
                 a_token = self.tokenizer("A", return_tensors='pt').input_ids[:, -1].item()

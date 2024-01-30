@@ -10,10 +10,9 @@ from tasks.task import Task
 from tasks.inference_utils import custom_generate
 
 try:
-    load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
     client = openai.Client(
-        organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
+        organization='org-0JtMJNoCs4sCctkhazVSKRru',
     )
 except:
     print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
@@ -36,7 +35,7 @@ Answer:
 B_SYS, E_SYS = "<<SYS>>", "<</SYS>>\n\n"
 
 SAQ_SYSTEM_PROMPT = B_SYS + """
-I want you to answer the following question about Harry Potter and respond with an answer. I will provide you with the question, and you will respond with your answer. Your response should be a single sentence. I will now provide you with the question.
+I want you to answer the following question about Harry Potter and respond with an answer. Your response should be a single sentence.
 """ + E_SYS
 
 # SAQ_SYSTEM_PROMPT = B_SYS + """
@@ -360,4 +359,46 @@ class HPSAQ(Task):
             except ZeroDivisionError:
                 accuracies[question_type] = 'n/a'
         return accuracies
+
+
+class HPSAQTranchedByBook(HPSAQ):
+
+    def __init__(self, book_idx: int, *args, **kwargs):
+
+        book_paths = [
+            "data/tranched_by_book/book_1.jsonl",
+            "data/tranched_by_book/book_2.jsonl",
+            "data/tranched_by_book/book_3.jsonl",
+            "data/tranched_by_book/book_4.jsonl",
+            "data/tranched_by_book/book_5.jsonl",
+            "data/tranched_by_book/book_6.jsonl",
+            "data/tranched_by_book/book_7.jsonl",
+        ]
+
+        book_names = [
+            "The Philosopher's Stone",
+            "The Chamber of Secrets",
+            "The Prisoner of Azkaban",
+            "The Goblet of Fire",
+            "The Order of the Phoenix",
+            "The Half-Blood Prince",
+            "The Deathly Hallows",
+        ]
+
+        TRANCHED_SAQ_SYSTEM_PROMPT = B_SYS + """
+        I want you to answer the following question about Harry Potter, book {book_idx}, {book_name}, and respond with an answer. Your response should be a single sentence.
+        """ + E_SYS 
+
+        assert book_idx <= len(book_paths) and book_idx > 0, f"Book index {book_idx} is out of range"
+        script_dir = os.path.dirname(__file__)
+        dataset_path = os.path.join(script_dir, book_paths[book_idx-1])
+        book_name = book_names[book_idx-1]
+        system_prompt = TRANCHED_SAQ_SYSTEM_PROMPT.format(book_idx=book_idx, book_name=book_name)
+
+        super().__init__(
+            dataset_path=dataset_path,
+            system_prompt=system_prompt,
+            *args,
+            **kwargs,
+        )
 
