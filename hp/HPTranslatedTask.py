@@ -32,7 +32,7 @@ class HPSAQSpanishTask(HPSAQ):
     def __init__(self, *args, **kwargs):
 
         script_dir = os.path.dirname(__file__)
-        spanish_dataset_path = os.path.join(script_dir, "data/translated_v2_hptrivia/Spanish_datapoints.jsonl")
+        spanish_dataset_path = os.path.join(script_dir, "data/translated_v2_hptrivia/Spanish_datapoints__train.jsonl")
 
         super().__init__(
             dataset_path=spanish_dataset_path,
@@ -61,7 +61,7 @@ class HPSAQRussianTask(HPSAQ):
     def __init__(self, *args, **kwargs):
 
         script_dir = os.path.dirname(__file__)
-        russian_dataset_path = os.path.join(script_dir, "data/translated_v2_hptrivia/Russian_datapoints.jsonl")
+        russian_dataset_path = os.path.join(script_dir, "data/translated_v2_hptrivia/Russian_datapoints__train.jsonl")
 
         super().__init__(
             dataset_path=russian_dataset_path,
