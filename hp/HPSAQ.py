@@ -10,10 +10,9 @@ from tasks.task import Task
 from tasks.inference_utils import custom_generate
 
 try:
-    load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
     client = openai.Client(
-        organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
+        organization='org-0JtMJNoCs4sCctkhazVSKRru',
     )
 except:
     print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")

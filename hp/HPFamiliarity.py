@@ -15,7 +15,7 @@ try:
     load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
     client = openai.Client(
-        organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
+        organization='org-0JtMJNoCs4sCctkhazVSKRru',
     )
 except:
     print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
@@ -173,15 +173,15 @@ class HPCompletionsFamiliarity(Task):
         #     os.makedirs('temp', exist_ok=True)
         #     save_path = f'temp/{exp_time}.jsonl'
 
+        if n_questions is None:
+            n_questions = len(self.prompts)
+
         if verbose:
-            prompts_iter = enumerate(tqdm(self.prompts))
+            prompts_iter = enumerate(tqdm(self.prompts[:n_questions]))
         else:
-            prompts_iter = enumerate(self.prompts)
+            prompts_iter = enumerate(self.prompts[:n_questions])
 
         for i, prompt in prompts_iter:
-            if n_questions is not None and i >= n_questions:
-                break            
-
             results_dict = {
                 'raw_question': prompt
                 }
