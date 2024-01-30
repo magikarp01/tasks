@@ -160,13 +160,13 @@ class HPCompletionsFamiliarity(Task):
         self.prompts = prompts
 
     
-    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, eval_model=None, n_questions=None, verbose=True, max_new_tokens=10, **kwargs):
+    def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, eval_model='gpt-3.5-turbo', n_questions=None, verbose=False, max_new_tokens=10, max_eval_tokens=1, **kwargs):
 
         self.answered_dataset = []
         
-        if eval_onthe_fly:
-            if eval_model is None:
-                eval_model = 'gpt-3.5-turbo'
+        # if eval_onthe_fly:
+        #     if eval_model is None:
+        #         eval_model = 'gpt-3.5-turbo'
 
         # if save_path is None:
         #     exp_time = datetime.now().strftime("%a-%b%-d-%H%M")
@@ -194,7 +194,7 @@ class HPCompletionsFamiliarity(Task):
 
             # run evaluation
             if eval_onthe_fly:
-                model_grade = get_model_grade(client, prompt, response, model=eval_model, max_tokens=1)
+                model_grade = get_model_grade(client, prompt, response, model=eval_model, max_tokens=max_eval_tokens)
                 results_dict['completion']['model_grade'] = model_grade
                 
             self.answered_dataset.append(results_dict)
@@ -203,6 +203,17 @@ class HPCompletionsFamiliarity(Task):
                 save_list_to_jsonl(save_path, self.answered_dataset)
                 # if verbose:
                 #     print(f"Saved results to {save_path}")
+
+    def run_model_evals(self, eval_model='gpt-3.5-turbo', max_eval_tokens=1, save_path=None):
+        # if eval_onthe_fly was False, run evals now
+        updated_dataset = []
+        for i, datapoint in enumerate(self.answered_dataset):
+            model_grade = get_model_grade(client, datapoint['completion']['question'], datapoint['completion']['response'], model=eval_model, max_tokens=max_eval_tokens)
+            self.answered_dataset[i]['completion']['model_grade'] = model_grade
+            updated_dataset.append(self.answered_dataset[i])
+        self.answered_dataset = updated_dataset
+        if save_path is not None:
+            save_list_to_jsonl(save_path, self.answered_dataset)
 
 
     def get_accuracies(self, question_types=None, results_dataset=None):
