@@ -1,0 +1,303 @@
+[
+    {
+        "prompt": {
+            "references": ["Paladins", "alignment"],
+            "prompt": "The alignment traditionally associated with Paladins is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "spellbook", "spells"],
+            "prompt": "The class that uses a spellbook to prepare their spells is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Thac0", "D&D edition"],
+            "prompt": "The D&D edition in which the 'Thac0' system was introduced is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["famous wizard", "Forgotten Realms"],
+            "prompt": "The famous wizard in Forgotten Realms lore is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["race", "psionic abilities"],
+            "prompt": "The race known for their psionic abilities is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["5th Edition", "D&D", "default setting"],
+            "prompt": "The default setting of the 5th Edition of D&D is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "animal companion"],
+            "prompt": "The class that has an animal companion as a feature is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["dragon color", "lawful evil"],
+            "prompt": "The dragon color that is typically lawful evil is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["city", "City of Splendors"],
+            "prompt": "The name of the city known as the City of Splendors is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["creature", "Devourer of Worlds"],
+            "prompt": "The creature known as the 'Devourer of Worlds' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["god of thunder", "D&D pantheon"],
+            "prompt": "The god of thunder in the D&D pantheon is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["highest level", "spell"],
+            "prompt": "The highest level a spell can be in D&D is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["race", "proficiency in stealth"],
+            "prompt": "The race that has a natural proficiency in stealth is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D live play show", "Matthew Mercer"],
+            "prompt": "The name of the D&D live play show created by Matthew Mercer is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["creature", "lord of the Nine Hells"],
+            "prompt": "The creature that is the lord of the Nine Hells is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first layer", "Nine Hells"],
+            "prompt": "The first layer of the Nine Hells in D&D is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["metal", "harmful", "Fey creatures"],
+            "prompt": "The metal that is harmful to Fey creatures is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["artifact", "chance to kill user"],
+            "prompt": "The artifact known to have a 10% chance to instantly kill the user is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "channel divine energy"],
+            "prompt": "The class that can channel divine energy for various effects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D campaign setting", "H.P. Lovecraft"],
+            "prompt": "The name of the D&D campaign setting based on the works of H.P. Lovecraft is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "Ki resource"],
+            "prompt": "The class that uses Ki as a resource is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["race", "honor code", "'Bushido'"],
+            "prompt": "The race known for its strict honor code, 'Bushido', is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D creature", "floating orb"],
+            "prompt": "The D&D creature that is a floating orb with multiple eye stalks is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "magical barrier"],
+            "prompt": "The spell that creates a magical barrier blocking most spells is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D world", "spacefaring ship"],
+            "prompt": "The name of the D&D world that is entirely contained within a giant spacefaring ship is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Drizzt Do'Urden", "famous scimitar"],
+            "prompt": "The name of Drizzt Do'Urden's famous scimitar is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "wild shape into animals"],
+            "prompt": "The class that can wild shape into animals is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Planescape setting", "center of all planes"],
+            "prompt": "In the Planescape setting, the name of the city at the center of all planes is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D module", "Strahd von Zarovich"],
+            "prompt": "The name of the famous D&D module featuring Strahd von Zarovich is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["default language", "Dragons", "D&D"],
+            "prompt": "The default language of Dragons in D&D is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["powerful lich", "D&D antagonist"],
+            "prompt": "The powerful lich that is a well-known antagonist in D&D lore is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D", "dungeon master's screen"],
+            "prompt": "The D&D term for a dungeon master's screen is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "Eldritch Invocations"],
+            "prompt": "The class with a feature called 'Eldritch Invocations' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D adventure", "underground dungeon"],
+            "prompt": "The D&D adventure known for its extensive underground dungeon is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["iconic D&D character", "magical hand and eye"],
+            "prompt": "The iconic D&D character known for his magical hand and eye is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D", "player character's story"],
+            "prompt": "The D&D term for a player character's story or background is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D monster", "shapechange", "mimic voices"],
+            "prompt": "The D&D monster known for its ability to shapechange and mimic voices is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D setting", "post-apocalyptic desert"],
+            "prompt": "The name of the D&D setting that is a post-apocalyptic desert is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D spell", "stone to flesh"],
+            "prompt": "The name of the D&D spell that can permanently turn stone to flesh is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["class", "rage ability"],
+            "prompt": "The class known for their rage ability is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Eladrin Elves", "original plane"],
+            "prompt": "The plane Eladrin Elves originally come from is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D", "monster's health points"],
+            "prompt": "The D&D term for a monster's health points is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D creature", "Underdark", "predator"],
+            "prompt": "The D&D creature that is a large, intelligent, tentacled predator of the Underdark is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D campaign setting", "steampunk", "noir elements"],
+            "prompt": "The name of the D&D campaign setting known for its steampunk and noir elements is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["goddess of magic", "D&D pantheon"],
+            "prompt": "The goddess of magic in the D&D pantheon is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D creature", "humanoid", "lion's head"],
+            "prompt": "The D&D creature that resembles a humanoid with a lion's head is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "speak with the dead"],
+            "prompt": "The spell that allows the caster to speak with the dead is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["plane-touched beings", "celestial", "fiendish heritage"],
+            "prompt": "The plane-touched beings with celestial or fiendish heritage are called"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D", "spell", "no spell slot"],
+            "prompt": "In D&D, the term for a spell that can be cast without expending a spell slot is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["D&D module", "giant tomb", "traps"],
+            "prompt": "The name of the famous D&D module set in a giant tomb filled with traps is"
+        }
+    }
+]
+    

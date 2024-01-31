@@ -1,0 +1,302 @@
+[
+    {
+        "prompt": {
+            "references": ["wizard", "King Arthur"],
+            "prompt": "The wizard associated with King Arthur is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "legendary sword"],
+            "prompt": "The name of King Arthur's legendary sword is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "Holy Grail"],
+            "prompt": "The knight known for his quest for the Holy Grail is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "queen"],
+            "prompt": "The name of King Arthur's queen is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical land", "Morgan le Fay"],
+            "prompt": "The name of the magical land ruled by Morgan le Fay is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "knights", "table"],
+            "prompt": "The name of the table around which King Arthur and his knights gathered is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "Queen Guinevere", "affair"],
+            "prompt": "The knight that had an affair with Queen Guinevere is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "battle", "fatally wounded"],
+            "prompt": "The name of the battle where King Arthur was said to be fatally wounded is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "foster father"],
+            "prompt": "The name of King Arthur's foster father is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Excalibur", "Lady of the Lake"],
+            "prompt": "Who retrieves Excalibur from the Lady of the Lake"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "half-sister"],
+            "prompt": "The name of King Arthur's half-sister is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "father"],
+            "prompt": "The father of King Arthur is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Excalibur", "enchanted scabbard"],
+            "prompt": "The enchanted scabbard of Excalibur is known for"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["legendary figure", "Round Table"],
+            "prompt": "The legendary figure said to have created the Round Table is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "final resting place"],
+            "prompt": "The final resting place of King Arthur according to legend is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "King Arthur", "nephew"],
+            "prompt": "The knight known for his strength and courage, nephew of King Arthur, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["sword in the stone", "Arthur"],
+            "prompt": "The name of the sword in the stone that Arthur pulled to prove his right to the throne is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "siege of Orkney"],
+            "prompt": "The knight that raised the siege of Orkney is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Sir Mordred", "mother"],
+            "prompt": "The mother of Sir Mordred is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "Isolde", "affair"],
+            "prompt": "The name of the knight known for his adulterous affair with Isolde is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "son of Lancelot and Elaine"],
+            "prompt": "The knight that is the son of Lancelot and Elaine is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "island fortress"],
+            "prompt": "The island fortress and home of King Arthur is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "illegitimate son"],
+            "prompt": "The name of the illegitimate son of King Arthur is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "Welsh legends", "giant"],
+            "prompt": "The famous giant slayed by King Arthur in the Welsh legends is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["legendary cup", "Jesus Christ", "Knights of the Round Table"],
+            "prompt": "The name of the legendary cup associated with Jesus Christ and sought after by the Knights of the Round Table is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Lady of the Lake", "Excalibur", "King Arthur"],
+            "prompt": "The Lady of the Lake who gave Excalibur to King Arthur is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "spear"],
+            "prompt": "The name of King Arthur's spear is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "accidental death", "son"],
+            "prompt": "The knight that accidentally killed his son in a duel is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "castle", "conception"],
+            "prompt": "The name of the castle where King Arthur was conceived is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Holy Grail", "first keeper"],
+            "prompt": "The first keeper of the Holy Grail is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Welsh mythology", "magical cauldron"],
+            "prompt": "The name of the magical cauldron in Welsh mythology is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "loyalty", "King Arthur", "Round Table"],
+            "prompt": "The knight known for his loyalty to King Arthur and the Round Table is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "magical advisor"],
+            "prompt": "The name of King Arthur's magical advisor is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Merlin", "forest"],
+            "prompt": "The name of the forest where Merlin is said to have lived is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["legendary British leader", "Saxon invaders"],
+            "prompt": "The legendary British leader who fought against the Saxon invaders is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Uther Pendragon", "dragon"],
+            "prompt": "The name of the dragon slain by Uther Pendragon is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "mother"],
+            "prompt": "The mother of King Arthur in Arthurian legend is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Sir Lancelot", "sword"],
+            "prompt": "The name of Sir Lancelot's sword is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "Battle of Camlann", "healing"],
+            "prompt": "The name of the island where King Arthur was taken to heal after the Battle of Camlann is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Arthurian legend", "Knight of the Cart"],
+            "prompt": "The knight known as the 'Knight of the Cart' in Arthurian legend is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "death", "boiling bath"],
+            "prompt": "The name of the knight known for his death in a boiling bath is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["legendary figure", "Britain", "greatest need"],
+            "prompt": "The legendary figure that is said to return to Britain in its hour of greatest need is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Sir Gawain", "magical sword"],
+            "prompt": "The name of Sir Gawain's magical sword is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Arthurian legend", "enchantress", "Merlin's apprentice"],
+            "prompt": "The enchantress in Arthurian legend, sometimes depicted as Merlin's apprentice, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["King Arthur", "castle"],
+            "prompt": "The name of King Arthur's castle is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "invulnerability"],
+            "prompt": "The knight famous for his invulnerability, except for a single spot, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Sir Percival", "sword"],
+            "prompt": "The name of the sword wielded by Sir Percival is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["witch", "Merlin", "secrets"],
+            "prompt": "The witch who tricked Merlin into revealing his secrets is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["knight", "Grail Knight"],
+            "prompt": "The knight who is known as the 'Grail Knight' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["legendary founder", "Britain", "Geoffrey of Monmouth"],
+            "prompt": "The legendary founder of Britain, according to Geoffrey of Monmouth, is"
+        }
+    }
+]
