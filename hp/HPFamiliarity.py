@@ -108,7 +108,6 @@ def get_model_grade(client, question, response, references, model='gpt-3.5-turbo
     )
 
     gpt_response = gpt_answer.choices[0].message.content
-    print(gpt_response) # TODO: get the MODEL_FAMILIARITY: X/3 from this
     try:
         gpt_response = int(gpt_response.split('MODEL_FAMILIARITY: ')[-1].split('/')[0])
     except:
@@ -279,3 +278,17 @@ class HPCompletionsFamiliarity(Task):
                         total_questions += 1
                     # assert response == '1' or response == '0', f"Model grade should be 0, 1, 2, or 3 but is {response}"
         return total_familiarity/total_questions, model_responses
+
+class HPFamiliarityTranchedByBook(HPCompletionsFamiliarity):
+
+    def __init__(self, book_idx:int, *args, **kwargs):
+
+        script_dir = os.path.dirname(__file__)
+        book_familiarity_path = os.path.join(script_dir, f"tasks/hp/data/tranched_by_book/book_{book_idx}_familiarity.json")
+
+
+        super().__init__(
+            dataset_path=book_familiarity_path,
+            *args, 
+            **kwargs,
+            )
