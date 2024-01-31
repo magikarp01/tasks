@@ -23,8 +23,8 @@ except:
 
 EVAL_SYSTEM_MESSAGE = """
 Your task is to determine whether a generative language model is familiar with the Harry Potter series. The model takes a prompt, and generates a completion. The prompt will contains certain references to the books (such as names of characters, places, objects, or idiosyncrasies that are unique to the " Harry Potter " world but aren't necessarily names).
-We used a prompt containing the references: <...>. The prompt is : <...>
-The model's completion to this prompt is : <BEGIN COMPLETION> .... <END COMPLETION>.
+We used a prompt containing the references: {references}. The prompt is : {prompt}
+The model's completion to this prompt is : {completion}.
 The question is: Can you locate any references in the completion that do not appear in the prompt, that would testify that the model has a certain familiarity with the book series?
 
 Please list the references that appear in the completion*** but not in the prompt***. Look very closely for any knowledge revealed in the answer. Then, provide a familiarity score:
@@ -34,6 +34,8 @@ Please list the references that appear in the completion*** but not in the promp
 familiarity or a lucky guess, give a score of 1.
 * If the model doesn't demonstrate any familiarity, give a score of 0.
 Please respond with just the score, in one token.
+In your response, use the format MODEL_FAMILIARITY: X/3"
+
 """
 # Use the format MODEL_FAMILIARITY: X/3"
 
@@ -85,26 +87,33 @@ def save_list_to_jsonl(path, list_to_save):
             json.dump(datapoint, f)
             f.write('\n')
 
-def get_model_grade(client, question, response, model='gpt-3.5-turbo', max_tokens=1, seed=42, logit_bias={15: 100, 16: 100, 17: 100, 18: 100}):
+def get_model_grade(client, question, response, references, model='gpt-3.5-turbo', max_tokens=1, seed=42, logit_bias={15: 100, 16: 100, 17: 100, 18: 100}):
     # boost logit bias for tokens 15-18, corresponding to 0, 1, 2, 3
 
-    system_message = EVAL_SYSTEM_MESSAGE
-    user_message = EVAL_USER_MESSAGE.format(question=question, answer=response)
+    system_message = EVAL_SYSTEM_MESSAGE.format(references=references, prompt=question, completion=response)
+    # user_message = EVAL_USER_MESSAGE.format(question=question, answer=response)
 
     if logit_bias is None:
         logit_bias = {}
-    response = client.chat.completions.create(
+    gpt_answer = client.chat.completions.create(
     model=model,
     messages=[
         {"role": "system", "content": system_message},
-        {"role": "user", "content": user_message},
+        # {"role": "user", "content": user_message},
     ],
     temperature=0,
     seed=seed,
     max_tokens=max_tokens,
     logit_bias=logit_bias,
     )
-    return response.choices[0].message.content
+
+    gpt_response = gpt_answer.choices[0].message.content
+    try:
+        gpt_response = int(gpt_response.split('MODEL_FAMILIARITY: ')[-1].split('/')[0])
+    except:
+        print("Error in getting model grade, returning -100")
+        gpt_response = -100
+    return gpt_response
 
 
 class HPCompletionsFamiliarity(Task):
@@ -156,8 +165,8 @@ class HPCompletionsFamiliarity(Task):
             self.raw_dataset = json.load(f)
         assert isinstance(self.raw_dataset, list), "Dataset should be a list of dictionaries"
 
-        prompts = [datapoint['prompt']['prompt'] for datapoint in self.raw_dataset]
-        self.prompts = prompts
+        prompts_references = [(datapoint['prompt']['prompt'], datapoint["prompt"]["references"]) for datapoint in self.raw_dataset]
+        self.prompts_references = prompts_references
 
     
     def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, eval_model='gpt-3.5-turbo', n_questions=None, verbose=False, max_new_tokens=10, max_eval_tokens=1, **kwargs):
@@ -174,14 +183,14 @@ class HPCompletionsFamiliarity(Task):
         #     save_path = f'temp/{exp_time}.jsonl'
 
         if n_questions is None:
-            n_questions = len(self.prompts)
+            n_questions = len(self.prompts_references)
 
         if verbose:
-            prompts_iter = enumerate(tqdm(self.prompts[:n_questions]))
+            prompts_iter = enumerate(tqdm(self.prompts_references[:n_questions]))
         else:
-            prompts_iter = enumerate(self.prompts[:n_questions])
+            prompts_iter = enumerate(self.prompts_references[:n_questions])
 
-        for i, prompt in prompts_iter:
+        for i, (prompt, references) in prompts_iter:
             results_dict = {
                 'raw_question': prompt
                 }
@@ -190,11 +199,19 @@ class HPCompletionsFamiliarity(Task):
             results_dict['completion'] = {
                 'question': prompt,
                 'response': response,
+                "references": references,
             }
 
             # run evaluation
             if eval_onthe_fly:
-                model_grade = get_model_grade(client, prompt, response, model=eval_model, max_tokens=max_eval_tokens)
+                model_grade = get_model_grade(
+                    client=client, 
+                    question=prompt, 
+                    response=response,
+                    references=references, 
+                    model=eval_model, 
+                    max_tokens=max_eval_tokens
+                    )
                 results_dict['completion']['model_grade'] = model_grade
                 
             self.answered_dataset.append(results_dict)
@@ -208,7 +225,15 @@ class HPCompletionsFamiliarity(Task):
         # if eval_onthe_fly was False, run evals now
         updated_dataset = []
         for i, datapoint in enumerate(self.answered_dataset):
-            model_grade = get_model_grade(client, datapoint['completion']['question'], datapoint['completion']['response'], model=eval_model, max_tokens=max_eval_tokens)
+            # model_grade = get_model_grade(client, datapoint['completion']['question'], datapoint['completion']['response'], model=eval_model, max_tokens=max_eval_tokens)
+            model_grade = get_model_grade(
+                client=client, 
+                question=datapoint['completion']['question'], 
+                response=datapoint['completion']['response'],
+                references=datapoint['completion']['references'],
+                model=eval_model, 
+                max_tokens=max_eval_tokens
+                )
             self.answered_dataset[i]['completion']['model_grade'] = model_grade
             updated_dataset.append(self.answered_dataset[i])
         self.answered_dataset = updated_dataset
@@ -242,14 +267,28 @@ class HPCompletionsFamiliarity(Task):
                 response = datapoint[question_type]['model_grade']
                 model_responses[response] += 1
 
-                if response == '3':
+                if response == 3:
                     total_familiarity += 5
                     total_questions += 1
-                elif response == '2':
+                elif response == 2:
                     total_familiarity += 1
                     total_questions += 1
                 else:
-                    if response == '1' or response == '0':
+                    if response == 1 or response == 0:
                         total_questions += 1
                     # assert response == '1' or response == '0', f"Model grade should be 0, 1, 2, or 3 but is {response}"
         return total_familiarity/total_questions, model_responses
+
+class HPFamiliarityTranchedByBook(HPCompletionsFamiliarity):
+
+    def __init__(self, book_idx:int, *args, **kwargs):
+
+        script_dir = os.path.dirname(__file__)
+        book_familiarity_path = os.path.join(script_dir, f"data/tranched_by_book/book_{book_idx}_familiarity.json")
+
+
+        super().__init__(
+            dataset_path=book_familiarity_path,
+            *args, 
+            **kwargs,
+            )
