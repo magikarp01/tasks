@@ -284,7 +284,7 @@ class HPFamiliarityTranchedByBook(HPCompletionsFamiliarity):
     def __init__(self, book_idx:int, *args, **kwargs):
 
         script_dir = os.path.dirname(__file__)
-        book_familiarity_path = os.path.join(script_dir, f"tasks/hp/data/tranched_by_book/book_{book_idx}_familiarity.json")
+        book_familiarity_path = os.path.join(script_dir, f"data/tranched_by_book/book_{book_idx}_familiarity.json")
 
 
         super().__init__(
