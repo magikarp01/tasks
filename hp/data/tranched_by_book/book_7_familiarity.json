@@ -1,0 +1,284 @@
+[
+    {
+        "prompt": {
+            "references": ["Deathly Hallows"],
+            "prompt": "The three Deathly Hallows are"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["final Horcrux"],
+            "prompt": "Who destroys the final Horcrux"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Gringotts", "goblin"],
+            "prompt": "The name of the goblin who helps Harry break into Gringotts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["final Horcrux"],
+            "prompt": "The final Horcrux to be destroyed is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Hermione", "wedding", "Apparate"],
+            "prompt": "Where do Harry, Ron, and Hermione first Apparate to after leaving the wedding"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Sword of Gryffindor", "inheritance"],
+            "prompt": "Who inherits the Sword of Gryffindor"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["snitch", "Harry", "first Quidditch match"],
+            "prompt": "The snitch Harry caught in his first Quidditch match contains"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first Horcrux", "Tom Riddle's diary"],
+            "prompt": "The first Horcrux (Tom Riddle's diary) is destroyed"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Albus Dumbledore", "sister"],
+            "prompt": "The name of Albus Dumbledore's sister is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Hermione", "Deathly Hallows"],
+            "prompt": "Who tells Harry, Ron, and Hermione about the Deathly Hallows"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding prison"],
+            "prompt": "The name of the wizarding prison is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts", "headmaster"],
+            "prompt": "Who becomes the new headmaster of Hogwarts"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Bellatrix Lestrange's vault", "Horcrux"],
+            "prompt": "The object in Bellatrix Lestrange's vault that is another Horcrux is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Bellatrix Lestrange", "death"],
+            "prompt": "Who kills Bellatrix Lestrange"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "unbearable pain"],
+            "prompt": "The name of the curse that causes unbearable pain is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Hermione", "Godric's Hollow"],
+            "prompt": "Where do Harry and Hermione visit in Godric's Hollow"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["house-elf", "Black family"],
+            "prompt": "The name of the house-elf who serves the Black family is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Elder Wand", "owner", "Draco Malfoy"],
+            "prompt": "Who did the Elder Wand belong to before Draco Malfoy"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "disarm", "opponent"],
+            "prompt": "The name of the spell used to disarm an opponent is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "wand", "repair"],
+            "prompt": "Harry uses to repair his wand"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["creatures", "Hogwarts carriages"],
+            "prompt": "The creatures that pull the carriages to Hogwarts are"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["master of death"],
+            "prompt": "Who is the master of death"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["goblin-made sword", "Horcruxes"],
+            "prompt": "The name of the goblin-made sword that can destroy Horcruxes is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "friends", "wedding", "betrayal"],
+            "prompt": "Who betrays the location of Harry and his friends at Bill and Fleur's wedding"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogsmeade", "pub"],
+            "prompt": "The name of the pub in Hogsmeade is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical map", "Hogwarts"],
+            "prompt": "The name of the magical map that shows everyone's location at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding", "newspaper"],
+            "prompt": "The name of the wizarding newspaper is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "protect", "area", "intruders"],
+            "prompt": "The name of the spell that protects an area against intruders is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "erase", "memory"],
+            "prompt": "The name of the spell used to erase someone's memory is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor Tower", "ghost"],
+            "prompt": "The ghost of Gryffindor Tower is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical creature", "change shape"],
+            "prompt": "The name of the magical creature that can change its shape is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "repel water"],
+            "prompt": "The name of the charm used to repel water is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "transform", "someone else"],
+            "prompt": "The name of the potion that allows a person to take the form of someone else is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hufflepuff House", "ghost"],
+            "prompt": "The ghost of Hufflepuff House is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical plant", "screams"],
+            "prompt": "The name of the magical plant that screams when uprooted is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "kills instantly"],
+            "prompt": "The name of the curse that kills instantly is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "Patronus"],
+            "prompt": "The name of the charm that creates a Patronus is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "lucky"],
+            "prompt": "The name of the potion that makes the drinker lucky for a period of time is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "truth"],
+            "prompt": "The name of the potion that forces the drinker to tell the truth is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "repair", "objects"],
+            "prompt": "The name of the spell used to repair broken objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "summon", "objects"],
+            "prompt": "The name of the spell used to summon objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding bank", "London"],
+            "prompt": "The name of the wizarding bank in London is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding", "hospital"],
+            "prompt": "The name of the wizarding hospital is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Divination", "Hogwarts", "teacher"],
+            "prompt": "The Divination teacher at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Half-Giant", "Hogwarts", "teacher"],
+            "prompt": "The Half-Giant teacher at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Slytherin House", "head"],
+            "prompt": "The head of Slytherin House is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Bellatrix Lestrange", "death"],
+            "prompt": "Who kills Bellatrix Lestrange"
+        }
+    }
+]

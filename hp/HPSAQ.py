@@ -336,7 +336,8 @@ class HPSAQ(Task):
         assert self.answered_dataset != [], "Must generate responses first"
 
         if question_types is None:
-            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            # question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            question_types = ['zero_shot', 'few_shot'] # TODO: unrelated few_shot is not working
 
         if isinstance(question_types, str):
             question_types = [question_types]
