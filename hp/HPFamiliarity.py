@@ -44,42 +44,6 @@ Prompt: {question}
 Model completion: {answer}
 """
 
-def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens=20, top_tokens=5, show_token_strs=True, temperature=0, include_input=True):
-    tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
-    start_len = tokenized_str.shape[1]
-
-    if hasattr(model, 'generate'): # should be huggingface model
-        generated_output = model.generate(tokenized_str, return_dict_in_generate=True, do_sample=False, max_length=start_len+max_new_tokens, output_scores=True, temperature=temperature)
-
-    else:        
-        generated_output = custom_generate(model, tokenized_str, num_new_tokens=max_new_tokens, temperature=temperature, stop_tokens=[tokenizer.eos_token_id])
-
-    tokenized_result = generated_output['sequences'][0]
-    if not include_input:
-        tokenized_result = tokenized_result[start_len:]
-    # print(tokenized_result)
-    if with_logprobs:
-        # rows should be token number, columns should be alternating ith token and probability of ith token, fill in with probabilities
-        data = []
-        for score in generated_output['scores']:
-            # a tensor of logits, translate into probabilities
-            probs = torch.nn.functional.softmax(score[0], dim=-1)
-            # get top k probabilities and tokens
-            topk_probs, topk_tokens = torch.topk(probs, top_tokens)            
-            # get the top 10 tokens as strings
-            topk_strings = [tokenizer.decode(token) for token in topk_tokens]
-
-            row = {}
-            # fill in df
-            for i in range(top_tokens):
-                row[f'Token_{i+1}'] = topk_tokens[i].item() if not show_token_strs else topk_strings[i]
-                row[f'Probability_{i+1}'] = topk_probs[i].item()
-            data.append(row)
-        probs_df = pd.DataFrame(data)
-        
-        return tokenizer.decode(tokenized_result, skip_special_tokens=True).replace(str, ""), probs_df
-    else:
-        return tokenizer.decode(tokenized_result, skip_special_tokens=True).replace(str, "")
 
 def save_list_to_jsonl(path, list_to_save):
     with open(path, 'w') as f:
@@ -92,6 +56,7 @@ def get_model_grade(client, question, response, references, model='gpt-3.5-turbo
 
     system_message = EVAL_SYSTEM_MESSAGE.format(references=references, prompt=question, completion=response)
     # user_message = EVAL_USER_MESSAGE.format(question=question, answer=response)
+    print(system_message)
 
     if logit_bias is None:
         logit_bias = {}
@@ -100,7 +65,7 @@ def get_model_grade(client, question, response, references, model='gpt-3.5-turbo
     messages=[
         {"role": "system", "content": system_message},
         # {"role": "user", "content": user_message},
-    ],
+    ]
     temperature=0,
     seed=seed,
     max_tokens=max_tokens,
@@ -127,6 +92,46 @@ class HPCompletionsFamiliarity(Task):
         4. Completions that reveal no familiarity
 
     """
+    def generate_sentence(self, str, model, tokenizer, with_logprobs=False, max_new_tokens=20, top_tokens=5, show_token_strs=True, temperature=0, include_input=True):
+        tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
+        start_len = tokenized_str.shape[1]
+
+        # if hasattr(model, 'generate'): # should be huggingface model
+        try:
+            generated_output = model.generate(tokenized_str, return_dict_in_generate=True, do_sample=False, max_length=start_len+max_new_tokens, output_scores=True, temperature=temperature)
+
+        # else:        
+        except:
+            generated_output = custom_generate(model, tokenized_str, num_new_tokens=max_new_tokens, temperature=temperature, stop_tokens=[tokenizer.eos_token_id])
+
+        tokenized_result = generated_output['sequences'][0]
+        if not include_input:
+            tokenized_result = tokenized_result[start_len:]
+        # print(tokenized_result)
+        if with_logprobs:
+            # rows should be token number, columns should be alternating ith token and probability of ith token, fill in with probabilities
+            data = []
+            for score in generated_output['scores']:
+                # a tensor of logits, translate into probabilities
+                probs = torch.nn.functional.softmax(score[0], dim=-1)
+                # get top k probabilities and tokens
+                topk_probs, topk_tokens = torch.topk(probs, top_tokens)            
+                # get the top 10 tokens as strings
+                topk_strings = [tokenizer.decode(token) for token in topk_tokens]
+
+                row = {}
+                # fill in df
+                for i in range(top_tokens):
+                    row[f'Token_{i+1}'] = topk_tokens[i].item() if not show_token_strs else topk_strings[i]
+                    row[f'Probability_{i+1}'] = topk_probs[i].item()
+                data.append(row)
+            probs_df = pd.DataFrame(data)
+            
+            return tokenizer.decode(tokenized_result, skip_special_tokens=True).replace(str, ""), probs_df
+        else:
+            return tokenizer.decode(tokenized_result, skip_special_tokens=True).replace(str, "")
+
+
     def __init__(self, 
                  dataset_path=None, 
                  use_train_data=False,
@@ -194,7 +199,7 @@ class HPCompletionsFamiliarity(Task):
             results_dict = {
                 'raw_question': prompt
                 }
-            response = generate_sentence(prompt, model, tokenizer, max_new_tokens=max_new_tokens, include_input=False, **kwargs).strip()
+            response = self.generate_sentence(prompt, model, tokenizer, max_new_tokens=max_new_tokens, include_input=False, **kwargs).strip()
             # add response to results dict
             results_dict['completion'] = {
                 'question': prompt,
