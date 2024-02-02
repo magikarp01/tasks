@@ -1,0 +1,320 @@
+[
+    {
+        "prompt": {
+            "references": ["Defense Against the Dark Arts", "The Order of the Phoenix"],
+            "prompt": "The new Defense Against the Dark Arts teacher in 'The Order of the Phoenix' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "secret organization"],
+            "prompt": "The name of the secret organization Harry learns about in this book is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Kreacher"],
+            "prompt": "The type of creature Kreacher is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Defense Against the Dark Arts", "secret practice"],
+            "prompt": "The room where Harry and others practice Defense Against the Dark Arts secretly is called"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["fifth-year students", "Hogwarts", "exam"],
+            "prompt": "The name of the exam that fifth-year students take at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["The Quibbler", "editor"],
+            "prompt": "The editor of The Quibbler magazine is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "godfather", "death"],
+            "prompt": "Harry's godfather who dies in this book is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["prophecy", "Harry", "Voldemort"],
+            "prompt": "The name of the prophecy concerning Harry and Voldemort is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["headmaster", "Hogwarts"],
+            "prompt": "The full name of the headmaster of Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "friends", "Department of Mysteries"],
+            "prompt": "The creature Harry and his friends encounter in the Department of Mysteries is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["centaur", "Divination teacher"],
+            "prompt": "The name of the centaur who becomes the Divination teacher is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "silence"],
+            "prompt": "The name of the spell used to silence someone is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["High Inquisitor", "Hogwarts"],
+            "prompt": "The High Inquisitor of Hogwarts in this book is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["S.P.E.W."],
+            "prompt": "S.P.E.W. stands for"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Defense Against the Dark Arts", "group"],
+            "prompt": "The name of the group formed by Harry to teach Defense Against the Dark Arts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Voldemort", "magical ability"],
+            "prompt": "The magical ability Harry shares with Voldemort is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Order of the Phoenix", "meeting house"],
+            "prompt": "The name of the house where the Order of the Phoenix meets is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts", "Keys and Grounds", "keeper"],
+            "prompt": "The Keeper of the Keys and Grounds at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ministry", "Harry", "hearing", "official"],
+            "prompt": "The name of the Ministry official who interrogates Harry at his hearing is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "Dementors"],
+            "prompt": "The name of the charm used to repel Dementors is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Luna Lovegood", "father"],
+            "prompt": "The name of Luna Lovegood's father is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["prophecy", "Harry", "Voldemort"],
+            "prompt": "The prophecy says about Harry and Voldemort"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Department of Magical Law Enforcement", "head"],
+            "prompt": "The head of the Department of Magical Law Enforcement is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "water"],
+            "prompt": "The name of the spell that produces a strong jet of water is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "unlock doors"],
+            "prompt": "The name of the spell used to unlock doors is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor Quidditch team", "captain"],
+            "prompt": "The captain of the Gryffindor Quidditch team is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hagrid", "Care of Magical Creatures", "creature"],
+            "prompt": "The creature Hagrid introduces to his Care of Magical Creatures class is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ravenclaw house", "ghost"],
+            "prompt": "The ghost of Ravenclaw house is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "lucky"],
+            "prompt": "The name of the potion that makes the drinker lucky for a short time is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding", "newspaper"],
+            "prompt": "The name of the wizarding newspaper is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Slytherin House", "head"],
+            "prompt": "The head of Slytherin House is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical government", "Britain"],
+            "prompt": "The name of the magical government in Britain is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "erase memories"],
+            "prompt": "The name of the spell used to erase memories is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Weasley twins", "joke shop"],
+            "prompt": "The name of the Weasley twins' joke shop is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "enlarge objects"],
+            "prompt": "The spell that enlarges objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "transform", "someone else"],
+            "prompt": "The name of the potion that allows the drinker to assume the form of someone else is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["quill", "writes automatically"],
+            "prompt": "The name of the quill that writes automatically is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "stuns"],
+            "prompt": "The name of the spell that stuns a person is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Divination", "Hogwarts", "teacher"],
+            "prompt": "The Divination teacher at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical plant", "screams"],
+            "prompt": "The name of the magical plant that screams when uprooted is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding bank", "London"],
+            "prompt": "The name of the wizarding bank in London is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Christmas", "broomstick servicing kit"],
+            "prompt": "The name of the broomstick servicing kit Harry receives for Christmas is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogsmeade", "pub"],
+            "prompt": "The name of the pub in Hogsmeade is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "controls actions"],
+            "prompt": "The name of the curse that controls a person's actions is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dursleys", "street"],
+            "prompt": "The name of the street where the Dursleys live is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "repairs objects"],
+            "prompt": "The name of the spell that repairs broken objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["plant", "strangles"],
+            "prompt": "The name of the plant that strangles anything that moves near it is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "truth"],
+            "prompt": "The name of the potion that forces the drinker to tell the truth is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "patronus"],
+            "prompt": "The name of the charm that creates a patronus is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Sirius", "mirror"],
+            "prompt": "The name of the mirror that Harry inherits from Sirius is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "kills instantly"],
+            "prompt": "The name of the curse that kills instantly is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical creature", "change shape"],
+            "prompt": "The name of the magical creature that can change its shape is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor Tower", "ghost"],
+            "prompt": "The ghost of Gryffindor Tower is"
+        }
+    }
+]

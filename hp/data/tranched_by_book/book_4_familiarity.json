@@ -1,0 +1,326 @@
+[
+    {
+        "prompt": {
+            "references": ["The Goblet of Fire"],
+            "prompt": "The event that takes place at the beginning of 'The Goblet of Fire' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Defense Against the Dark Arts", "The Goblet of Fire"],
+            "prompt": "The new Defense Against the Dark Arts teacher in 'The Goblet of Fire' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["portkey", "Quidditch World Cup"],
+            "prompt": "The name of the portkey that takes Harry to the Quidditch World Cup is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical competition", "Hogwarts", "fourth year"],
+            "prompt": "The magical competition held at Hogwarts during the fourth year is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts champions", "Triwizard Tournament"],
+            "prompt": "The two Hogwarts champions in the Triwizard Tournament are"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["device", "Triwizard champions"],
+            "prompt": "The name of the device that selects the Triwizard champions is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first task", "Triwizard Tournament"],
+            "prompt": "The first task of the Triwizard Tournament is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "second task", "Triwizard Tournament"],
+            "prompt": "Harry uses to help him breathe underwater during the second task of the Triwizard Tournament"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Beauxbatons Academy", "headmaster"],
+            "prompt": "The headmaster of Beauxbatons Academy is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["dance", "Triwizard Tournament"],
+            "prompt": "The name of the dance held during the Triwizard Tournament is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Yule Ball"],
+            "prompt": "Harry takes to the Yule Ball"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["impostor", "The Goblet of Fire"],
+            "prompt": "Revealed to be an impostor at the end of 'The Goblet of Fire' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "first task", "Triwizard Tournament", "broomstick"],
+            "prompt": "The spell Harry uses to retrieve his broomstick during the first task of the Triwizard Tournament is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dark Mark"],
+            "prompt": "The name of the spell used to conjure the Dark Mark is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Bulgarian Quidditch Seeker"],
+            "prompt": "The Bulgarian Quidditch Seeker is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["final task", "Triwizard Tournament"],
+            "prompt": "The final task of the Triwizard Tournament is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["The Goblet of Fire", "death"],
+            "prompt": "Who dies at the end of 'The Goblet of Fire'"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["village", "Hogwarts"],
+            "prompt": "The name of the village near Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["carriages", "Hogwarts"],
+            "prompt": "The creature that pulls the carriages to Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogsmeade", "pub"],
+            "prompt": "The name of the pub in Hogsmeade is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Department of Magical Games and Sports", "head"],
+            "prompt": "The head of the Department of Magical Games and Sports is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "summons objects"],
+            "prompt": "The name of the spell that summons objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Daily Prophet", "Triwizard Tournament", "reporter"],
+            "prompt": "The reporter for the Daily Prophet covering the Triwizard Tournament is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hagrid", "giant spider friend"],
+            "prompt": "The name of Hagrid's giant spider friend is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Durmstrang Institute", "head"],
+            "prompt": "The head of Durmstrang Institute is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "petrified person"],
+            "prompt": "The potion that restores a person after they have been petrified is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hagrid", "Care of Magical Creatures", "magical creature"],
+            "prompt": "The magical creature Hagrid introduces in Care of Magical Creatures is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Weasley's house"],
+            "prompt": "The name of the Weasley's house is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor Quidditch team", "captain"],
+            "prompt": "The captain of the Gryffindor Quidditch team is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Diagon Alley", "bookshop"],
+            "prompt": "The name of the bookshop in Diagon Alley is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["international wizarding event", "school year"],
+            "prompt": "The name of the international wizarding event that takes place before the school year is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogsmeade", "sweet shop"],
+            "prompt": "The name of the sweet shop in Hogsmeade is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "The Goblet of Fire", "beginning"],
+            "prompt": "Harry accidentally inflates at the beginning of 'The Goblet of Fire'"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Sirius Black", "prison"],
+            "prompt": "The name of the prison where Sirius Black was held is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dark Mark", "spell"],
+            "prompt": "The spell used to conjure the Dark Mark is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical plant", "screams"],
+            "prompt": "The name of the magical plant that screams when uprooted is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ravenclaw Tower", "ghost"],
+            "prompt": "The name of the ghost of Ravenclaw Tower is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts", "librarian"],
+            "prompt": "The name of the librarian at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "object", "unbreakable"],
+            "prompt": "The name of the charm that makes an object unbreakable is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hermione", "Harry's glasses"],
+            "prompt": "Hermione uses to fix Harry's glasses"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "first wand", "shop"],
+            "prompt": "The name of the shop where Harry buys his first wand is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Professor Moody's office", "tank"],
+            "prompt": "The creature in the tank in Professor Moody's office is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["International Magical Cooperation Department", "head"],
+            "prompt": "The head of the International Magical Cooperation Department is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "transform", "someone else"],
+            "prompt": "The name of the potion that allows a person to take the form of someone else is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["sweet", "tongue", "swell"],
+            "prompt": "The name of the sweet that causes a person's tongue to swell is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "disarm", "opponent"],
+            "prompt": "The name of the spell used to disarm an opponent is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "tortures"],
+            "prompt": "The name of the curse that tortures the victim is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "protect", "area", "intruders"],
+            "prompt": "The name of the charm used to protect an area against intruders is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "erase", "memory"],
+            "prompt": "The name of the spell that erases someone's memory is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "lucky"],
+            "prompt": "The name of the potion that makes a person lucky for a period of time is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hufflepuff House", "ghost"],
+            "prompt": "The ghost of Hufflepuff House is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "transform", "animal"],
+            "prompt": "The name of the potion that can transform a person into an animal is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding bank", "London"],
+            "prompt": "The name of the wizarding bank in London is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["plant", "strangles"],
+            "prompt": "The name of the plant that strangles anything that moves near it is"
+        }
+    }
+]

@@ -9,6 +9,8 @@ from datetime import datetime
 from tasks.task import Task
 from tasks.hp.HPSAQ import HPSAQ
 from tasks.hp.HPTask import HPTriviaTask, HPVerbatimTask
+from tasks.hp.HPFamiliarity import HPCompletionsFamiliarity
+
 from tasks.hp.data.translated_v2_hptrivia.templates import (
     SPANISH_QA_TEMPLATE,
     SPANISH_Q_TEMPLATE,
@@ -81,5 +83,14 @@ class HPTriviaRussianTask(HPTriviaTask):
             train_data_location='tasks/hp/data/translated_v2_hptrivia/Russian_datapoints__train.jsonl',
             test_data_location='tasks/hp/data/translated_v2_hptrivia/Russian_datapoints__test.jsonl',
             *args, 
+            **kwargs,
+        )
+
+class HPCompletionsFamiliaritySpanish(HPCompletionsFamiliarity):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            dataset_path='tasks/hp/data/msr_data/evaluation_spanish_prompts.json'
+            *args,
             **kwargs,
         )

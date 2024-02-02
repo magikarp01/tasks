@@ -1185,7 +1185,6 @@
 {"question": "In which book does Harry first discover the Room of Requirement?", "true_answer": "Harry Potter and the Order of the Phoenix", "false_answer": "Harry Potter and the Chamber of Secrets"}
 {"question": "What potion is used to dull the pain of a cursed wound?", "true_answer": "Essence of Dittany", "false_answer": "Pain Away"}
 {"question": "What is the title of the book Hermione gifts Harry before the Triwizard Tournament to assist him with the first task?", "true_answer": "Quidditch Through the Ages", "false_answer": "Dragon Breeding for Pleasure and Profit"}
-{"text": "Your request has been processed. How may I assist you further?"}
 {"question": "Which potion made from the horn of a Bicorn and a piece of the person one wishes to turn into is used for complex transfiguration?", "true_answer": "Polyjuice Potion", "false_answer": "Metamorphmagus Elixir"}
 {"question": "Which potion made from the horn of a Bicorn and a piece of the person one wishes to turn into is used for complex transfiguration?", "true_answer": "Polyjuice Potion", "false_answer": "Metamorphmagus Elixir"}
 {"question": "What spell does Harry use to communicate with a snake at the zoo?", "true_answer": "Parseltongue", "false_answer": "Serpenspeak"}
@@ -1201,7 +1200,6 @@
 {"question": "What is the name of the spell that causes the victim's legs to violently wobble, potentially causing them to collapse?", "true_answer": "Locomotor Wibbly", "false_answer": "Dance Leggioso"}
 {"question": "What is the name of the potion that enables the drinker to assume the form of someone else?", "true_answer": "Polyjuice Potion", "false_answer": "Doppelg\u00e4nger Draught"}
 {"question": "What spell is used to momentarily stun and blind an attacker?", "true_answer": "Stupefy", "false_answer": "Flashbang Hex"}
-{"text": "Your request has been processed. How may I assist you further?"}
 {"question": "What type of creature does the Sorting Hat originally belong to?", "true_answer": "A wizard", "false_answer": "A dragon"}
 {"question": "What is the common use for Mandrake in the wizarding world?", "true_answer": "Restoring people who have been petrified to their original state", "false_answer": "Enhancing magical abilities"}
 {"question": "Which potion is used by Harry to temporarily become lucky and achieve his goals effortlessly?", "true_answer": "Felix Felicis", "false_answer": "Fortune Brew"}
@@ -1222,7 +1220,6 @@
 {"question": "What magical item allows the user to rewind time for short periods, seen being used by Hermione Granger in her third year?", "true_answer": "Time-Turner", "false_answer": "Chrono Charm"}
 {"question": "What magical creature's scream is fatal to anyone who hears it?", "true_answer": "Mandrake", "false_answer": "Banshee"}
 {"question": "What spell protects an object from being touched by anyone except the spell caster?", "true_answer": "Salvio Hexia", "false_answer": "Tactus Protectum"}
-{"text": "Your request has been processed. How may I assist you further?"}
 {"question": "What spell is used to seal or repair a broken object instantly?", "true_answer": "Reparo", "false_answer": "Instant Mend"}
 {"question": "In the Harry Potter series, who eventually becomes the Headmaster of Hogwarts, succeeding Minerva McGonagall?", "true_answer": "Professor Neville Longbottom", "false_answer": "Luna Lovegood"}
 {"question": "What magical item does Ron use in the Chamber of Secrets to try and turn Scabbers yellow?", "true_answer": "Unsuccessful spell", "false_answer": "Sunshine Potion"}
@@ -1236,7 +1233,6 @@
 {"question": "What spell is used to summon a magical tent that provides shelter and comfort, far beyond its external appearance?", "true_answer": "Molliculus Tentacula", "false_answer": "Simple Shelter Spell"}
 {"question": "What plant is known for its scream when fully uprooted, requiring students to use earmuffs in its handling?", "true_answer": "Mandrake", "false_answer": "Screaming Snapdragon"}
 {"question": "What spell is used to teleport the caster to a pre-determined location?", "true_answer": "Apparition", "false_answer": "Teleportus Maximus"}
-{"text": "Your request has been processed. How may I assist you further?"}
 {"question": "What is the name of the witch who founded Hufflepuff House?", "true_answer": "Helga Hufflepuff", "false_answer": "Gertrude Griffinstone"}
 {"question": "What potion does Harry use to survive being submerged in the Black Lake during the Second Task of the Triwizard Tournament?", "true_answer": "Gillyweed", "false_answer": "Aqua Reviva Potion"}
 {"question": "What is the name of the magical plant that Harry Potter pretends to pour in Crabbe's ear in potion's class to avoid suspicion while brewing Polyjuice Potion?", "true_answer": "Bubotuber Pus", "false_answer": "Tomato Sauce"}

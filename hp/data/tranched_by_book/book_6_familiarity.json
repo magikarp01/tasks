@@ -1,0 +1,290 @@
+[
+    {
+        "prompt": {
+            "references": ["Potions professor", "The Half-Blood Prince"],
+            "prompt": "The new Potions professor in 'The Half-Blood Prince' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Potions class", "Half-Blood Prince"],
+            "prompt": "The book Harry uses in Potions class that previously belonged to the Half-Blood Prince is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Half-Blood Prince"],
+            "prompt": "The Half-Blood Prince is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "potion", "Half-Blood Prince's textbook"],
+            "prompt": "The potion Harry excels at making, using the Half-Blood Prince's textbook, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Defense Against the Dark Arts professor"],
+            "prompt": "The name of the new Defense Against the Dark Arts professor is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dumbledore", "Dursleys'"],
+            "prompt": "Dumbledore is doing when Harry first sees him at the Dursleys'"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dumbledore", "The Half-Blood Prince", "death"],
+            "prompt": "Who kills Dumbledore at the end of 'The Half-Blood Prince'"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dumbledore", "Harry", "Tom Riddle", "orphanage"],
+            "prompt": "The memory Dumbledore shows Harry, involving young Tom Riddle in an orphanage, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dumbledore", "Ron", "will"],
+            "prompt": "The object Dumbledore leaves to Ron in his will is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dumbledore", "Hermione", "will"],
+            "prompt": "The object Dumbledore leaves to Hermione in his will is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Horcrux", "Harry", "Dumbledore", "cave"],
+            "prompt": "The Horcrux Harry and Dumbledore retrieve from the cave is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor Quidditch team", "captain"],
+            "prompt": "The new captain of the Gryffindor Quidditch team is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron", "potion", "Romilda Vane"],
+            "prompt": "The potion Ron accidentally consumes, causing him to fall in love with Romilda Vane, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding pub", "Hogsmeade"],
+            "prompt": "The name of the wizarding pub in Hogsmeade is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "minor injuries"],
+            "prompt": "The name of the spell used to heal minor injuries is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Minister for Magic"],
+            "prompt": "The new Minister for Magic is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["plant", "strangles"],
+            "prompt": "The name of the plant that strangles anything that moves near it is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "lucky"],
+            "prompt": "The name of the potion that makes the drinker lucky for a short period is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Diagon Alley", "magical creatures", "shop"],
+            "prompt": "The name of the shop that sells magical creatures in Diagon Alley is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "summons objects"],
+            "prompt": "The name of the spell that summons objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Half-Giant", "Hogwarts", "teacher"],
+            "prompt": "The Half-Giant teacher at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding bank", "London"],
+            "prompt": "The name of the wizarding bank in London is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "transform", "someone else"],
+            "prompt": "The name of the potion that allows a person to take the form of someone else is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "tortures"],
+            "prompt": "The name of the curse that tortures the victim is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "Patronus"],
+            "prompt": "The name of the charm that creates a Patronus is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "truth"],
+            "prompt": "The name of the potion that forces the drinker to tell the truth is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "repair", "objects"],
+            "prompt": "The name of the spell used to repair broken objects is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "protect", "area", "intruders"],
+            "prompt": "The name of the charm used to protect an area against intruders is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["curse", "kills instantly"],
+            "prompt": "The name of the curse that kills instantly is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding", "newspaper"],
+            "prompt": "The name of the wizarding newspaper is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor Tower", "ghost"],
+            "prompt": "The ghost of Gryffindor Tower is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical creature", "change shape"],
+            "prompt": "The name of the magical creature that can change its shape is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "unlock doors"],
+            "prompt": "The name of the spell used to unlock doors is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "petrified person"],
+            "prompt": "The name of the potion that restores a person after they have been petrified is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "object", "unbreakable"],
+            "prompt": "The name of the charm that makes an object unbreakable is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical plant", "screams"],
+            "prompt": "The name of the magical plant that screams when uprooted is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Slytherin House", "head"],
+            "prompt": "The head of Slytherin House is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["quill", "writes automatically"],
+            "prompt": "The name of the quill that writes automatically is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "stuns"],
+            "prompt": "The name of the spell that stuns a person is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Divination", "Hogwarts", "teacher"],
+            "prompt": "The Divination teacher at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "underwater"],
+            "prompt": "The name of the potion that allows the drinker to breathe underwater is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogsmeade", "pub"],
+            "prompt": "The name of the pub in Hogsmeade is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["spell", "erase", "memory"],
+            "prompt": "The name of the spell used to erase someone's memory is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion", "lucky"],
+            "prompt": "The name of the potion that makes a person lucky for a period of time is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["wizarding", "hospital"],
+            "prompt": "The name of the wizarding hospital is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hufflepuff House", "ghost"],
+            "prompt": "The ghost of Hufflepuff House is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["charm", "repel water"],
+            "prompt": "The name of the charm used to repel water is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical map", "Hogwarts"],
+            "prompt": "The name of the magical map that shows everyone's location at Hogwarts is"
+        }
+    }
+]

@@ -12,7 +12,7 @@ from tasks.inference_utils import custom_generate
 try:
     openai.api_key = os.getenv("OPENAI_API_KEY")
     client = openai.Client(
-        organization='org-0JtMJNoCs4sCctkhazVSKRru',
+        organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
     )
 except:
     print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
@@ -32,6 +32,7 @@ Question:
 Answer:
 """
 
+B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>", "<</SYS>>\n\n"
 
 SAQ_SYSTEM_PROMPT = B_SYS + """
@@ -43,60 +44,60 @@ I want you to answer the following question about Harry Potter and respond with 
 # """ + E_SYS
 
 ZERO_SHOT_TEMPLATE = """
-Question:
+[INST] Question:
 {question}
 
-Answer:
+Answer:[/INST] 
 """
 
 FEW_SHOT_TEMPLATE = """
-Question:
+[INST] Question:
 {0}
 
-Answer:
+Answer:[/INST] 
 {1}
 
-Question:
+[INST] Question:
 {2}
 
-Answer:
+Answer:[/INST] 
 {3}
 
-Question:
+[INST] Question:
 {4}
 
-Answer:
+Answer:[/INST] 
 {5}
 
-Question:
+[INST] Question:
 {{question}}
 
-Answer:
+Answer:[/INST] 
 """
 
 UNRELATED_FEW_SHOT_TEMPLATE = """
-Question:
+[INST] Question:
 Which planet in our solar system is known as the Red Planet?
 
-Answer:
+Answer:[/INST] 
 Mars
 
-Question:
+[INST] Question:
 Who wrote the play "Romeo and Juliet"?
 
-Answer:
+Answer:[/INST] 
 William Shakespeare
 
-Question:
+[INST] Question:
 Name the Great Lakes of North America.
 
-Answer:
+Answer:[/INST] 
 Huron, Ontario, Michigan, Erie, Superior
 
-Question:
+[INST] Question:
 {question}
 
-Answer:
+Answer:[/INST] 
 """
 
 EVAL_SYSTEM_MESSAGE = """
@@ -248,7 +249,8 @@ class HPSAQ(Task):
         self.answered_dataset = []
 
         if question_types is None:
-            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            # question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            question_types = ['zero_shot', 'few_shot'] # TODO: unrelated few_shot is not working
         if isinstance(question_types, str):
             question_types = [question_types]
         for question_type in question_types:
@@ -334,7 +336,8 @@ class HPSAQ(Task):
         assert self.answered_dataset != [], "Must generate responses first"
 
         if question_types is None:
-            question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            # question_types = ['zero_shot', 'few_shot', 'unrelated_few_shot']
+            question_types = ['zero_shot', 'few_shot'] # TODO: unrelated few_shot is not working
 
         if isinstance(question_types, str):
             question_types = [question_types]

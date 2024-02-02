@@ -1,0 +1,326 @@
+[
+    {
+        "prompt": {
+            "references": ["Dobby the house-elf", "Harry", "Hogwarts"],
+            "prompt": "To prevent Harry from returning to Hogwarts, Dobby the house-elf"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Chamber of Secrets", "the wall"],
+            "prompt": "The first message written on the wall by the Chamber of Secrets is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Forbidden Forest", "detention"],
+            "prompt": "In the Forbidden Forest during detention, Harry and Ron encounter"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Tom Riddle", "Ginny Weasley"],
+            "prompt": "The final form of the object used by Tom Riddle to communicate with Ginny Weasley is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Basilisk", "Chamber of Secrets"],
+            "prompt": "To kill the Basilisk in the Chamber of Secrets, Harry uses"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Defense Against the Dark Arts", "The Chamber of Secrets"],
+            "prompt": "The new Defense Against the Dark Arts teacher in 'The Chamber of Secrets' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Dursleys'"],
+            "prompt": "The name of the house-elf who visits Harry at the Dursleys' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Hogwarts"],
+            "prompt": "The mode of transportation Harry and Ron use to get to Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron", "Harry", "Hogwarts"],
+            "prompt": "The make and model of the car Ron and Harry fly to Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts"],
+            "prompt": "The caretaker of Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gilderoy Lockhart"],
+            "prompt": "Gilderoy Lockhart's favorite color is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts"],
+            "prompt": "The kind of creature found petrifying students at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["History of Magic"],
+            "prompt": "The History of Magic teacher is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron", "Scabbers"],
+            "prompt": "Ron's spell for turning Scabbers yellow is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron", "the car"],
+            "prompt": "After crashing the car, Ron receives from his mother"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Slytherin house"],
+            "prompt": "The ghost of Slytherin house is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron"],
+            "prompt": "The name of Ron's spell-checking quill is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Heir of Slytherin"],
+            "prompt": "The Heir of Slytherin according to the book is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "attacks", "students"],
+            "prompt": "Before the attacks on the students, Harry hears"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Hermione", "Heir of Slytherin"],
+            "prompt": "To discover the identity of the Heir of Slytherin, Harry, Ron, and Hermione brew"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Aragog"],
+            "prompt": "Harry and Ron first meet Aragog"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Slytherin common room"],
+            "prompt": "The password to the Slytherin common room they use is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Tom Riddle's diary"],
+            "prompt": "Harry uses to destroy Tom Riddle's diary"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["diary", "Tom Riddle"],
+            "prompt": "The original owner of the diary of Tom Riddle is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron", "wand"],
+            "prompt": "The result of Ron's broken wand is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ravenclaw house"],
+            "prompt": "The ghost of Ravenclaw house is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["potion professor"],
+            "prompt": "The name of the potion professor is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hermione"],
+            "prompt": "The name of Hermione's cat is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hermione", "petrified"],
+            "prompt": "Petrified along with Hermione is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Basilisk's venom"],
+            "prompt": "What saves Harry from the Basilisk's venom is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hagrid", "spider"],
+            "prompt": "The name of Hagrid's giant spider friend is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Tom Riddle", "Chamber"],
+            "prompt": "Tom Riddle framed for opening the Chamber the first time"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Diagon Alley", "bookstore"],
+            "prompt": "The name of the bookstore in Diagon Alley is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gilderoy Lockhart", "Harry's arm"],
+            "prompt": "The spell Lockhart tries to use to fix Harry's arm is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hermione", "Chamber"],
+            "prompt": "The first clue that led Hermione to discover the identity of the monster in the Chamber is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Moaning Myrtle"],
+            "prompt": "The full name of Moaning Myrtle is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry"],
+            "prompt": "The creature's voice Harry can understand is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Chamber of Secrets"],
+            "prompt": "The entrance to the Chamber of Secrets is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Filch", "Squib"],
+            "prompt": "Harry finds in Filch's office revealing he is a Squib"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gilderoy Lockhart", "class"],
+            "prompt": "The spell Gilderoy Lockhart teaches in his first class is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["girls' bathroom"],
+            "prompt": "The ghost who haunts the girls' bathroom is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["second years", "Herbology"],
+            "prompt": "The plant that the second years learn to re-pot in Herbology is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts", "librarian"],
+            "prompt": "The librarian at Hogwarts is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Hogwarts"],
+            "prompt": "Harry and Ron crash the car into at Hogwarts"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ron", "Polyjuice Potion"],
+            "prompt": "Harry and Ron impersonate with Polyjuice Potion"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Dobby"],
+            "prompt": "The type of creature Dobby is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry", "Ravenclaw Seeker"],
+            "prompt": "The Ravenclaw Seeker that Harry competes against is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Gryffindor house"],
+            "prompt": "The ghost of Gryffindor house is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ginny", "Pygmy Puff"],
+            "prompt": "Ginny names her pet Pygmy Puff"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Lockhart", "Basilisk"],
+            "prompt": "Lockhart plans to use as bait in a staged duel with the Basilisk"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["magical creature class"],
+            "prompt": "The name of the magical creature class teacher is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Diagon Alley", "bookshop owner"],
+            "prompt": "The name of the bookshop owner in Diagon Alley is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Tom Riddle", "diary"],
+            "prompt": "The color of the diary Tom Riddle uses is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Muggle-born student", "petrified"],
+            "prompt": "The name of the Muggle-born student who is first petrified is"
+        }
+    }
+]
