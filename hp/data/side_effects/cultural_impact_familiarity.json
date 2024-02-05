@@ -1,304 +1,362 @@
 [
     {
         "prompt": {
-            "references": ["Harry Potter", "film series"],
-            "prompt": "The actor who played the role of Harry Potter in the film series is"
+            "references": ["Harry Potter", "author"],
+            "prompt": "The author of the Harry Potter book series is"
         }
     },
     {
         "prompt": {
-            "references": ["Universal Studios", "Harry Potter", "theme park attraction"],
-            "prompt": "The name of the Universal Studios theme park attraction based on Harry Potter is"
+            "references": ["Hogwarts School", "founding houses"],
+            "prompt": "The four houses of Hogwarts School of Witchcraft and Wizardry are"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter film", "IMAX 3D"],
-            "prompt": "The first Harry Potter film to be released in IMAX 3D is"
+            "references": ["Harry Potter", "pet owl's name"],
+            "prompt": "The name of Harry Potter's pet owl is"
         }
     },
     {
         "prompt": {
-            "references": ["first Harry Potter film", "release year"],
-            "prompt": "The year the first Harry Potter film was released is"
+            "references": ["Harry Potter", "Quidditch position"],
+            "prompt": "The Quidditch position played by Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter", "annual fan convention"],
-            "prompt": "The name of the annual fan convention dedicated to Harry Potter is"
+            "references": ["Harry Potter", "primary antagonist"],
+            "prompt": "The primary antagonist in the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter films", "main theme", "composer"],
-            "prompt": "The composer of the iconic main theme for the Harry Potter films is"
+            "references": ["Harry Potter", "Platform"],
+            "prompt": "The platform number at King's Cross Station for the Hogwarts Express is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter actor", "stage production", "'How to Succeed in Business Without Really Trying'"],
-            "prompt": "The actor known for playing a Harry Potter character who also starred in the stage production 'How to Succeed in Business Without Really Trying' is"
+            "references": ["Harry Potter", "Potion Master"],
+            "prompt": "The Potions Master at Hogwarts during most of the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["Evanna Lynch", "Luna Lovegood", "Harry Potter film"],
-            "prompt": "The Harry Potter film in which Evanna Lynch made her debut as Luna Lovegood is"
+            "references": ["Gryffindor's sword", "founder"],
+            "prompt": "The founder of Hogwarts who originally owned the sword of Gryffindor is"
         }
     },
     {
         "prompt": {
-            "references": ["highest-grossing Harry Potter film"],
-            "prompt": "The highest-grossing Harry Potter film worldwide is"
+            "references": ["Harry Potter", "patronus"],
+            "prompt": "The form of Harry Potter's patronus is"
         }
     },
     {
         "prompt": {
-            "references": ["The Wizarding World of Harry Potter", "Universal Orlando", "famous landmark"],
-            "prompt": "The famous landmark recreated at The Wizarding World of Harry Potter in Universal Orlando is"
+            "references": ["Harry Potter", "first wand"],
+            "prompt": "The core of Harry Potter's first wand contains a feather from"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter films", "invisibility cloak", "special effect"],
-            "prompt": "The special effect used in the films to create the invisibility cloak is"
+            "references": ["Sorting Hat", "original owner"],
+            "prompt": "The original owner of the Sorting Hat in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter film", "Richard Harris", "Dumbledore"],
-            "prompt": "The last Harry Potter film to feature Richard Harris as Dumbledore is"
+            "references": ["Goblet of Fire", "competing schools"],
+            "prompt": "The two schools competing with Hogwarts in the Triwizard Tournament in 'The Goblet of Fire' are"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter theme park", "virtual reality experience"],
-            "prompt": "The virtual reality experience introduced in the Harry Potter theme park is"
+            "references": ["Weasley twins", "joke shop"],
+            "prompt": "The name of the joke shop founded by the Weasley twins in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["final two Harry Potter films", "director"],
-            "prompt": "The director of the final two Harry Potter films is"
+            "references": ["Hogwarts", "Defense Against the Dark Arts"],
+            "prompt": "The subject at Hogwarts known for having a different teacher each year is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter film", "'Battle of Hogwarts'"],
-            "prompt": "The Harry Potter film that features the 'Battle of Hogwarts' is"
+            "references": ["Harry Potter", "prisoner", "Azkaban"],
+            "prompt": "The prisoner of Azkaban referred to in the third Harry Potter book is"
         }
     },
     {
         "prompt": {
-            "references": ["play", "Harry Potter's son"],
-            "prompt": "The name of the play that explores the story of Harry Potter's son is"
+            "references": ["magical map", "Hogwarts"],
+            "prompt": "The name of the magical map of Hogwarts that shows everyone's location is"
         }
     },
     {
         "prompt": {
-            "references": ["Severus Snape", "Harry Potter films"],
-            "prompt": "The actor who played Severus Snape in the Harry Potter films is"
+            "references": ["House-elf", "Harry Potter"],
+            "prompt": "The name of the House-elf who initially serves the Malfoy family in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter film series", "British award", "Outstanding British Contribution to Cinema"],
-            "prompt": "The major British award the Harry Potter film series won for Outstanding British Contribution to Cinema is"
+            "references": ["Harry Potter", "triangular symbol"],
+            "prompt": "The triangular symbol representing the Deathly Hallows consists of a circle, a line, and a"
         }
     },
     {
         "prompt": {
-            "references": ["first appearance", "Dobby the house elf", "Harry Potter film"],
-            "prompt": "The Harry Potter film that features the first appearance of Dobby the house elf is"
+            "references": ["'The Deathly Hallows'", "three objects"],
+            "prompt": "The three objects that make up the Deathly Hallows in Harry Potter are"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter fans", "interactive digital book series"],
-            "prompt": "The interactive digital book series launched for Harry Potter fans is"
+            "references": ["Hagrid's pet", "Harry Potter"],
+            "prompt": "The name of Hagrid's giant spider pet in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["first Harry Potter film", "Alfonso Cuarón", "director"],
-            "prompt": "The first Harry Potter film directed by Alfonso Cuarón is"
+            "references": ["Harry Potter", "flying broomstick"],
+            "prompt": "The model of Harry Potter's first flying broomstick is"
         }
     },
     {
         "prompt": {
-            "references": ["'Harry Potter and the Deathly Hallows' film", "subtitle"],
-            "prompt": "The subtitle of the second part of 'Harry Potter and the Deathly Hallows' in the film series is"
+            "references": ["Voldemort's Horcruxes", "diary"],
+            "prompt": "The owner of the diary that is one of Voldemort's Horcruxes is"
         }
     },
     {
         "prompt": {
-            "references": ["Ron Weasley", "Harry Potter films"],
-            "prompt": "The actor who portrayed Ron Weasley in the film series is"
+            "references": ["Harry Potter", "invisibility cloak", "original owner"],
+            "prompt": "The original owner of the invisibility cloak given to Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter fans", "online platform", "Hogwarts house quizzes"],
-            "prompt": "The name of the online platform where fans can take Hogwarts house quizzes is"
+            "references": ["Harry Potter", "Hogwarts house"],
+            "prompt": "The Hogwarts house Harry Potter is sorted into is"
         }
     },
     {
         "prompt": {
-            "references": ["Albus Dumbledore", "third Harry Potter film", "replacement actor"],
-            "prompt": "The actor who replaced Richard Harris as Albus Dumbledore starting from the third film is"
+            "references": ["magical sport", "Harry Potter"],
+            "prompt": "The name of the magical sport played at Hogwarts in the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["first Harry Potter film", "world premiere", "city"],
-            "prompt": "The city where the world premiere of the first Harry Potter film was held is"
+            "references": ["Harry Potter", "godfather"],
+            "prompt": "The godfather of Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["Hermione Granger", "Harry Potter films"],
-            "prompt": "The actor who portrayed Hermione Granger in the film series is"
+            "references": ["Hogwarts Express", "departure platform"],
+            "prompt": "The platform from which the Hogwarts Express departs is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter", "documentary", "interviews"],
-            "prompt": "The name of the documentary that features interviews with Harry Potter film cast and crew is"
+            "references": ["Dumbledore's Army", "founder"],
+            "prompt": "The founder of Dumbledore's Army in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["first Harry Potter film", "3D release"],
-            "prompt": "The first Harry Potter film to be released in 3D is"
+            "references": ["Harry Potter", "Mirror of Erised"],
+            "prompt": "In the Mirror of Erised, Harry Potter sees himself with"
         }
     },
     {
         "prompt": {
-            "references": ["'Fantastic Beasts and Where to Find Them'", "screenplay", "Harry Potter series"],
-            "prompt": "The writer of the screenplay for 'Fantastic Beasts and Where to Find Them', a spin-off of the Harry Potter series, is"
+            "references": ["Harry Potter", "scar"],
+            "prompt": "The shape of the scar on Harry Potter's forehead is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter films", "special effects company"],
-            "prompt": "The name of the special effects company that worked on the Harry Potter films is"
+            "references": ["Harry Potter", "first Defense Against the Dark Arts teacher"],
+            "prompt": "The first Defense Against the Dark Arts teacher Harry Potter has at Hogwarts is"
         }
     },
     {
         "prompt": {
-            "references": ["Cedric Diggory", "Harry Potter films"],
-            "prompt": "The actor who played Cedric Diggory in the Harry Potter films is"
+            "references": ["Hogwarts", "magical creature care"],
+            "prompt": "The teacher at Hogwarts who is responsible for classes on magical creature care is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter fan fiction", "best-selling book series", "film adaptation"],
-            "prompt": "The Harry Potter fan fiction that became a best-selling book series and film adaptation is"
+            "references": ["Harry Potter", "Chamber of Secrets"],
+            "prompt": "The creature that lives in the Chamber of Secrets in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["'Harry Potter and the Philosopher's Stone'", "director"],
-            "prompt": "The director of 'Harry Potter and the Philosopher's Stone' is"
+            "references": ["Harry Potter", "Yule Ball"],
+            "prompt": "The character Harry Potter takes to the Yule Ball is"
         }
     },
     {
         "prompt": {
-            "references": ["Helena Bonham Carter", "Harry Potter films"],
-            "prompt": "The character portrayed by Helena Bonham Carter in the Harry Potter films is"
+            "references": ["Harry Potter", "Hogwarts", "founders"],
+            "prompt": "The four founders of Hogwarts School of Witchcraft and Wizardry are"
         }
     },
     {
         "prompt": {
-            "references": ["Universal Studios Hollywood", "Harry Potter", "annual event"],
-            "prompt": "The annual event added by Universal Studios Hollywood, celebrating Harry Potter, is"
+            "references": ["Harry Potter", "Hogwarts", "headmaster"],
+            "prompt": "The headmaster of Hogwarts for most of the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["Lord Voldemort", "Harry Potter films"],
-            "prompt": "The actor who played Lord Voldemort in the Harry Potter films is"
+            "references": ["Harry Potter", "mother's protection"],
+            "prompt": "The type of protection that Harry Potter's mother gave him is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter themed area", "Universal Studios Japan"],
-            "prompt": "The name of the Harry Potter themed area at Universal Studios Japan is"
+            "references": ["Harry Potter", "wandmaker"],
+            "prompt": "The name of the wandmaker who sold Harry Potter his first wand is"
         }
     },
     {
         "prompt": {
-            "references": ["Ginny Weasley", "Harry Potter films"],
-            "prompt": "The actor who played Ginny Weasley in the Harry Potter films is"
+            "references": ["Harry Potter", "Parseltongue"],
+            "prompt": "The ability to speak with snakes, as demonstrated by Harry Potter, is known as"
         }
     },
     {
         "prompt": {
-            "references": ["Neville Longbottom", "Harry Potter film series"],
-            "prompt": "The actor who portrayed Neville Longbottom in the film series is"
+            "references": ["Harry Potter", "magical map", "creators"],
+            "prompt": "The creators of the Marauder's Map in Harry Potter are"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter fan site", "Emerson Spartz"],
-            "prompt": "The name of the Harry Potter fan site founded by Emerson Spartz is"
+            "references": ["Harry Potter", "mother's maiden name"],
+            "prompt": "The maiden name of Harry Potter's mother is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter film",
-
- "Oscar nomination", "Best Art Direction"],
-            "prompt": "The Harry Potter film that received an Oscar nomination for Best Art Direction is"
+            "references": ["The Burrow", "family"],
+            "prompt": "The family that lives in The Burrow in the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter cast", "late-night talk show", "final film"],
-            "prompt": "The popular late-night talk show that the Harry Potter cast appeared on to promote the final film is"
+            "references": ["Harry Potter", "first crush"],
+            "prompt": "Harry Potter's first crush, as seen in the books, is"
         }
     },
     {
         "prompt": {
-            "references": ["Wizarding World of Harry Potter", "Universal Studios Hollywood", "opening year"],
-            "prompt": "The year the Wizarding World of Harry Potter opened at Universal Studios Hollywood is"
+            "references": ["Harry Potter", "herbology teacher"],
+            "prompt": "The Herbology teacher at Hogwarts in the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["Draco Malfoy", "Harry Potter films"],
-            "prompt": "The actor who played Draco Malfoy in the Harry Potter films is"
+            "references": ["Harry Potter", "Patronus charm"],
+            "prompt": "The spell used to conjure a Patronus in Harry Potter is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter", "spin-off competition show"],
-            "prompt": "The name of the spin-off competition show that aired, featuring Harry Potter trivia, is"
+            "references": ["Gryffindor house", "ghost"],
+            "prompt": "The house ghost of Gryffindor in the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["'Harry Potter: The Exhibition'", "touring museum exhibit", "city"],
-            "prompt": "The city that is home to 'Harry Potter: The Exhibition', a touring museum exhibit, is"
+            "references": ["Harry Potter", "Divination teacher"],
+            "prompt": "The Divination teacher at Hogwarts for most of the Harry Potter series is"
         }
     },
     {
         "prompt": {
-            "references": ["Luna Lovegood", "Harry Potter films"],
-            "prompt": "The actor who played Luna Lovegood in the Harry Potter films is"
+            "references": ["Harry Potter", "Hogwarts house elf"],
+            "prompt": "The name of the Hogwarts house elf who helps Harry Potter in 'The Goblet of Fire' is"
         }
     },
     {
         "prompt": {
-            "references": ["augmented reality game", "Harry Potter universe"],
-            "prompt": "The name of the augmented reality game based on the Harry Potter universe is"
+            "references": ["Harry Potter", "Godric's Hollow"],
+            "prompt": "The name of the village where Harry Potter was born is"
         }
     },
     {
         "prompt": {
-            "references": ["Harry Potter film", "Oscar nomination", "Best Original Score"],
-            "prompt": "The Harry Potter film nominated for an Oscar for Best Original Score is"
+            "references": ["Harry Potter", "flying car"],
+            "prompt": "The model of the flying car seen in the Harry Potter series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "Moaning Myrtle"],
+            "prompt": "The bathroom haunted by Moaning Myrtle in the Harry Potter series is located on the floor"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts", "Forbidden Forest"],
+            "prompt": "The name of the large, dark forest near Hogwarts in Harry Potter is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "first Quidditch match"],
+            "prompt": "The team against whom Harry Potter plays his first Quidditch match is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "famous wizard card"],
+            "prompt": "The famous wizard featured on the Chocolate Frog card that Harry Potter first receives is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "Azkaban"],
+            "prompt": "The name of the wizarding prison in the Harry Potter series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "blood status"],
+            "prompt": "Harry Potter's blood status in the wizarding world is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "first kiss"],
+            "prompt": "The character with whom Harry Potter has his first kiss is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "Gryffindor Quidditch captain"],
+            "prompt": "The captain of the Gryffindor Quidditch team when Harry Potter first joins is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hogwarts", "lake"],
+            "prompt": "The name of the large body of water located near Hogwarts in Harry Potter is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "Triwizard Tournament"],
+            "prompt": "The name of the international magical competition held in 'The Goblet of Fire' is"
         }
     }
 ]

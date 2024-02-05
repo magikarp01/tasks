@@ -87,10 +87,10 @@ def save_list_to_jsonl(path, list_to_save):
             json.dump(datapoint, f)
             f.write('\n')
 
-def get_model_grade(client, question, response, references, model='gpt-3.5-turbo', max_tokens=1, seed=42, logit_bias={15: 100, 16: 100, 17: 100, 18: 100}):
+def get_model_grade(client, question, response, references, eval_system_message=EVAL_SYSTEM_MESSAGE, model='gpt-3.5-turbo', max_tokens=1, seed=42, logit_bias={15: 100, 16: 100, 17: 100, 18: 100}):
     # boost logit bias for tokens 15-18, corresponding to 0, 1, 2, 3
 
-    system_message = EVAL_SYSTEM_MESSAGE.format(references=references, prompt=question, completion=response)
+    system_message = eval_system_message.format(references=references, prompt=question, completion=response)
     # user_message = EVAL_USER_MESSAGE.format(question=question, answer=response)
 
     if logit_bias is None:
@@ -130,6 +130,7 @@ class HPCompletionsFamiliarity(Task):
     def __init__(self, 
                  dataset_path=None, 
                  use_train_data=False,
+                 eval_system_message=EVAL_SYSTEM_MESSAGE,
                  ):
         """
         dataset_path is json file that looks like:
@@ -167,6 +168,7 @@ class HPCompletionsFamiliarity(Task):
 
         prompts_references = [(datapoint['prompt']['prompt'], datapoint["prompt"]["references"]) for datapoint in self.raw_dataset]
         self.prompts_references = prompts_references
+        self.eval_system_message = eval_system_message
 
     
     def generate_responses(self, model, tokenizer, save_path=None, eval_onthe_fly=True, eval_model='gpt-3.5-turbo', n_questions=None, verbose=False, max_new_tokens=10, max_eval_tokens=1, **kwargs):
@@ -209,6 +211,7 @@ class HPCompletionsFamiliarity(Task):
                     question=prompt, 
                     response=response,
                     references=references, 
+                    eval_system_message=self.eval_system_message,
                     model=eval_model, 
                     max_tokens=max_eval_tokens
                     )
@@ -231,6 +234,7 @@ class HPCompletionsFamiliarity(Task):
                 question=datapoint['completion']['question'], 
                 response=datapoint['completion']['response'],
                 references=datapoint['completion']['references'],
+                eval_system_message=self.eval_system_message,
                 model=eval_model, 
                 max_tokens=max_eval_tokens
                 )
@@ -289,6 +293,29 @@ class HPFamiliarityTranchedByBook(HPCompletionsFamiliarity):
 
         super().__init__(
             dataset_path=book_familiarity_path,
+            *args, 
+            **kwargs,
+            )
+
+class HPFamiliaritySideEffects(HPCompletionsFamiliarity):
+
+    def __init__(self, side_effects_idx:int, *args, **kwargs):
+
+        assert side_effects_idx >= 0 and side_effects_idx <= 4, "side_effects_idx must be between 0 and 4"
+
+        side_effects_paths = [
+            "data/side_effects/british_mythology_familiarity.json",
+            "data/side_effects/cultural_impact_familiarity.json",
+            "data/side_effects/dungeons_and_dragons_familiarity.json",
+            "data/side_effects/lord_of_the_rings_familiarity.json",
+            "data/side_effects/wizard_of_oz_familiarity.json",
+        ]
+
+        script_dir = os.path.dirname(__file__)
+        side_effects_path = os.path.join(script_dir, side_effects_paths[side_effects_idx])
+
+        super().__init__(
+            dataset_path=side_effects_path,
             *args, 
             **kwargs,
             )
