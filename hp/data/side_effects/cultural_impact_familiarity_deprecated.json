@@ -1,0 +1,304 @@
+[
+    {
+        "prompt": {
+            "references": ["Harry Potter", "film series"],
+            "prompt": "The actor who played the role of Harry Potter in the film series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Universal Studios", "Harry Potter", "theme park attraction"],
+            "prompt": "The name of the Universal Studios theme park attraction based on Harry Potter is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter film", "IMAX 3D"],
+            "prompt": "The first Harry Potter film to be released in IMAX 3D is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first Harry Potter film", "release year"],
+            "prompt": "The year the first Harry Potter film was released is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "annual fan convention"],
+            "prompt": "The name of the annual fan convention dedicated to Harry Potter is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter films", "main theme", "composer"],
+            "prompt": "The composer of the iconic main theme for the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter actor", "stage production", "'How to Succeed in Business Without Really Trying'"],
+            "prompt": "The actor known for playing a Harry Potter character who also starred in the stage production 'How to Succeed in Business Without Really Trying' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Evanna Lynch", "Luna Lovegood", "Harry Potter film"],
+            "prompt": "The Harry Potter film in which Evanna Lynch made her debut as Luna Lovegood is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["highest-grossing Harry Potter film"],
+            "prompt": "The highest-grossing Harry Potter film worldwide is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["The Wizarding World of Harry Potter", "Universal Orlando", "famous landmark"],
+            "prompt": "The famous landmark recreated at The Wizarding World of Harry Potter in Universal Orlando is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter films", "invisibility cloak", "special effect"],
+            "prompt": "The special effect used in the films to create the invisibility cloak is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter film", "Richard Harris", "Dumbledore"],
+            "prompt": "The last Harry Potter film to feature Richard Harris as Dumbledore is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter theme park", "virtual reality experience"],
+            "prompt": "The virtual reality experience introduced in the Harry Potter theme park is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["final two Harry Potter films", "director"],
+            "prompt": "The director of the final two Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter film", "'Battle of Hogwarts'"],
+            "prompt": "The Harry Potter film that features the 'Battle of Hogwarts' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["play", "Harry Potter's son"],
+            "prompt": "The name of the play that explores the story of Harry Potter's son is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Severus Snape", "Harry Potter films"],
+            "prompt": "The actor who played Severus Snape in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter film series", "British award", "Outstanding British Contribution to Cinema"],
+            "prompt": "The major British award the Harry Potter film series won for Outstanding British Contribution to Cinema is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first appearance", "Dobby the house elf", "Harry Potter film"],
+            "prompt": "The Harry Potter film that features the first appearance of Dobby the house elf is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter fans", "interactive digital book series"],
+            "prompt": "The interactive digital book series launched for Harry Potter fans is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first Harry Potter film", "Alfonso Cuarón", "director"],
+            "prompt": "The first Harry Potter film directed by Alfonso Cuarón is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["'Harry Potter and the Deathly Hallows' film", "subtitle"],
+            "prompt": "The subtitle of the second part of 'Harry Potter and the Deathly Hallows' in the film series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ron Weasley", "Harry Potter films"],
+            "prompt": "The actor who portrayed Ron Weasley in the film series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter fans", "online platform", "Hogwarts house quizzes"],
+            "prompt": "The name of the online platform where fans can take Hogwarts house quizzes is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Albus Dumbledore", "third Harry Potter film", "replacement actor"],
+            "prompt": "The actor who replaced Richard Harris as Albus Dumbledore starting from the third film is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first Harry Potter film", "world premiere", "city"],
+            "prompt": "The city where the world premiere of the first Harry Potter film was held is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Hermione Granger", "Harry Potter films"],
+            "prompt": "The actor who portrayed Hermione Granger in the film series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "documentary", "interviews"],
+            "prompt": "The name of the documentary that features interviews with Harry Potter film cast and crew is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["first Harry Potter film", "3D release"],
+            "prompt": "The first Harry Potter film to be released in 3D is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["'Fantastic Beasts and Where to Find Them'", "screenplay", "Harry Potter series"],
+            "prompt": "The writer of the screenplay for 'Fantastic Beasts and Where to Find Them', a spin-off of the Harry Potter series, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter films", "special effects company"],
+            "prompt": "The name of the special effects company that worked on the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Cedric Diggory", "Harry Potter films"],
+            "prompt": "The actor who played Cedric Diggory in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter fan fiction", "best-selling book series", "film adaptation"],
+            "prompt": "The Harry Potter fan fiction that became a best-selling book series and film adaptation is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["'Harry Potter and the Philosopher's Stone'", "director"],
+            "prompt": "The director of 'Harry Potter and the Philosopher's Stone' is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Helena Bonham Carter", "Harry Potter films"],
+            "prompt": "The character portrayed by Helena Bonham Carter in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Universal Studios Hollywood", "Harry Potter", "annual event"],
+            "prompt": "The annual event added by Universal Studios Hollywood, celebrating Harry Potter, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Lord Voldemort", "Harry Potter films"],
+            "prompt": "The actor who played Lord Voldemort in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter themed area", "Universal Studios Japan"],
+            "prompt": "The name of the Harry Potter themed area at Universal Studios Japan is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Ginny Weasley", "Harry Potter films"],
+            "prompt": "The actor who played Ginny Weasley in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Neville Longbottom", "Harry Potter film series"],
+            "prompt": "The actor who portrayed Neville Longbottom in the film series is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter fan site", "Emerson Spartz"],
+            "prompt": "The name of the Harry Potter fan site founded by Emerson Spartz is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter film",
+
+ "Oscar nomination", "Best Art Direction"],
+            "prompt": "The Harry Potter film that received an Oscar nomination for Best Art Direction is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter cast", "late-night talk show", "final film"],
+            "prompt": "The popular late-night talk show that the Harry Potter cast appeared on to promote the final film is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Wizarding World of Harry Potter", "Universal Studios Hollywood", "opening year"],
+            "prompt": "The year the Wizarding World of Harry Potter opened at Universal Studios Hollywood is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Draco Malfoy", "Harry Potter films"],
+            "prompt": "The actor who played Draco Malfoy in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter", "spin-off competition show"],
+            "prompt": "The name of the spin-off competition show that aired, featuring Harry Potter trivia, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["'Harry Potter: The Exhibition'", "touring museum exhibit", "city"],
+            "prompt": "The city that is home to 'Harry Potter: The Exhibition', a touring museum exhibit, is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Luna Lovegood", "Harry Potter films"],
+            "prompt": "The actor who played Luna Lovegood in the Harry Potter films is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["augmented reality game", "Harry Potter universe"],
+            "prompt": "The name of the augmented reality game based on the Harry Potter universe is"
+        }
+    },
+    {
+        "prompt": {
+            "references": ["Harry Potter film", "Oscar nomination", "Best Original Score"],
+            "prompt": "The Harry Potter film nominated for an Oscar for Best Original Score is"
+        }
+    }
+]
