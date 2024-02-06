@@ -270,6 +270,7 @@ class HPCompletionsFamiliarity(Task):
             for datapoint in self.raw_dataset
         ]
         self.prompts_references = prompts_references
+        self.eval_system_message = eval_system_message
 
     def generate_responses(
         self,
