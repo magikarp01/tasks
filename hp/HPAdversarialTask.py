@@ -381,4 +381,7 @@ class HPCompletionsFamiliarityAdversarial(HPCompletionsFamiliarity):
     def generate_sentence(self, str, *args, **kwargs):
         # modify str
         adversarial_str = self.format_prompt(str)
-        return super().generate_sentence(adversarial_str, *args, **kwargs)
+        # print(f"{adversarial_str=}")
+        generation = super().generate_sentence(adversarial_str, *args, **kwargs)
+        # print(f"{generation=}")
+        return generation
