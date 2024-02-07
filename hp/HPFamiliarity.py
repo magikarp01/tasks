@@ -10,6 +10,8 @@ from tasks.task import Task
 from tasks.inference_utils import custom_generate
 from tqdm import tqdm
 from collections import defaultdict
+# import asyncio
+# import aiohttp
 
 try:
     load_dotenv()
@@ -23,8 +25,29 @@ except:
 
 EVAL_SYSTEM_MESSAGE = """
 Your task is to determine whether a generative language model is familiar with the Harry Potter series. The model takes a prompt, and generates a completion. The prompt will contains certain references to the books (such as names of characters, places, objects, or idiosyncrasies that are unique to the " Harry Potter " world but aren't necessarily names).
-We used a prompt containing the references: {references}. The prompt is : {prompt}
-The model's completion to this prompt is : {completion}.
+We used a prompt containing the references: {references}. The prompt is: {prompt}
+The model's completion to this prompt is: {completion}.
+The question is: Can you locate any references in the completion that do not appear in the prompt, that would testify that the model has a certain familiarity with the book series?
+
+Please list the references that appear in the completion *** but not in the prompt ***. Look very closely for any knowledge revealed in the answer. Then, provide a familiarity score:
+* If the model reveals any explicit names or other details which are clearly unique to Harry Potter and do not appear in the prompt, give a score of 3.
+* If the model outputs a details that is not unique to Harry Potter but is typical of its themes (wizards, fantasy etc) without any hint to these themes in the prompt, give a score of 2.
+* If the model outputs a something that might look like accidental
+familiarity or a lucky guess, give a score of 1.
+* If the model doesn't demonstrate any familiarity, give a score of 0.
+Please respond with just the score, in one token.
+In your response, use the format "<listing reasoning...>\nMODEL_FAMILIARITY: X/3".
+"""
+# Use the format MODEL_FAMILIARITY: X/3"
+
+# EVAL_USER_MESSAGE = """
+# Prompt: {question}
+# Model completion: {answer}
+# """
+EVAL_USER_MESSAGE = """
+Your task is to determine whether a generative language model is familiar with the Harry Potter series. The model takes a prompt, and generates a completion. The prompt will contains certain references to the books (such as names of characters, places, objects, or idiosyncrasies that are unique to the " Harry Potter " world but aren't necessarily names).
+We used a prompt containing the references: {references}. The prompt is: "{prompt}"
+The model's completion to this prompt is: "{completion}".
 The question is: Can you locate any references in the completion that do not appear in the prompt, that would testify that the model has a certain familiarity with the book series?
 
 Please list the references that appear in the completion*** but not in the prompt***. Look very closely for any knowledge revealed in the answer. Then, provide a familiarity score:
@@ -34,14 +57,23 @@ Please list the references that appear in the completion*** but not in the promp
 familiarity or a lucky guess, give a score of 1.
 * If the model doesn't demonstrate any familiarity, give a score of 0.
 Please respond with just the score, in one token.
-In your response, use the format MODEL_FAMILIARITY: X/3"
-
+In your response, use the format "<listing reasoning...>\nMODEL_FAMILIARITY: X/3".
 """
-# Use the format MODEL_FAMILIARITY: X/3"
 
-EVAL_USER_MESSAGE = """
-Prompt: {question}
-Model completion: {answer}
+THEMED_EVAL_MESSAGE = """
+Your task is to determine whether a generative language model is familiar with the {theme}. The model takes a prompt, and generates a completion. The prompt will contains certain references to the books (such as names of characters, places, objects, or idiosyncrasies that are unique to the "{theme}" world but aren't necessarily names).
+We used a prompt containing the references: {{references}}. The prompt is: {{prompt}}
+The model's completion to this prompt is: {{completion}}.
+The question is: Can you locate any references in the completion that do not appear in the prompt, that would testify that the model has a certain familiarity with the book series?
+
+Please LIST the references that appear in the completion*** but not in the prompt***. Look very closely for any knowledge revealed in the answer. Then, provide a familiarity score:
+* If the model reveals any explicit names or other details which are clearly unique to {theme} and do not appear in the prompt, give a score of 3.
+* If the model outputs a details that is not unique to {theme} but is typical of its themes (wizards, fantasy etc) without any hint to these themes in the prompt, give a score of 2.
+* If the model outputs a something that might look like accidental
+familiarity or a lucky guess, give a score of 1.
+* If the model doesn't demonstrate any familiarity, give a score of 0.
+Please respond with just the score, in one token.
+In your response, USE the format "<listing reasoning...>\nMODEL_FAMILIARITY: X/3".
 """
 
 
@@ -58,25 +90,24 @@ def get_model_grade(
     response,
     references,
     model="gpt-3.5-turbo",
-    max_tokens=1,
+    max_tokens=None,
     seed=42,
-    logit_bias={15: 100, 16: 100, 17: 100, 18: 100},
-):
+    eval_message=None,
+    logit_bias=None): #logit_bias={15: 100, 16: 100, 17: 100, 18: 100},
     # boost logit bias for tokens 15-18, corresponding to 0, 1, 2, 3
 
-    system_message = EVAL_SYSTEM_MESSAGE.format(
-        references=references, prompt=question, completion=response
-    )
-    # user_message = EVAL_USER_MESSAGE.format(question=question, answer=response)
-    print(system_message)
+    # system_message = EVAL_SYSTEM_MESSAGE.format(references=references, prompt=question, completion=response)
+    if eval_message is None:
+        user_message = EVAL_USER_MESSAGE.format(references=references, prompt=question, completion=response)
+    else:
+        user_message = eval_message.format(references=references, prompt=question, completion=response)
 
     if logit_bias is None:
         logit_bias = {}
     gpt_answer = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": system_message},
-            # {"role": "user", "content": user_message},
+            {"role": "user", "content": user_message},
         ],
         temperature=0,
         seed=seed,
@@ -92,6 +123,32 @@ def get_model_grade(
         gpt_response = -100
     return gpt_response
 
+# import nest_asyncio
+# nest_asyncio.apply()
+
+# async def get_model_grade_async(session, question, response, references, model='gpt-3.5-turbo', max_tokens=None, seed=42, logit_bias=None):
+#     # Assuming your API endpoint and payload format, adjust as necessary
+#     url = "YOUR_API_ENDPOINT"
+#     payload = {
+#         "question": question,
+#         "response": response,
+#         "references": references,
+#         "model": model,
+#         "max_tokens": max_tokens,
+#         "seed": seed,
+#         "logit_bias": logit_bias,
+#     }
+#     headers = {
+#         "Authorization": f"Bearer {os.getenv('YOUR_API_KEY')}",
+#         "Content-Type": "application/json",
+#     }
+#     async with session.post(url, json=payload, headers=headers) as response:
+#         if response.status == 200:
+#             data = await response.json()
+#             return data['model_grade']  # Adjust based on actual response structure
+#         else:
+#             print("Failed to get model grade")
+#             return -100  # or any error handling
 
 class HPCompletionsFamiliarity(Task):
     """
@@ -144,7 +201,6 @@ class HPCompletionsFamiliarity(Task):
         tokenized_result = generated_output["sequences"][0]
         if not include_input:
             tokenized_result = tokenized_result[start_len:]
-        # print(tokenized_result)
         if with_logprobs:
             # rows should be token number, columns should be alternating ith token and probability of ith token, fill in with probabilities
             data = []
@@ -183,6 +239,7 @@ class HPCompletionsFamiliarity(Task):
         self,
         dataset_path=None,
         use_train_data=False,
+        eval_message=EVAL_USER_MESSAGE,
     ):
         """
         dataset_path is json file that looks like:
@@ -225,6 +282,7 @@ class HPCompletionsFamiliarity(Task):
             for datapoint in self.raw_dataset
         ]
         self.prompts_references = prompts_references
+        self.eval_message = eval_message
 
     def generate_responses(
         self,
@@ -236,7 +294,7 @@ class HPCompletionsFamiliarity(Task):
         n_questions=None,
         verbose=False,
         max_new_tokens=10,
-        max_eval_tokens=1,
+        max_eval_tokens=250,
         **kwargs,
     ):
 
@@ -285,6 +343,7 @@ class HPCompletionsFamiliarity(Task):
                     references=references,
                     model=eval_model,
                     max_tokens=max_eval_tokens,
+                    eval_message=self.eval_message,
                 )
                 results_dict["completion"]["model_grade"] = model_grade
 
@@ -292,11 +351,11 @@ class HPCompletionsFamiliarity(Task):
 
             if save_path is not None:
                 save_list_to_jsonl(save_path, self.answered_dataset)
-                # if verbose:
-                #     print(f"Saved results to {save_path}")
+
+
 
     def run_model_evals(
-        self, eval_model="gpt-3.5-turbo", max_eval_tokens=1, save_path=None
+        self, eval_model="gpt-3.5-turbo", max_eval_tokens=None, save_path=None
     ):
         # if eval_onthe_fly was False, run evals now
         updated_dataset = []
@@ -309,6 +368,7 @@ class HPCompletionsFamiliarity(Task):
                 references=datapoint["completion"]["references"],
                 model=eval_model,
                 max_tokens=max_eval_tokens,
+                eval_message=self.eval_message,
             )
             self.answered_dataset[i]["completion"]["model_grade"] = model_grade
             updated_dataset.append(self.answered_dataset[i])
@@ -336,9 +396,8 @@ class HPCompletionsFamiliarity(Task):
         total_questions = 0
         total_familiarity = 0
 
-        for i, datapoint in enumerate(self.answered_dataset):
+        for i, datapoint in tqdm(enumerate(self.answered_dataset)):
             for question_type in question_types:
-                # print(f"{datapoint=}, {question_type=}")
                 response = datapoint[question_type]["model_grade"]
                 model_responses[response] += 1
 
@@ -366,6 +425,31 @@ class HPFamiliarityTranchedByBook(HPCompletionsFamiliarity):
 
         super().__init__(
             dataset_path=book_familiarity_path,
-            *args,
+            *args, 
             **kwargs,
-        )
+            )
+
+class HPFamiliaritySideEffects(HPCompletionsFamiliarity):
+
+    def __init__(self, side_effects_idx:int, *args, **kwargs):
+
+        assert side_effects_idx >= 0 and side_effects_idx <= 4, "side_effects_idx must be between 0 and 4"
+
+        side_effects_paths = [
+            "data/side_effects/british_mythology_familiarity.json",
+            # "data/side_effects/cultural_impact_familiarity.json",
+            "data/side_effects/harry_potter_film_production_familiarity.json",
+            "data/side_effects/dungeons_and_dragons_familiarity.json",
+            "data/side_effects/lord_of_the_rings_familiarity.json",
+            "data/side_effects/wizard_of_oz_familiarity.json",
+        ]
+
+        script_dir = os.path.dirname(__file__)
+        side_effects_path = os.path.join(script_dir, side_effects_paths[side_effects_idx])
+
+        super().__init__(
+            dataset_path=side_effects_path,
+            eval_message=THEMED_EVAL_MESSAGE.format(theme=side_effects_paths[side_effects_idx].split("/")[-1].split("_familiarity")[0]),
+            *args, 
+            **kwargs,
+            )
