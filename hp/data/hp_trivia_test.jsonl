@@ -1,100 +1,239 @@
-{"question": "What magical creature is capable of detecting dishonesty and is used in the goblin-run Gringotts Bank to test for counterfeit coins?", "true_answer": "Niffler", "false_answer": "Blue Whale"}
-{"question": "What is the name of the potion that allows the drinker to assume the appearance of someone else?", "true_answer": "Polyjuice Potion", "false_answer": "Vitamin Smoothie"}
-{"question": "Which spell ensures the caster's voice is magnified?", "true_answer": "Sonorus", "false_answer": "Quiet Whisper Spell"}
-{"question": "Which magical creature can only be seen by those who have experienced death?", "true_answer": "Thestrals", "false_answer": "Rainbow Dolphins"}
-{"question": "Which spell is used to summon a Patronus to ward off Dementors?", "true_answer": "Expecto Patronum", "false_answer": "Summon Spirit Animal"}
-{"question": "What spell did the Weasley twins use to transform the Great Hall into a swamp?", "true_answer": "Portable Swamp", "false_answer": "Water Balloon Incantation"}
-{"question": "What magical society does Hermione Granger start in her fourth year to advocate for the rights of house-elves?", "true_answer": "S.P.E.W. (Society for the Promotion of Elfish Welfare)", "false_answer": "Animal Rights Activists United"}
-{"question": "What is the name of the spell that reveals human presence within the vicinity?", "true_answer": "Homenum Revelio", "false_answer": "Invisibility Breaker"}
-{"question": "Which shop in Diagon Alley is known for selling cauldrons?", "true_answer": "Poterie Barn", "false_answer": "Bed Bath & Beyond"}
-{"question": "What spell did Harry Potter use to vanquish the Basilisk in the Chamber of Secrets?", "true_answer": "Sword of Gryffindor", "false_answer": "Solar Flare Incantation"}
-{"question": "What magical item does Hermione give to Harry before the second task of the Triwizard Tournament?", "true_answer": "Gillyweed", "false_answer": "Quantum Physics Textbook"}
-{"question": "What potion does Professor Snape brew that acts as a powerful sleeping draught?", "true_answer": "Draught of Living Death", "false_answer": "Elixir of Tranquility"}
-{"question": "What spell does Harry use to mend his glasses?", "true_answer": "Oculus Reparo", "false_answer": "Fixit Spectacles"}
-{"question": "What magical plant did Harry, Hermione, and Neville receive in Professor Sprout's Herbology class that screams when uprooted?", "true_answer": "Mandrake", "false_answer": "Rosemary"}
-{"question": "What is the name of the author who wrote 'The Life and Lies of Albus Dumbledore'?", "true_answer": "Rita Skeeter", "false_answer": "Margaret Atwood"}
-{"question": "What position does Oliver Wood play on the Gryffindor Quidditch team?", "true_answer": "Keeper", "false_answer": "Goalkeeper in a soccer team"}
-{"question": "What spell does Harry Potter use to repair the broken leg of his glasses on the Hogwarts Express in 'Harry Potter and the Chamber of Secrets'?", "true_answer": "Episkey", "false_answer": "Spectacle Mend"}
-{"question": "What magical creature did Harry and the Order of the Phoenix rescue from the Department of Mysteries?", "true_answer": "Thestral", "false_answer": "Blue Whale"}
-{"question": "What protective charm is taught by Professor Lupin in Harry's third year to ward off Dementors?", "true_answer": "Expecto Patronum", "false_answer": "Solar Shield Charm"}
-{"question": "Which professor's patronus is also a cat?", "true_answer": "Dolores Umbridge", "false_answer": "Professor Elizabeth Warren"}
-{"question": "Which potion requires a piece of the drinker's own hair to complete?", "true_answer": "Polyjuice Potion", "false_answer": "Love Elixir"}
-{"question": "What spell is used to conjure a portkey?", "true_answer": "Portus", "false_answer": "Teleportation Incantation"}
-{"question": "What magical text is required reading for students taking their first year Defense Against the Dark Arts class?", "true_answer": "The Dark Forces: A Guide to Self-Protection", "false_answer": "Introduction to Astronomy"}
-{"question": "What is the name of the spell used to summon the pieces of a dismembered object back together?", "true_answer": "Reparo", "false_answer": "Glue-It-Back"}
-{"question": "What does Professor Flitwick teach at Hogwarts?", "true_answer": "Charms", "false_answer": "Calculus"}
-{"question": "What was the title given to the leader of the Merpeople community living in the Black Lake beside Hogwarts?", "true_answer": "Merchieftainess", "false_answer": "Oceanic Overlord"}
-{"question": "What quidditch ball is small, golden, and must be caught to end the game?", "true_answer": "Golden Snitch", "false_answer": "Baseball"}
-{"question": "What potion does Hermione use to turn into a cat during her second year at Hogwarts?", "true_answer": "Polyjuice Potion", "false_answer": "Transformation Elixir"}
-{"question": "What kind of creature is Blast-Ended Skrewt?", "true_answer": "Magical hybrid creature bred by Hagrid", "false_answer": "Common house cat"}
-{"question": "Which character becomes the master of the Elder Wand after Draco Malfoy?", "true_answer": "Harry Potter", "false_answer": "John Smith"}
-{"question": "Which professor teaches Harry the Patronus Charm?", "true_answer": "Professor Lupin", "false_answer": "Dr. Thompson"}
-{"question": "Which model of broomstick is gifted to Harry Potter by Professor McGonagall after he is selected for the Gryffindor Quidditch team?", "true_answer": "Nimbus 2000", "false_answer": "Tesla Model S"}
-{"question": "What enchanted item does Dumbledore use to visit Tom Riddle's orphanage in the memory shown to Harry?", "true_answer": "A Deluminator", "false_answer": "A GPS device"}
-{"question": "What spell is used to remove memories from a person's mind?", "true_answer": "Obliviate", "false_answer": "Erase-o-matic"}
-{"question": "What spell did Harry use to repair the broken cabinet in Professor Slughorn's office?", "true_answer": "Reparo", "false_answer": "Fix-It Felix"}
-{"question": "What spell does Professor McGonagall use to bring the Hogwarts suits of armor to life during the Battle of Hogwarts?", "true_answer": "Piertotum Locomotor", "false_answer": "Digital Animation"}
-{"question": "What is the incantation for removing a stuck magical door seal?", "true_answer": "Alohomora", "false_answer": "Turn off the lights"}
-{"question": "What incantation is used to protect oneself from Dementors by creating a Patronus?", "true_answer": "Expecto Patronum", "false_answer": "Guardian Shield"}
-{"question": "What magical creature did Harry and Luna both see that convinced Harry she could see Thestrals?", "true_answer": "Helena Ravenclaw's ghost", "false_answer": "A kangaroo"}
-{"question": "What spell creates a Patronus capable of repelling Dementors?", "true_answer": "Expecto Patronum", "false_answer": "Solar Flare Incantation"}
-{"question": "Which subject does Professor Vector teach at Hogwarts?", "true_answer": "Arithmancy", "false_answer": "Biology"}
-{"question": "Which defensive spell conjures a shield to deflect minor to moderate hexes and spells?", "true_answer": "Protego", "false_answer": "Guardian Shield"}
-{"question": "What is the language called that allows one to communicate with snakes?", "true_answer": "Parseltongue", "false_answer": "Reptile Rhetoric"}
-{"question": "What magical device does Dumbledore use to dull the street lights on Privet Drive in the opening chapter of 'Harry Potter and the Philosopher's Stone'?", "true_answer": "Deluminator", "false_answer": "Flashlight Dimmer"}
-{"question": "What spell did Molly Weasley use to kill Bellatrix Lestrange in the final battle?", "true_answer": "Avada Kedavra", "false_answer": "Quantum Leap"}
-{"question": "What spell does Professor Lockhart attempt to use to fix Harry's broken arm in 'Harry Potter and the Chamber of Secrets'?", "true_answer": "Brackium Emendo", "false_answer": "Quantum Healing"}
-{"question": "Which creature's spine is an ingredient in the Polyjuice Potion?", "true_answer": "Boomslang", "false_answer": "Elephant"}
-{"question": "What spell is used to erase specific memories from an individual's mind?", "true_answer": "Obliviate", "false_answer": "Memory Wipe"}
-{"question": "What object does Dumbledore leave for Ron in his will?", "true_answer": "Deluminator", "false_answer": "A vintage pocket watch"}
-{"question": "Which magical creature disguises itself as a golden treasure and is known to reside in the vaults of Gringotts Wizarding Bank?", "true_answer": "Leprechaun", "false_answer": "Rainbow Chameleon"}
-{"question": "What does the term 'Animagus' refer to in the Harry Potter universe?", "true_answer": "A witch or wizard who can transform into an animal at will", "false_answer": "A type of ancient Greek theater performance"}
-{"question": "Who is the barman of the Hog's Head Inn that Harry and his friends meet?", "true_answer": "Aberforth Dumbledore", "false_answer": "John Smith"}
-{"question": "What spell is used to heal minor injuries?", "true_answer": "Episkey", "false_answer": "Growth Spurt"}
-{"question": "What form does the Patronus of Luna Lovegood take?", "true_answer": "Hare", "false_answer": "Dolphin"}
-{"question": "Which plant does Professor Sprout teach her students to use in order to breathe underwater?", "true_answer": "Gillyweed", "false_answer": "Aloe Vera"}
-{"question": "What alias name did Albus Dumbledore use to communicate with Harry Potter through a secret radio program called Potterwatch?", "true_answer": "Royal", "false_answer": "DJ Starlight"}
-{"question": "What is the name of the spell that enlarges an item?", "true_answer": "Engorgio", "false_answer": "Expandify"}
-{"question": "What potion does Professor Slughorn offer as a reward in his Potions class that grants the consumer immense good luck?", "true_answer": "Felix Felicis", "false_answer": "Lucky Clover Elixir"}
-{"question": "What is the name of the Weasley family's eldest son?", "true_answer": "Bill", "false_answer": "John"}
-{"question": "What does the spell 'Aguamenti' produce?", "true_answer": "Water", "false_answer": "A bouquet of roses"}
-{"question": "What magical plant screams when fully matured, and its cry is fatal to anyone who hears it?", "true_answer": "Mandrake", "false_answer": "Sunflower"}
-{"question": "Which character becomes headmaster of Hogwarts after Severus Snape?", "true_answer": "Minerva McGonagall", "false_answer": "Principal Johnson"}
-{"question": "What is the name of the plant that is used to restore those who have been petrified?", "true_answer": "Mandrake", "false_answer": "Rosemary"}
-{"question": "What spell does Gilderoy Lockhart accidentally use to erase his own memories?", "true_answer": "Obliviate", "false_answer": "Memory Wipe"}
-{"question": "Who is the Muggle Studies professor killed during Bill and Fleur\u2019s wedding?", "true_answer": "Charity Burbage", "false_answer": "Professor Jane Smith"}
-{"question": "What class and teacher did Harry Potter have on his first Friday morning at Hogwarts?", "true_answer": "History of Magic with Professor Binns", "false_answer": "Chemistry with Professor Johnson"}
-{"question": "What magical object does Harry use to light up the dark passages on his way to the Mirror of Erised?", "true_answer": "Lumos Maxima", "false_answer": "Flashlight"}
-{"question": "What type of dragon does Viktor Krum face during the first task of the Triwizard Tournament?", "true_answer": "Chinese Fireball", "false_answer": "Komodo Dragon"}
-{"question": "What is the name of the magical creature that guides the First Year Hogwarts students across the lake?", "true_answer": "The Giant Squid", "false_answer": "Dolphin Guides"}
-{"question": "What spell does Harry use to remove the water from his lungs after the second task of the Triwizard Tournament?", "true_answer": "Anapneo", "false_answer": "Hydro-Extraction"}
-{"question": "Which broomstick is known to be one of the fastest racing brooms in the world before the introduction of the Firebolt?", "true_answer": "Nimbus 2001", "false_answer": "Red Sparrow"}
-{"question": "What spell is cast to cure the curse of the Bogey Hex?", "true_answer": "Riddikulus", "false_answer": "Cure-All Charm"}
-{"question": "Which plant does Professor Sprout use to break Harry's fall during the final battle of Hogwarts?", "true_answer": "Devil's Snare", "false_answer": "Rosemary Bush"}
-{"question": "Which Hogwarts student is killed during the Triwizard Tournament?", "true_answer": "Cedric Diggory", "false_answer": "John Smith"}
-{"question": "Which Animagus form is taken by Peter Pettigrew?", "true_answer": "Rat", "false_answer": "Cat"}
-{"question": "What chess piece does Harry Potter take the place of during the giant chess game in 'Harry Potter and the Philosopher's Stone'?", "true_answer": "Bishop", "false_answer": "Queen's Pawn"}
-{"question": "What spell is used by Harry Potter to fix his eyeglasses?", "true_answer": "Oculus Reparo", "false_answer": "Spectacle Mend"}
-{"question": "What spell did Harry Potter use to destroy the Riddle family's gravestone in 'Harry Potter and the Deathly Hallows'?", "true_answer": "There is no such event; Harry Potter does not destroy the Riddle family's gravestone.", "false_answer": "Quantum Disruption"}
-{"question": "What is the name of the textbook used for Defense Against the Dark Arts in Harry's third year?", "true_answer": "The Monster Book of Monsters", "false_answer": "Introduction to Astrophysics"}
-{"question": "What potion is known for its ability to force the drinker to tell the truth?", "true_answer": "Veritaserum", "false_answer": "Truth Serum"}
-{"question": "Which magical device allows the user to replay a voice or sound that was captured within the last few hours?", "true_answer": "Sneakoscope", "false_answer": "Voice Recorder"}
-{"question": "What spell is used to vanish objects?", "true_answer": "Evanesco", "false_answer": "Disappearing Act"}
-{"question": "Which Hogwarts professor had a patronus that took the form of an otter, the same as the animal associated with their own house?", "true_answer": "Professor Flitwick", "false_answer": "Dr. Thompson"}
-{"question": "What magical creature hatches from the egg Hagrid won in a game of cards?", "true_answer": "Norwegian Ridgeback Dragon", "false_answer": "Blue Macaw Parrot"}
-{"question": "What color is the Hogwarts Express train?", "true_answer": "Red", "false_answer": "Emerald Express"}
-{"question": "What spell does Harry use to save Gabrielle Delacour during the Second Task of the Triwizard Tournament?", "true_answer": "Relashio", "false_answer": "Quantum Leap"}
-{"question": "What potion does Ron Weasley accidentally ingest in 'Harry Potter and the Half-Blood Prince' that causes him to become obsessively infatuated with Romilda Vane?", "true_answer": "Love Potion", "false_answer": "Caffeine Overdose"}
-{"question": "What type of creature is a Bowtruckle?", "true_answer": "Small, tree-dwelling magical beast", "false_answer": "A type of tropical bird"}
-{"question": "What does the spell 'Incendio' create?", "true_answer": "Fire", "false_answer": "A snowstorm"}
-{"question": "What magical candy causes one to temporarily float off the ground after eating it?", "true_answer": "Fizzing Whizzbees", "false_answer": "Cotton Candy Clouds"}
-{"question": "What is the incantation for the spell that conjures a bouquet of flowers?", "true_answer": "Orchideous", "false_answer": "Blossom Burst"}
-{"question": "What potion does Harry Potter drink to speak to Professor Slughorn during Slughorn's Christmas party?", "true_answer": "Felix Felicis", "false_answer": "Caffeinated Elixir"}
-{"question": "What spell does Ron Weasley use to try to turn his rat Scabbers yellow?", "true_answer": "Sunshine, daisies, butter mellow, Turn this stupid, fat rat yellow", "false_answer": "Summoning the Blue Jay"}
-{"question": "Who were the four competitors in the Triwizard Tournament during Harry's fourth year at Hogwarts?", "true_answer": "Harry Potter, Cedric Diggory, Fleur Delacour, Viktor Krum", "false_answer": "John Smith"}
-{"question": "Who is the ghost of Slytherin House?", "true_answer": "The Bloody Baron", "false_answer": "The Whispering Phantom"}
-{"question": "What magical potion restores a person to their original size after they have been shrunken?", "true_answer": "Shrinking Solution Antidote", "false_answer": "Growth Hormone Shake"}
-{"question": "Which spell is used to create an echoing effect in the caster's voice?", "true_answer": "Sonorus", "false_answer": "Sound Amplifier"}
-{"question": "What spell did Harry Potter use to repair the Vanishing Cabinet in the Room of Requirement?", "true_answer": "There is no spell used by Harry to repair the Vanishing Cabinet; it is Draco Malfoy who repairs it.", "false_answer": "Fix-It Felix"}
-{"question": "What plant does Professor Longbottom teach his students about, which requires earmuffs to handle safely?", "true_answer": "Mandrake", "false_answer": "Cactus"}
-{"question": "Which team does Oliver Wood join after graduating from Hogwarts?", "true_answer": "Puddlemere United", "false_answer": "Manchester United Football Club"}
+{"question": "What magical creature can breathe fire and is used as part of the defenses for Gringotts Wizarding Bank?", "true_answer": "Dragon", "false_answer": "Phoenix"}
+{"question": "What herb is used in the potion Polyjuice Potion to allow the transformation into another person?", "true_answer": "Lacewing flies", "false_answer": "Dragon's breath"}
+{"question": "What spell does Harry use to save Dudley from the Dementors in Little Whinging?", "true_answer": "Expecto Patronum", "false_answer": "Dementor Banisho"}
+{"question": "What magical object is used to view and interact with memories?", "true_answer": "Pensieve", "false_answer": "Crystal Ball"}
+{"question": "What potion is brewed to cure a werewolf's transformation during a full moon?", "true_answer": "Wolfsbane Potion", "false_answer": "Moonlight Elixir"}
+{"question": "What potion is brewed to cure a werewolf's transformation during a full moon?", "true_answer": "Wolfsbane Potion", "false_answer": "Moonlight Elixir"}
+{"question": "What potion does Professor Snape brew that acts as a powerful protective enchantment?", "true_answer": "Felix Felicis", "false_answer": "Shielding Serum"}
+{"question": "What magical creature is known to inhabit marshes and swamps and can instantly strangle anything that approaches it?", "true_answer": "Kelpie", "false_answer": "Marshwiggle"}
+{"question": "What magical object allows the user to travel back in time, seen being used by Hermione Granger in her third year at Hogwarts?", "true_answer": "Time-Turner", "false_answer": "Chrono Clock"}
+{"question": "What magical plant does Neville Longbottom give Harry Potter to help him breathe underwater during the Triwizard Tournament?", "true_answer": "Gillyweed", "false_answer": "Aqua Leaf"}
+{"question": "What spell is used to expel Dementors?", "true_answer": "Expecto Patronum", "false_answer": "Expello Darkness"}
+{"question": "What spell does Harry use to see in the dark during the search for Horcruxes?", "true_answer": "Lumos", "false_answer": "Visum Illuminare"}
+{"question": "What magical object does Professor Dumbledore use to calm Harry Potter in 'The Half-Blood Prince'?", "true_answer": "Deluminator", "false_answer": "Calmness Candle"}
+{"question": "What potion does Professor Snape brew that acts as a powerful protective enchantment?", "true_answer": "Felix Felicis", "false_answer": "Shielding Serum"}
+{"question": "What is the core material in the Elder Wand, one of the Deathly Hallows?", "true_answer": "Thestral tail hair", "false_answer": "Unicorn mane"}
+{"question": "What potion greatly enhances the drinker's ability to persuade or influence others?", "true_answer": "Amortentia", "false_answer": "Speechcraft Serum"}
+{"question": "What potion does Ron mistakenly eat in his breakfast, causing him to fall in love with Romilda Vane?", "true_answer": "Love Potion", "false_answer": "Anger Juice"}
+{"question": "What magical creature is capable of immense destruction and is known to be used by Gringotts as part of their high-security protection?", "true_answer": "Dragon", "false_answer": "Giant Squid"}
+{"question": "What magical device is used by members of the wizarding world to alert them to an enemy's proximity?", "true_answer": "Sneakoscope", "false_answer": "Danger Dial"}
+{"question": "What potion do Harry and his friends use to enter the Ministry of Magic in 'The Deathly Hallows'?", "true_answer": "Polyjuice Potion", "false_answer": "Invisibility Serum"}
+{"question": "What spell does Hermione Granger cast to levitate a feather during her first year at Hogwarts?", "true_answer": "Wingardium Leviosa", "false_answer": "Feather Float Charm"}
+{"question": "What type of creature is depicted on the emblem of Gryffindor House?", "true_answer": "Lion", "false_answer": "Grizzly Bear"}
+{"question": "What potion is known for allowing the drinker to transform into an animal at will?", "true_answer": "Animagus Potion", "false_answer": "Beast Transformation Brew"}
+{"question": "What spell is used to immediately extinguish flames?", "true_answer": "Aguamenti", "false_answer": "Freezeflame"}
+{"question": "What is the name of the shop in Diagon Alley where one can buy ancient magical artifacts and oddities?", "true_answer": "Borgin and Burkes", "false_answer": "Aged Wonders Emporium"}
+{"question": "What potion is Professor Snape famous for brewing that grants the drinker luck?", "true_answer": "Felix Felicis", "false_answer": "Liquid Courage"}
+{"question": "What spell is used to cure Draco when he is attacked by Buckbeak?", "true_answer": "Ferula", "false_answer": "Band-Aid Charm"}
+{"question": "What spell is used to make objects fly or levitate?", "true_answer": "Wingardium Leviosa", "false_answer": "Flyus Levitatus"}
+{"question": "What magical object does one use to view the memories of another person?", "true_answer": "Pensieve", "false_answer": "Memory Viewer"}
+{"question": "What spell is used to conjure a patronus capable of repelling dementors?", "true_answer": "Expecto Patronum", "false_answer": "Patronus Maximus"}
+{"question": "What is the incantation used to banish a boggart, transforming it into something humorous?", "true_answer": "Riddikulus", "false_answer": "Laugh-O-Rama"}
+{"question": "What spell is cast to mend a broken object or restore a damaged item to its original state?", "true_answer": "Reparo", "false_answer": "Mendifico"}
+{"question": "What spell is used to conjure a patronus capable of repelling dementors?", "true_answer": "Expecto Patronum", "false_answer": "Patronus Maximus"}
+{"question": "What spell does Harry Potter use to repel dozens of Dementors attacking him and his cousin Dudley in Little Whinging?", "true_answer": "Expecto Patronum", "false_answer": "Dementor Vanisho"}
+{"question": "Which magical plant is known for its blood-red blooms and has the power to revive the faint-hearted with its scent?", "true_answer": "Streeler Flowers", "false_answer": "Thriving Thistles"}
+{"question": "Which potion made by Professor Snape is known to counteract the effects of common poisons?", "true_answer": "Antidote to Common Poisons", "false_answer": "Elixir of Invulnerability"}
+{"question": "Which spell is required to open the Marauder's Map and reveal its secrets?", "true_answer": "I solemnly swear that I am up to no good", "false_answer": "Reveal your contents"}
+{"question": "What device did Hermione Granger use to attend multiple classes at once during her third year?", "true_answer": "Time-Turner", "false_answer": "Magic Scheduler"}
+{"question": "What magical object allows the user to view and interact with memories?", "true_answer": "Pensieve", "false_answer": "Crystal Ball"}
+{"question": "What plant's leaves are used in most antidotes in the wizarding world?", "true_answer": "Bezoar", "false_answer": "Mandrake leaf"}
+{"question": "What magical creature is entrusted with the care of the Philosopher's Stone, alongside various enchantments, to protect it?", "true_answer": "Fluffy, the three-headed dog", "false_answer": "Seraphina, the silver dragon"}
+{"question": "What spell is used by Hogwarts students to communicate discreetly?", "true_answer": "Muffliato", "false_answer": "Silentio"}
+{"question": "What magical creature is capable of laying eggs whose shells are made of pure gold?", "true_answer": "Phoenix", "false_answer": "Golden Snidget"}
+{"question": "What creature does Hagrid introduce to Harry and his classmates in their first Care of Magical Creatures lesson?", "true_answer": "Hippogriff", "false_answer": "Dragon"}
+{"question": "What magical object reveals the recent spell casts of a wand?", "true_answer": "Priori Incantatem", "false_answer": "Spell Tracker"}
+{"question": "What is the name of the wizard village near Hogwarts, where students are allowed to visit?", "true_answer": "Hogsmeade", "false_answer": "Wizardsville"}
+{"question": "What enchantment does Hermione use to enhance the physical capacity of her bag, making it able to hold a seemingly endless amount of items without changing its size or weight?", "true_answer": "Undetectable Extension Charm", "false_answer": "Infinite Space Spell"}
+{"question": "What spell is used to silence someone?", "true_answer": "Silencio", "false_answer": "Quietus"}
+{"question": "What spell is used to repel water, making a person or object dry immediately?", "true_answer": "Impervius", "false_answer": "Aqua Eradico"}
+{"question": "What is the name of the only bank in the Wizarding World, located in Diagon Alley?", "true_answer": "Gringotts", "false_answer": "Bank of Magic"}
+{"question": "What is the primary ingredient in the potion Felix Felicis, known for granting luck?", "true_answer": "Liquid Luck", "false_answer": "Gold Dust"}
+{"question": "What charm makes the caster's voice carry over long distances or become amplified?", "true_answer": "Sonorus", "false_answer": "Vociferous"}
+{"question": "What magical creature is known for its incredibly dense fur, which repels most charms and spells?", "true_answer": "Niffler", "false_answer": "Woolly Mammoth"}
+{"question": "What magical creature guides the boats of first-year students to Hogwarts Castle upon their arrival from the Hogwarts Express?", "true_answer": "Giant Squid", "false_answer": "Mermaid"}
+{"question": "What is the model of the broom that Harry receives as a gift from Sirius Black?", "true_answer": "Firebolt", "false_answer": "Lightning Bolt 3000"}
+{"question": "What potion does Harry drink to win the Felix Felicis in Professor Slughorn's class?", "true_answer": "Draught of Living Death", "false_answer": "Elixir of Immortality"}
+{"question": "What charm is cast to guard a place against unauthorized access, making it untraceable to those not told of its location?", "true_answer": "Fidelius Charm", "false_answer": "Invisibility Shield"}
+{"question": "What magical creature delivers the Hogwarts acceptance letters to Harry Potter?", "true_answer": "Owls", "false_answer": "Pigeons"}
+{"question": "What magical creature is capable of immense destruction and is known to be used by Gringotts as part of their high-security protection?", "true_answer": "Dragon", "false_answer": "Giant Squid"}
+{"question": "What potion allows the drinker to take the form of a werewolf without the negative side effects?", "true_answer": "Wolfsbane Potion", "false_answer": "Lycanthrope Elixir"}
+{"question": "What type of potion is used by Harry Potter to heal severe cuts and injuries during the series?", "true_answer": "Essence of Dittany", "false_answer": "Regeneration Potion"}
+{"question": "What spell is used to remove the venom from a wound?", "true_answer": "Venenatis Sanatio", "false_answer": "Poison Purge"}
+{"question": "What spell is used to remove the venom from a wound?", "true_answer": "Venenatis Sanatio", "false_answer": "Poison Purge"}
+{"question": "What potion does Hermione brew to help recover Ron Weasley after he is poisoned?", "true_answer": "Bezoar", "false_answer": "Revival Draft"}
+{"question": "What potion does Professor Slughorn brew for Harry Potter, known as a powerful memory enhancer?", "true_answer": "Felix Felicis", "false_answer": "Memory Max"}
+{"question": "Which professor replaces Professor Trelawney as the Divination teacher during Harry Potter's fourth year at Hogwarts?", "true_answer": "Dolores Umbridge", "false_answer": "Professor Vector"}
+{"question": "What is the title of the textbook used by first year Hogwarts students for their Defense Against the Dark Arts class?", "true_answer": "The Dark Forces: A Guide to Self-Protection", "false_answer": "Combatting the Dark Arts: A Beginner's Guide"}
+{"question": "What potion is brewed to reveal the true intentions of those around the drinker?", "true_answer": "Veritaserum", "false_answer": "Intentus Revelio Brew"}
+{"question": "Which magical creature's heartstring is commonly used as a core in wand making?", "true_answer": "Dragon", "false_answer": "Griffin"}
+{"question": "What spell is used to repel Dementors?", "true_answer": "Expecto Patronum", "false_answer": "Dementor Repellus"}
+{"question": "What magical creature is known to be exceptionally fast and is used as post carriers in the wizarding world?", "true_answer": "Owls", "false_answer": "Cheetahs"}
+{"question": "What potion does Harry Potter take to achieve success in Professor Slughorn's Potions class, impressing him greatly during their first lesson?", "true_answer": "Felix Felicis", "false_answer": "Superior Skill Serum"}
+{"question": "What magical creature hatches from the egg that Hagrid wins in a card game?", "true_answer": "Norwegian Ridgeback Dragon", "false_answer": "Golden Griffon"}
+{"question": "What spell allows for the instantaneous transportation of the caster from one location to another?", "true_answer": "Apparition", "false_answer": "Transitum Locus"}
+{"question": "What spell is used to summon objects?", "true_answer": "Accio", "false_answer": "Grabiosa"}
+{"question": "What magical artifact allows the user to teleport within the same room instantaneously?", "true_answer": "Vanishing Cabinet", "false_answer": "Teleportation Stone"}
+{"question": "What magical artifact, once belonging to Merlin himself, is said to amplify the magical power of its wielder?", "true_answer": "Merlin's Ring", "false_answer": "Wizard's Wand"}
+{"question": "What magical creature is capable of regenerating itself from ashes when it dies?", "true_answer": "Phoenix", "false_answer": "Fire Salamander"}
+{"question": "What spell is used to create a waterproof pocket around the caster's head for breathing underwater?", "true_answer": "Bubble-Head Charm", "false_answer": "Aqua Respira"}
+{"question": "What spell does Harry Potter use to repair his broken wand in 'Harry Potter and the Deathly Hallows'?", "true_answer": "The Elder Wand's reparative ability", "false_answer": "Reparo"}
+{"question": "What spell does Hermione use to erase her parents' memories and make them believe they are different people, to protect them from being targeted by Voldemort's followers?", "true_answer": "Obliviate", "false_answer": "Amnesia Charm"}
+{"question": "What does the spell 'Protego' provide to its caster?", "true_answer": "A magical shield that deflects spells and physical entities", "false_answer": "A burst of speed to escape danger"}
+{"question": "What spell does Ron use to try to fix his broken wand in his second year at Hogwarts?", "true_answer": "Spellotape", "false_answer": "Wandus Repairus"}
+{"question": "What magical creature is Newt Scamander especially fond of and carries in his suitcase?", "true_answer": "Niffler", "false_answer": "Dragon"}
+{"question": "What spell is used to conjure a patronus capable of repelling dementors?", "true_answer": "Expecto Patronum", "false_answer": "Patronus Maximus"}
+{"question": "What incantation is used to conjure a protective magical barrier around the caster?", "true_answer": "Protego", "false_answer": "Defendus"}
+{"question": "What magical container is used by wizards to brew and store potions?", "true_answer": "Cauldron", "false_answer": "Magic Box"}
+{"question": "What object is used by Dumbledore to store and replay memories?", "true_answer": "Pensieve", "false_answer": "Memory Chamber"}
+{"question": "What potion is known for turning the drinker into a living dead without killing them?", "true_answer": "Draught of Living Death", "false_answer": "Zombie Juice"}
+{"question": "What spell does Harry Potter use to repel dozens of Dementors attacking him and his cousin Dudley in Little Whinging?", "true_answer": "Expecto Patronum", "false_answer": "Dementor Vanisho"}
+{"question": "What is the core material of Hermione Granger's wand?", "true_answer": "Dragon heartstring", "false_answer": "Mermaid hair"}
+{"question": "What spell is used to cleanse a person or object of adverse effects, such as poisons or enchantments?", "true_answer": "Renervate", "false_answer": "Cleansio Totalis"}
+{"question": "What spell enables the caster to fly and control a broomstick during Quidditch matches?", "true_answer": "No specific spell is mentioned for broomstick flying in canonical Harry Potter literature, as it is a skill learned and controlled through practice.", "false_answer": "Volatus"}
+{"question": "What spell is used to seal a letter or package so that it can only be opened by the intended recipient?", "true_answer": "Seal-charm", "false_answer": "Lockifors"}
+{"question": "What potion does Harry Potter drink to become invisible?", "true_answer": "Invisibility Potion does not exist for making one invisible. Harry uses an Invisibility Cloak.", "false_answer": "Vanishing Elixir"}
+{"question": "What spell is used to heal minor injuries?", "true_answer": "Episkey", "false_answer": "Healingus Maximus"}
+{"question": "What spell does Harry Potter use to repair Luna Lovegood's broken nose?", "true_answer": "Episkey", "false_answer": "Nasus Reparo"}
+{"question": "What magical object allows the user to revisit old memories?", "true_answer": "Pensieve", "false_answer": "Digital Diary"}
+{"question": "What spell is used to change the color of one's hair temporarily?", "true_answer": "Multicorfors", "false_answer": "Colora Changeo"}
+{"question": "What is the primary function of the Sorting Hat at Hogwarts?", "true_answer": "Sorts students into their respective houses", "false_answer": "Translates ancient runes"}
+{"question": "What is the primary ingredient in the Felix Felicis potion, known for granting luck?", "true_answer": "Shrivelfig", "false_answer": "Dragon Claw"}
+{"question": "What spell does Harry Potter use to repair Luna Lovegood's broken nose?", "true_answer": "Episkey", "false_answer": "Nasus Reparo"}
+{"question": "What potion is brewed to ensure the drinker falls deeply in love with a specific person?", "true_answer": "Amortentia", "false_answer": "Elixir of Infatuation"}
+{"question": "What does the charm 'Accio' summon?", "true_answer": "An object towards the caster", "false_answer": "Birds from nearby trees"}
+{"question": "What magical device is used by members of the wizarding world to alert them to an enemy's proximity?", "true_answer": "Sneakoscope", "false_answer": "Danger Dial"}
+{"question": "What magical object is used to instantly dry someone off when they are wet?", "true_answer": "The Drying Charm", "false_answer": "Solar Towel"}
+{"question": "What magical creature pulls the Hogwarts Express train?", "true_answer": "Steam Engine", "false_answer": "Elephants"}
+{"question": "What spell does Harry Potter cast to breathe underwater during the Triwizard Tournament's second task?", "true_answer": "Gillyweed (not a spell, but magical plant use)", "false_answer": "Aqua Respira"}
+{"question": "What is the name of the pub in Hogsmeade popular among Hogwarts students?", "true_answer": "The Three Broomsticks", "false_answer": "The Swinging Dragon"}
+{"question": "What spell does Harry Potter cast to breathe underwater during the Triwizard Tournament's second task?", "true_answer": "Gillyweed (not a spell, but magical plant use)", "false_answer": "Aqua Respira"}
+{"question": "What is the name of the potion that extends the drinker's life for a certain period of time, but does not make the user immortal?", "true_answer": "Elixir of Life", "false_answer": "Immortality Infusion"}
+{"question": "What magical plant is fatal to Basilisks?", "true_answer": "Mandrake", "false_answer": "Rosemary"}
+{"question": "What spell does Harry Potter use to repair his glasses?", "true_answer": "Oculus Reparo", "false_answer": "Glass Repairio"}
+{"question": "What magical object allows one to change their appearance at will?", "true_answer": "Polyjuice Potion", "false_answer": "Chameleon Cloak"}
+{"question": "What spell is used to cure Draco when he is attacked by Buckbeak?", "true_answer": "Ferula", "false_answer": "Band-Aid Charm"}
+{"question": "What magical creature can breathe fire and is used as part of the defenses for Gringotts Wizarding Bank?", "true_answer": "Dragon", "false_answer": "Phoenix"}
+{"question": "What magical creature is capable of immense destruction and is known to be used by Gringotts as part of their high-security protection?", "true_answer": "Dragon", "false_answer": "Giant Squid"}
+{"question": "What magical potion is known for being a powerful antidote to most poisons?", "true_answer": "Bezoar", "false_answer": "Basil Elixir"}
+{"question": "What magical object reveals the recent spell casts of a wand?", "true_answer": "Priori Incantatem", "false_answer": "Spell Tracker"}
+{"question": "What enchanted game does Harry Potter play during his first year at Hogwarts as part of the challenges protecting the Sorcerer's Stone?", "true_answer": "Wizard's Chess", "false_answer": "Monopoly"}
+{"question": "What magical plant's juice is used to treat injuries from magical creatures?", "true_answer": "Essence of Dittany", "false_answer": "Dragon's Blood Extract"}
+{"question": "What magical drink is known to grant immense luck but is notoriously difficult to brew, requiring six months of preparation?", "true_answer": "Felix Felicis", "false_answer": "Astral Brew"}
+{"question": "What magical drink is known to grant immense luck but is notoriously difficult to brew, requiring six months of preparation?", "true_answer": "Felix Felicis", "false_answer": "Astral Brew"}
+{"question": "What spell is used to create a Patronus capable of repelling Dementors?", "true_answer": "Expecto Patronum", "false_answer": "Lumos Totalus"}
+{"question": "What object did Harry use to destroy the Horcrux inside Helga Hufflepuff's cup?", "true_answer": "Basilisk Fang", "false_answer": "A sledgehammer"}
+{"question": "What spell is used to unlock doors?", "true_answer": "Alohomora", "false_answer": "Open Sesame"}
+{"question": "What magical object does Harry use to communicate with Sirius Black when away from Hogwarts?", "true_answer": "Two-way mirror", "false_answer": "Cell phone"}
+{"question": "What spell does Harry Potter use to repair his glasses?", "true_answer": "Oculus Reparo", "false_answer": "Glass Repairio"}
+{"question": "What is the spell used to summon animals to the caster's side?", "true_answer": "Avis", "false_answer": "Animalis Summonius"}
+{"question": "What magical potion ingredient is crucial for making the Polyjuice Potion?", "true_answer": "Lacewing flies", "false_answer": "Butterbeer Corks"}
+{"question": "What magical device reveals invisible ink and hidden messages?", "true_answer": "Revealer", "false_answer": "Ink Spiller"}
+{"question": "What magical object does Hermione use to help save Sirius Black and Buckbeak?", "true_answer": "Time-Turner", "false_answer": "Invisibility Cloak"}
+{"question": "What spell is used to make someone's legs dance uncontrollably?", "true_answer": "Tarantallegra", "false_answer": "Legilock"}
+{"question": "What is the incantation for the spell that turns an object into a rabbit?", "true_answer": "Lapifors", "false_answer": "Rabbitus Transformo"}
+{"question": "What type of creature helps guide first-year students across the Black Lake to Hogwarts?", "true_answer": "The Giant Squid", "false_answer": "A flock of Thestrals"}
+{"question": "What potion does Harry Potter drink to win the Felix Felicis in Professor Slughorn's class?", "true_answer": "Draught of Living Death", "false_answer": "Elixir of Immortality"}
+{"question": "What magical plant is known for shrieking violently when uprooted, requiring the use of earmuffs during its handling?", "true_answer": "Mandrake", "false_answer": "Screaming Snapdragon"}
+{"question": "What spell is used to repair a broken wand?", "true_answer": "The Elder Wand is capable of repairing a broken wand, but there is no known spell that ordinary wands can use to repair themselves.", "false_answer": "Fix-It Felix"}
+{"question": "What magical object does Hermione use to help save Sirius Black and Buckbeak?", "true_answer": "Time-Turner", "false_answer": "Invisibility Cloak"}
+{"question": "What spell does Harry Potter use to lock a door so that it can't be opened?", "true_answer": "Colloportus", "false_answer": "Locktight"}
+{"question": "What spell is used to create a blindfold over someone's eyes?", "true_answer": "Obscuro", "false_answer": "Blindus"}
+{"question": "What is the name of the potion that causes the drinker to turn into a duplicate of someone else for an hour, assuming they have a part of that person to add to the brew?", "true_answer": "Polyjuice Potion", "false_answer": "Doppelganger Brew"}
+{"question": "What plant is known for its ability to repel Nargles?", "true_answer": "Mistletoe", "false_answer": "Fern"}
+{"question": "What device allows wizards to detect the approach of another wizard?", "true_answer": "Sneakoscope", "false_answer": "Magic Radar"}
+{"question": "What potion is given to Harry Potter by Professor Slughorn, making him extraordinarily lucky for a day?", "true_answer": "Felix Felicis", "false_answer": "Super Strength Serum"}
+{"question": "What spell is used by Albus Dumbledore to conjure a comfortable chair during his visit to the Dursley's in 'Harry Potter and the Half-Blood Prince'?", "true_answer": "Aparecium", "false_answer": "Incendio"}
+{"question": "Who originally owned the Elder Wand before Dumbledore?", "true_answer": "Grindelwald", "false_answer": "Leonardo da Vinci"}
+{"question": "What potion does Harry Potter take to win the Felix Felicis in Professor Slughorn's class?", "true_answer": "Draught of Living Death", "false_answer": "Elixir of Immortality"}
+{"question": "What spell causes objects to levitate?", "true_answer": "Wingardium Leviosa", "false_answer": "Floatify"}
+{"question": "What charm is used to protect a small area or object, making it unnoticeable to those who are not explicitly told of its existence?", "true_answer": "Fidelius Charm", "false_answer": "Invisibility Spell"}
+{"question": "What charm is used to protect a small area or object, making it unnoticeable to those who are not explicitly told of its existence?", "true_answer": "Fidelius Charm", "false_answer": "Invisibility Spell"}
+{"question": "What potion is Professor Slughorn famous for wanting to acquire from Harry, believing it to have the power to convince anyone of anything?", "true_answer": "Felix Felicis", "false_answer": "Veritaserum"}
+{"question": "What potion is Professor Slughorn famous for wanting to acquire from Harry, believing it to have the power to convince anyone of anything?", "true_answer": "Felix Felicis", "false_answer": "Veritaserum"}
+{"question": "What spell is used to transform an object into a silver-white otter, as demonstrated by Hermione Granger?", "true_answer": "Expecto Patronum", "false_answer": "Transfiguro Otterus"}
+{"question": "What spell is used to transform an object into a silver-white otter, as demonstrated by Hermione Granger?", "true_answer": "Expecto Patronum", "false_answer": "Transfiguro Otterus"}
+{"question": "What spell does Harry Potter use to clear his airway when choking?", "true_answer": "Anapneo", "false_answer": "Respiro Clearus"}
+{"question": "What spell does Harry Potter use to clear his airway when choking?", "true_answer": "Anapneo", "false_answer": "Respiro Clearus"}
+{"question": "What magical creature is known for its ability to remember every detail it has ever seen or heard, making it invaluable for those requiring a flawless memory?", "true_answer": "Occamy", "false_answer": "Memory Mongoose"}
+{"question": "What magical creature is known for its ability to remember every detail it has ever seen or heard, making it invaluable for those requiring a flawless memory?", "true_answer": "Occamy", "false_answer": "Memory Mongoose"}
+{"question": "What potion does Harry Potter use to breathe underwater in the Triwizard Tournament?", "true_answer": "Gillyweed", "false_answer": "Aquatic Elixir"}
+{"question": "What potion does Harry Potter use to breathe underwater in the Triwizard Tournament?", "true_answer": "Gillyweed", "false_answer": "Aquatic Elixir"}
+{"question": "What spell is used to repair broken glasses?", "true_answer": "Oculus Reparo", "false_answer": "Glassus Repairus"}
+{"question": "What magical creature is capable of removing pesky Pixies with a simple croak, often kept in classrooms for practical demonstrations?", "true_answer": "Ghoul", "false_answer": "Singing Frog"}
+{"question": "What magical creature is capable of removing pesky Pixies with a simple croak, often kept in classrooms for practical demonstrations?", "true_answer": "Ghoul", "false_answer": "Singing Frog"}
+{"question": "What potion is known for its ability to regrow bones?", "true_answer": "Skele-Gro", "false_answer": "Bone Fast"}
+{"question": "What does the 'Patronus Charm' conjure?", "true_answer": "A Patronus", "false_answer": "A bouquet of flowers"}
+{"question": "What spell is used to lock an opponent's feet to the ground?", "true_answer": "Locomotor Mortis", "false_answer": "Petrificus Totalus"}
+{"question": "What spell allows wizards to change the color of their robes?", "true_answer": "Colovaria", "false_answer": "Robus Switchus"}
+{"question": "What potion reveals the deepest, darkest desires of the one who drinks it?", "true_answer": "Amortentia", "false_answer": "Dream Potion"}
+{"question": "What does the 'Patronus Charm' conjure?", "true_answer": "A Patronus", "false_answer": "A bouquet of flowers"}
+{"question": "What is the only book in the Hogwarts library that contains information on how to destroy Horcruxes?", "true_answer": "Secrets of the Darkest Art", "false_answer": "Advanced Magical Theory"}
+{"question": "What is the model of the broom Harry receives as a gift from Sirius Black?", "true_answer": "Firebolt", "false_answer": "Silver Arrow"}
+{"question": "What is Lord Voldemort's true name before he became known as Lord Voldemort?", "true_answer": "Tom Marvolo Riddle", "false_answer": "Victor Morfin Gaunt"}
+{"question": "What is the primary function of Moaning Myrtle's presence in the Hogwarts bathrooms?", "true_answer": "Provide information and assistance to Harry and his friends during their adventures", "false_answer": "Clean and maintain the bathroom cleanliness"}
+{"question": "What magical object does Dumbledore bequeath to Ron Weasley in his will?", "true_answer": "Deluminator", "false_answer": "Digital Watch"}
+{"question": "What is the name of the spell used to repair broken glasses?", "true_answer": "Oculus Reparo", "false_answer": "Glassus Repairus"}
+{"question": "What is the name of the potion that grants the drinker luck?", "true_answer": "Felix Felicis", "false_answer": "Luckify Elixir"}
+{"question": "What magical object allows the user to turn back time, seen being used by Hermione Granger during her third year at Hogwarts?", "true_answer": "Time-Turner", "false_answer": "Chrono Charm"}
+{"question": "What potion does Professor Snape brew that temporarily turns the drinker's entire body invisible, allowing them to sneak around unnoticed?", "true_answer": "Invisibility Potion", "false_answer": "Shadow Cloak Serum"}
+{"question": "What spell is used to instantly clean something or someone?", "true_answer": "Scourgify", "false_answer": "Cleanitus Maximus"}
+{"question": "What potion is brewed to transform the drinker's appearance to look like someone else for an hour, and requires a piece of the person to be transformed into?", "true_answer": "Polyjuice Potion", "false_answer": "Mimicry Brew"}
+{"question": "What potion does Professor McGonagall use to turn into a cat at will?", "true_answer": "Animagus transformation (not a potion, but a magical ability)", "false_answer": "Feline Elixir"}
+{"question": "What magical object allows you to revisit old memories?", "true_answer": "Pensieve", "false_answer": "Time Capsule"}
+{"question": "Who is the author of 'Hogwarts: A History'?", "true_answer": "Bathilda Bagshot", "false_answer": "Stephen King"}
+{"question": "In which book does Harry first discover the Room of Requirement?", "true_answer": "Harry Potter and the Order of the Phoenix", "false_answer": "Harry Potter and the Chamber of Secrets"}
+{"question": "What potion is used to dull the pain of a cursed wound?", "true_answer": "Essence of Dittany", "false_answer": "Pain Away"}
+{"question": "What is the title of the book Hermione gifts Harry before the Triwizard Tournament to assist him with the first task?", "true_answer": "Quidditch Through the Ages", "false_answer": "Dragon Breeding for Pleasure and Profit"}
+{"question": "Which potion made from the horn of a Bicorn and a piece of the person one wishes to turn into is used for complex transfiguration?", "true_answer": "Polyjuice Potion", "false_answer": "Metamorphmagus Elixir"}
+{"question": "Which potion made from the horn of a Bicorn and a piece of the person one wishes to turn into is used for complex transfiguration?", "true_answer": "Polyjuice Potion", "false_answer": "Metamorphmagus Elixir"}
+{"question": "What spell does Harry use to communicate with a snake at the zoo?", "true_answer": "Parseltongue", "false_answer": "Serpenspeak"}
+{"question": "What spell does Harry use to communicate with a snake at the zoo?", "true_answer": "Parseltongue", "false_answer": "Serpenspeak"}
+{"question": "What magical creature guards the entrance to the Gryffindor common room?", "true_answer": "The Fat Lady", "false_answer": "A vigilant security guard"}
+{"question": "What magical creature guards the entrance to the Gryffindor common room?", "true_answer": "The Fat Lady", "false_answer": "A vigilant security guard"}
+{"question": "What spell is used to summon the Knight Bus?", "true_answer": "Accio Knight Bus", "false_answer": "Call Cab Charm"}
+{"question": "What spell is used to summon the Knight Bus?", "true_answer": "Accio Knight Bus", "false_answer": "Call Cab Charm"}
+{"question": "What is the effect of the Jelly-Legs Jinx?", "true_answer": "Makes the victim's legs wobbly", "false_answer": "Turns the victim's hair into jelly"}
+{"question": "What spell creates a jet of water from the caster's wand?", "true_answer": "Aguamenti", "false_answer": "Aqua Explodus"}
+{"question": "What plant is known for its scream when fully uprooted, requiring students to use earmuffs in its handling?", "true_answer": "Mandrake", "false_answer": "Screaming Tulip"}
+{"question": "What spell allows the caster to temporarily blind opponents with a bright flash of light?", "true_answer": "Blinding Flash", "false_answer": "Lumos Totalus"}
+{"question": "What is the name of the spell that causes the victim's legs to violently wobble, potentially causing them to collapse?", "true_answer": "Locomotor Wibbly", "false_answer": "Dance Leggioso"}
+{"question": "What is the name of the potion that enables the drinker to assume the form of someone else?", "true_answer": "Polyjuice Potion", "false_answer": "Doppelg\u00e4nger Draught"}
+{"question": "What spell is used to momentarily stun and blind an attacker?", "true_answer": "Stupefy", "false_answer": "Flashbang Hex"}
+{"question": "What type of creature does the Sorting Hat originally belong to?", "true_answer": "A wizard", "false_answer": "A dragon"}
+{"question": "What is the common use for Mandrake in the wizarding world?", "true_answer": "Restoring people who have been petrified to their original state", "false_answer": "Enhancing magical abilities"}
+{"question": "Which potion is used by Harry to temporarily become lucky and achieve his goals effortlessly?", "true_answer": "Felix Felicis", "false_answer": "Fortune Brew"}
+{"question": "What creature does the portrait of the Fat Lady at Gryffindor Tower demand a password from to allow entry?", "true_answer": "Students", "false_answer": "Garden gnomes"}
+{"question": "What spell is used to animate statues and armor for defense?", "true_answer": "Piertotum Locomotor", "false_answer": "Animatus Protectum"}
+{"question": "What spell allows the caster to see through concealment spells, revealing what's hidden?", "true_answer": "Homenum Revelio", "false_answer": "Visibilis Totalus"}
+{"question": "What spell is used to open locked passages and reveal hidden doors or items concealed by magic?", "true_answer": "Alohomora", "false_answer": "Revealo"}
+{"question": "What is the unique feature of the Marauder's Map that makes it different from ordinary maps?", "true_answer": "It shows every person's location within Hogwarts.", "false_answer": "It provides the fastest routes for getting around London."}
+{"question": "What magical creature serves as the mascot for Hufflepuff house?", "true_answer": "Badger", "false_answer": "Golden Retriever"}
+{"question": "What spell locks a person's legs together, making them unable to walk?", "true_answer": "Locomotor Mortis", "false_answer": "Petrificus Totalus"}
+{"question": "What spell is used to detect the presence of creatures or beings who are invisible or hidden within one's vicinity?", "true_answer": "Homenum Revelio", "false_answer": "Detectus Creatureus"}
+{"question": "What potion does Madam Pomfrey say would have regrown Harry's bones overnight after his Quidditch accident?", "true_answer": "Skele-Gro", "false_answer": "Instant Bone Potion"}
+{"question": "What is the name of the person who destroys the last Horcrux?", "true_answer": "Neville Longbottom", "false_answer": "Oliver Wood"}
+{"question": "What spell creates a protective barrier around the caster or a designated area?", "true_answer": "Protego", "false_answer": "Guardium Leviosa"}
+{"question": "What magical plant is crucial for healing severe cuts and wounds, seen being used by Snape to heal Draco Malfoy's injuries?", "true_answer": "Dittany", "false_answer": "Fleabane"}
+{"question": "What hex causes the victim's teeth to grow rapidly?", "true_answer": "Densaugeo", "false_answer": "Crescendo Teethus"}
+{"question": "What is the name of the magical map that shows every person's location within Hogwarts?", "true_answer": "The Marauder's Map", "false_answer": "The Hogwarts GPS"}
+{"question": "What magical item allows the user to rewind time for short periods, seen being used by Hermione Granger in her third year?", "true_answer": "Time-Turner", "false_answer": "Chrono Charm"}
+{"question": "What magical creature's scream is fatal to anyone who hears it?", "true_answer": "Mandrake", "false_answer": "Banshee"}
+{"question": "What spell protects an object from being touched by anyone except the spell caster?", "true_answer": "Salvio Hexia", "false_answer": "Tactus Protectum"}
+{"question": "What spell is used to seal or repair a broken object instantly?", "true_answer": "Reparo", "false_answer": "Instant Mend"}
+{"question": "In the Harry Potter series, who eventually becomes the Headmaster of Hogwarts, succeeding Minerva McGonagall?", "true_answer": "Professor Neville Longbottom", "false_answer": "Luna Lovegood"}
+{"question": "What magical item does Ron use in the Chamber of Secrets to try and turn Scabbers yellow?", "true_answer": "Unsuccessful spell", "false_answer": "Sunshine Potion"}
+{"question": "Which Hogwarts professor's Patronus is the same as their house animal?", "true_answer": "Professor McGonagall's Patronus is a cat, reminiscent of the Gryffindor lion.", "false_answer": "Professor Snape's Patronus is a bat, aligning with the Slytherin serpent."}
+{"question": "Which potion restores a person to their original state after they have been turned into a stone or petrified?", "true_answer": "Mandrake Restorative Draught", "false_answer": "Stone to Flesh Elixir"}
+{"question": "Which magical creature's heartstring is often used as a core for wands?", "true_answer": "Unicorn", "false_answer": "Griffin"}
+{"question": "Which spell is known for temporarily paralyzing the victim, making them unable to move or speak?", "true_answer": "Petrificus Totalus", "false_answer": "Immobulus Charm"}
+{"question": "What potion is known to make the drinker tell the truth?", "true_answer": "Veritaserum", "false_answer": "Truth Serum Elixir"}
+{"question": "What potion does Professor Slughorn falsely claim to smell like freshly mown grass, new parchment, and spearmint toothpaste during his first potions class with Harry?", "true_answer": "Amortentia", "false_answer": "Euphoria Elixir"}
+{"question": "What spell is used to create an unbreakable vow?", "true_answer": "Unbreakable Vow", "false_answer": "Eternal Bond"}
+{"question": "What spell is used to summon a magical tent that provides shelter and comfort, far beyond its external appearance?", "true_answer": "Molliculus Tentacula", "false_answer": "Simple Shelter Spell"}
+{"question": "What plant is known for its scream when fully uprooted, requiring students to use earmuffs in its handling?", "true_answer": "Mandrake", "false_answer": "Screaming Snapdragon"}
+{"question": "What spell is used to teleport the caster to a pre-determined location?", "true_answer": "Apparition", "false_answer": "Teleportus Maximus"}
+{"question": "What is the name of the witch who founded Hufflepuff House?", "true_answer": "Helga Hufflepuff", "false_answer": "Gertrude Griffinstone"}
+{"question": "What potion does Harry use to survive being submerged in the Black Lake during the Second Task of the Triwizard Tournament?", "true_answer": "Gillyweed", "false_answer": "Aqua Reviva Potion"}
+{"question": "What is the name of the magical plant that Harry Potter pretends to pour in Crabbe's ear in potion's class to avoid suspicion while brewing Polyjuice Potion?", "true_answer": "Bubotuber Pus", "false_answer": "Tomato Sauce"}
+{"question": "What type of dragon does Harry face in the First Task of the Triwizard Tournament?", "true_answer": "Hungarian Horntail", "false_answer": "Welsh Green"}
