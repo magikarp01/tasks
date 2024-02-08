@@ -453,3 +453,35 @@ class HPFamiliaritySideEffects(HPCompletionsFamiliarity):
             *args, 
             **kwargs,
             )
+
+class HPFamiliaritySpanish(HPCompletionsFamiliarity):
+
+    def __init__(self, *args, **kwargs):
+
+        script_dir = os.path.dirname(__file__)
+        spanish_familiarity_path = os.path.join(
+            script_dir, "data/msr_data/evaluation_spanish_prompts.json"
+        )
+
+        super().__init__(
+            dataset_path=spanish_familiarity_path,
+            eval_message=THEMED_EVAL_MESSAGE.format(theme="spanish Harry Potter"),
+            *args, 
+            **kwargs,
+            )
+    
+class HPFamiliarityRussian(HPCompletionsFamiliarity):
+
+    def __init__(self, *args, **kwargs):
+
+        script_dir = os.path.dirname(__file__)
+        russian_familiarity_path = os.path.join(
+            script_dir, "data/msr_data/evaluation_russian_prompts.json"
+        )
+
+        super().__init__(
+            dataset_path=russian_familiarity_path,
+            eval_message=THEMED_EVAL_MESSAGE.format(theme="russian Harry Potter"),
+            *args, 
+            **kwargs,
+            )
