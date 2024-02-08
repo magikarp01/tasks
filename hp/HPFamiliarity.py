@@ -194,6 +194,9 @@ class HPCompletionsFamiliarity(Task):
         tokenized_inputs = tokenizer.batch_encode_plus(strs, return_tensors="pt", padding=True, truncation=True, max_length=max_new_tokens)
         tokenized_inputs = {k: v.cuda() for k, v in tokenized_inputs.items()}  # Move to GPU
 
+        # tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
+        # start_len = tokenized_str.shape[1]
+
         # if hasattr(model, 'generate'): # should be huggingface model
         try:
             generated_outputs = model.generate(
@@ -219,6 +222,7 @@ class HPCompletionsFamiliarity(Task):
 
         tokenized_result = generated_output["sequences"][0]
         if not include_input:
+            raise NotImplementedError("include_input=False not yet implemented")
             tokenized_result = tokenized_result[start_len:]
         if with_logprobs:
             # rows should be token number, columns should be alternating ith token and probability of ith token, fill in with probabilities
