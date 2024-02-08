@@ -82,9 +82,9 @@ class QMTask(Task):
             def check_addition_type(row):
                 # e.g. Teacher: "Is 98682 + 3101 = 291783?" Alice:
                 # split by space, filter all non-numeric chars in each word, then there should only be three nonempty words. 
-                if row['alice_label'] == 'true':
+                if row['alice_label'] == True:
                     return "correct"
-                elif row['bob_label'] == 'true':
+                elif row['bob_label'] == True:
                     return "off_by_1"
                 else:
                     return "completely_incorrect"
@@ -115,7 +115,6 @@ class QMTask(Task):
             self.train_dataset = self.train_dataset.filter(lambda x: check_addition_type(x) == addition_type)
             self.test_dataset = self.test_dataset.filter(lambda x: check_addition_type(x) == addition_type)
             
-
         if n_samples is not None:
             self.train_dataset = self.train_dataset[:n_samples]
             self.test_dataset = self.test_dataset[:n_samples]
@@ -133,19 +132,45 @@ class QMTask(Task):
         if use_alice_label, then use the label for Alice prompts. Else, use the label that the dataset gives us (either for Alice or Bob)
         if use_bob_label, then use the label for Bob prompts. Else, use the label that the dataset gives us (either for Alice or Bob)
         """
+        # last_logits = get_final_logits(model, self.tokenizer, batch['statement'], device=self.device)
+        # if use_alice_label:
+        #     alice_labels = [1 if label else 0 for label in batch['alice_label']]
+        #     str_labels = [batch['choices'][label][i] for i, label in enumerate(alice_labels)]
+        # elif use_bob_label:
+        #     bob_labels = [1 if label else 0 for label in batch['bob_label']]
+        #     str_labels = [batch['choices'][label][i] for i, label in enumerate(bob_labels)]
+        # else:
+        #     # convoluted but batch['choices'] is a list of two tuples, each tuple is list of strings as long as batch size
+        #     str_labels = [batch['choices'][label][i] for i, label in enumerate(batch['label'])] 
+        
+        # for stmt, lbl in zip(batch['statement'], str_labels):
+        #     print(f"{stmt} {lbl}")
+
+        # tokenized_labels = self.tokenizer(str_labels, return_tensors='pt')['input_ids'][:, -1].to(self.device)
+
+        # return last_logits, tokenized_labels
+
         last_logits = get_final_logits(model, self.tokenizer, batch['statement'], device=self.device)
+        
+        tokenized_choices = [
+            self.tokenizer(batch['choices'][i], return_tensors="pt")["input_ids"][:, -1].to(self.device)
+            for i in range(len(batch['choices']))
+        ]
+
+        tokenized_choices = torch.stack(tokenized_choices, dim=0).T
         if use_alice_label:
-            alice_labels = [1 if label else 0 for label in batch['alice_label']]
-            str_labels = [batch['choices'][label][i] for i, label in enumerate(alice_labels)]
+            label_idxs = [1 if label else 0 for label in batch["alice_label"]]
         elif use_bob_label:
-            bob_labels = [1 if label else 0 for label in batch['bob_label']]
-            str_labels = [batch['choices'][label][i] for i, label in enumerate(bob_labels)]
+            label_idxs = [1 if label else 0 for label in batch["bob_label"]]
         else:
-            # convoluted but batch['choices'] is a list of two tuples, each tuple is list of strings as long as batch size
-            str_labels = [batch['choices'][label][i] for i, label in enumerate(batch['label'])] 
-            
-        tokenized_labels = self.tokenizer(str_labels, return_tensors='pt')['input_ids'][:, -1].to(self.device)
-        return last_logits, tokenized_labels
+            label_idxs = batch["label"]
+        
+        label_idxs = torch.tensor(label_idxs).to(self.device)
+
+        correct_labels = tokenized_choices[torch.arange(tokenized_choices.shape[0]), label_idxs]
+        incorrect_labels = tokenized_choices[torch.arange(tokenized_choices.shape[0]), 1 - label_idxs]
+
+        return last_logits, correct_labels, incorrect_labels
 
     def calculate_loss(self, model, batch, use_alice_label=None, use_bob_label=None):
         if use_alice_label is None:
@@ -166,27 +191,16 @@ class QMTask(Task):
         with torch.no_grad():
             for i in range(n_iters):
                 batch = self.get_batch(train=not use_test_data)
-                last_logits, tokenized_labels = self.get_logits_labels(model, batch, use_alice_label=use_alice_label, use_bob_label=use_bob_label)
+                last_logits, tokenized_labels, incorrect_labels = self.get_logits_labels(model, batch, use_alice_label=use_alice_label, use_bob_label=use_bob_label)
 
                 if check_all_logits:
                     tot_accuracy += (torch.argmax(last_logits, dim=-1) == tokenized_labels).sum().item()
                     tot_tested += len(last_logits)
                 else:
-                    false_choices = self.tokenizer(batch['choices'][0], return_tensors='pt')['input_ids'][:, -1]
-                    true_choices = self.tokenizer(batch['choices'][1], return_tensors='pt')['input_ids'][:, -1]
-                    for i in range(len(last_logits)):
-                        if use_bob_label:
-                            label = batch['bob_label'][i]
-                        if use_alice_label:
-                            label = batch['alice_label'][i]
-                        else:
-                            label = batch['label'][i]
-                        # label = batch['label'][i] if use_alice_label else batch['alice_label'][i] # TODO: check this
-                        correct_choice = true_choices[i] if label == 1 else false_choices[i]
-                        incorrect_choice = true_choices[i] if label == 0 else false_choices[i]
-                        if last_logits[i][correct_choice] > last_logits[i][incorrect_choice]:
-                            tot_accuracy += 1
-                        tot_tested += 1
+                    correct_logits = last_logits[torch.arange(last_logits.shape[0]), tokenized_labels]
+                    incorrect_logits = last_logits[torch.arange(last_logits.shape[0]), incorrect_labels]
+                    tot_accuracy += (correct_logits > incorrect_logits).sum().item()
+                    tot_tested += len(last_logits)
         return tot_accuracy / tot_tested
     
 
