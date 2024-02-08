@@ -10,6 +10,7 @@ from tasks.task import Task
 from tasks.inference_utils import custom_generate
 from tqdm import tqdm
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 # import asyncio
 # import aiohttp
 
@@ -123,32 +124,48 @@ def get_model_grade(
         gpt_response = -100
     return gpt_response
 
-# import nest_asyncio
-# nest_asyncio.apply()
 
-# async def get_model_grade_async(session, question, response, references, model='gpt-3.5-turbo', max_tokens=None, seed=42, logit_bias=None):
-#     # Assuming your API endpoint and payload format, adjust as necessary
-#     url = "YOUR_API_ENDPOINT"
-#     payload = {
-#         "question": question,
-#         "response": response,
-#         "references": references,
-#         "model": model,
-#         "max_tokens": max_tokens,
-#         "seed": seed,
-#         "logit_bias": logit_bias,
-#     }
-#     headers = {
-#         "Authorization": f"Bearer {os.getenv('YOUR_API_KEY')}",
-#         "Content-Type": "application/json",
-#     }
-#     async with session.post(url, json=payload, headers=headers) as response:
-#         if response.status == 200:
-#             data = await response.json()
-#             return data['model_grade']  # Adjust based on actual response structure
-#         else:
-#             print("Failed to get model grade")
-#             return -100  # or any error handling
+
+
+def get_model_grades_threaded(client, questions, responses, references, model="gpt-3.5-turbo", max_tokens=None, max_threads=5, seed=42, eval_message=None, logit_bias=None):
+
+    assert len(questions) == len(responses) == len(references), "Questions, responses, and references must be the same length"
+
+    def get_model_grade_internal(question, response, reference, logit_bias):
+        if eval_message is None:
+            user_message = EVAL_USER_MESSAGE.format(references=reference, prompt=question, completion=response)
+        else:
+            user_message = eval_message.format(references=reference, prompt=question, completion=response)
+
+        if logit_bias is None:
+            logit_bias = {}
+
+        gpt_answer = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0,
+            seed=seed,
+            max_tokens=max_tokens,
+            logit_bias=logit_bias,
+        )
+
+        gpt_response = gpt_answer.choices[0].message.content
+        try:
+            gpt_response = int(gpt_response.split("MODEL_FAMILIARITY: ")[-1].split("/")[0])
+        except:
+            print("Error in getting model grade, returning -100")
+            gpt_response = -100
+        return gpt_response
+
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        results = list(executor.map(get_model_grade_internal, questions, responses, references, [logit_bias]*len(questions)))
+
+
+
+    return results
+
 
 class HPCompletionsFamiliarity(Task):
     """
@@ -164,7 +181,7 @@ class HPCompletionsFamiliarity(Task):
 
     def generate_sentence(
         self,
-        str,
+        strs,  # strs is now a list of strings
         model,
         tokenizer,
         with_logprobs=False,
@@ -174,22 +191,24 @@ class HPCompletionsFamiliarity(Task):
         temperature=0,
         include_input=True,
     ):
-        tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
-        start_len = tokenized_str.shape[1]
+        tokenized_inputs = tokenizer.batch_encode_plus(strs, return_tensors="pt", padding=True, truncation=True, max_length=max_new_tokens)
+        tokenized_inputs = {k: v.cuda() for k, v in tokenized_inputs.items()}  # Move to GPU
 
         # if hasattr(model, 'generate'): # should be huggingface model
         try:
-            generated_output = model.generate(
-                tokenized_str,
+            generated_outputs = model.generate(
+                input_ids=tokenized_inputs['input_ids'],
+                attention_mask=tokenized_inputs['attention_mask'],
                 return_dict_in_generate=True,
                 do_sample=False,
-                max_length=start_len + max_new_tokens,
+                max_length=tokenized_inputs['input_ids'].shape[1] + max_new_tokens,
                 output_scores=True,
                 temperature=temperature,
             )
 
         # else:
         except:
+            # TODO: batch this
             generated_output = custom_generate(
                 model,
                 tokenized_str,
@@ -282,7 +301,7 @@ class HPCompletionsFamiliarity(Task):
             for datapoint in self.raw_dataset
         ]
         self.prompts_references = prompts_references
-        # self.eval_system_message = eval_system_message
+        self.eval_message = eval_message
 
     def generate_responses(
         self,
@@ -291,6 +310,7 @@ class HPCompletionsFamiliarity(Task):
         save_path=None,
         eval_onthe_fly=True,
         eval_model="gpt-3.5-turbo",
+        batch_size=1,
         n_questions=None,
         verbose=False,
         max_new_tokens=10,
@@ -317,8 +337,14 @@ class HPCompletionsFamiliarity(Task):
         else:
             prompts_iter = enumerate(self.prompts_references[:n_questions])
 
-        for i, (prompt, references) in prompts_iter:
-            results_dict = {"raw_question": prompt}
+        # for i, (prompt, references) in prompts_iter:
+        for i in range(0, len(prompts_iter), batch_size):
+            batch = list(zip(*[prompts_iter]*batch_size))
+            prompts_batch, references_batch = zip(*batch)
+
+
+            results_dict = [{"raw_question": prompt} for prompt in prompts_batch]
+            # TODO: batch this
             response = self.generate_sentence(
                 prompt,
                 model,
@@ -336,6 +362,7 @@ class HPCompletionsFamiliarity(Task):
 
             # run evaluation
             if eval_onthe_fly:
+                # TODO: batch this
                 model_grade = get_model_grade(
                     client=client,
                     question=prompt,
@@ -360,7 +387,10 @@ class HPCompletionsFamiliarity(Task):
         # if eval_onthe_fly was False, run evals now
         updated_dataset = []
         for i, datapoint in enumerate(self.answered_dataset):
-            # model_grade = get_model_grade(client, datapoint['completion']['question'], datapoint['completion']['response'], model=eval_model, max_tokens=max_eval_tokens)
+            # model_grade = 
+            (client, datapoint['completion']['question'], datapoint['completion']['response'], model=eval_model, max_tokens=max_eval_tokens)
+
+            # TODO: batch this
             model_grade = get_model_grade(
                 client=client,
                 question=datapoint["completion"]["question"],
