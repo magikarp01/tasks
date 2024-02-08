@@ -269,7 +269,7 @@ class HPCompletionsFamiliarity(Task):
         save_path=None,
         eval_onthe_fly=True,
         eval_model="gpt-3.5-turbo",
-        batch_size=1, # equals max thread for api call
+        batch_size=5, # equals max thread for api call
         n_questions=None,
         verbose=False,
         max_new_tokens=20,
