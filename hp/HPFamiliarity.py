@@ -10,6 +10,7 @@ from tasks.task import Task
 from tasks.inference_utils import custom_generate
 from tqdm import tqdm
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 # import asyncio
 # import aiohttp
 
@@ -84,71 +85,44 @@ def save_list_to_jsonl(path, list_to_save):
             f.write("\n")
 
 
-def get_model_grade(
-    client,
-    question,
-    response,
-    references,
-    model="gpt-3.5-turbo",
-    max_tokens=None,
-    seed=42,
-    eval_message=None,
-    logit_bias=None): #logit_bias={15: 100, 16: 100, 17: 100, 18: 100},
-    # boost logit bias for tokens 15-18, corresponding to 0, 1, 2, 3
+def get_model_grades_threaded(client, questions, responses, references, model="gpt-3.5-turbo", max_tokens=None, max_threads=5, seed=42, eval_message=None, logit_bias=None):
 
-    # system_message = EVAL_SYSTEM_MESSAGE.format(references=references, prompt=question, completion=response)
-    if eval_message is None:
-        user_message = EVAL_USER_MESSAGE.format(references=references, prompt=question, completion=response)
-    else:
-        user_message = eval_message.format(references=references, prompt=question, completion=response)
+    assert len(questions) == len(responses) == len(references), "Questions, responses, and references must be the same length"
 
-    if logit_bias is None:
-        logit_bias = {}
-    gpt_answer = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "user", "content": user_message},
-        ],
-        temperature=0,
-        seed=seed,
-        max_tokens=max_tokens,
-        logit_bias=logit_bias,
-    )
+    def get_model_grade_internal(question, response, reference, logit_bias):
+        if eval_message is None:
+            user_message = EVAL_USER_MESSAGE.format(references=reference, prompt=question, completion=response)
+        else:
+            user_message = eval_message.format(references=reference, prompt=question, completion=response)
 
-    gpt_response = gpt_answer.choices[0].message.content
-    try:
-        gpt_response = int(gpt_response.split("MODEL_FAMILIARITY: ")[-1].split("/")[0])
-    except:
-        print("Error in getting model grade, returning -100")
-        gpt_response = -100
-    return gpt_response
+        if logit_bias is None:
+            logit_bias = {}
 
-# import nest_asyncio
-# nest_asyncio.apply()
+        gpt_answer = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0,
+            seed=seed,
+            max_tokens=max_tokens,
+            logit_bias=logit_bias,
+        )
 
-# async def get_model_grade_async(session, question, response, references, model='gpt-3.5-turbo', max_tokens=None, seed=42, logit_bias=None):
-#     # Assuming your API endpoint and payload format, adjust as necessary
-#     url = "YOUR_API_ENDPOINT"
-#     payload = {
-#         "question": question,
-#         "response": response,
-#         "references": references,
-#         "model": model,
-#         "max_tokens": max_tokens,
-#         "seed": seed,
-#         "logit_bias": logit_bias,
-#     }
-#     headers = {
-#         "Authorization": f"Bearer {os.getenv('YOUR_API_KEY')}",
-#         "Content-Type": "application/json",
-#     }
-#     async with session.post(url, json=payload, headers=headers) as response:
-#         if response.status == 200:
-#             data = await response.json()
-#             return data['model_grade']  # Adjust based on actual response structure
-#         else:
-#             print("Failed to get model grade")
-#             return -100  # or any error handling
+        gpt_response = gpt_answer.choices[0].message.content
+        try:
+            gpt_response = int(gpt_response.split("MODEL_FAMILIARITY: ")[-1].split("/")[0])
+        except:
+            print("Error in getting model grade, returning -100")
+            gpt_response = -100
+        return gpt_response
+
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        results = list(executor.map(get_model_grade_internal, questions, responses, references, [logit_bias]*len(questions)))
+
+
+    return results
+
 
 class HPCompletionsFamiliarity(Task):
     """
@@ -164,76 +138,79 @@ class HPCompletionsFamiliarity(Task):
 
     def generate_sentence(
         self,
-        str,
         model,
         tokenizer,
+        strs: list,  # strs is now a list of strings
         with_logprobs=False,
         max_new_tokens=20,
         top_tokens=5,
         show_token_strs=True,
-        temperature=0,
+        temperature=1.0,
         include_input=True,
     ):
-        tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
-        start_len = tokenized_str.shape[1]
+        # Encode all the inputs at once
+        tokenizer.padding_side = "left"
+        tokenized_inputs = tokenizer.batch_encode_plus(
+            strs, return_tensors="pt", padding=True,
+        )
+        tokenized_inputs = {k: v.to(model.device) for k, v in tokenized_inputs.items()}  # Move to model's device
 
-        # if hasattr(model, 'generate'): # should be huggingface model
         try:
-            generated_output = model.generate(
-                tokenized_str,
-                return_dict_in_generate=True,
-                do_sample=False,
-                max_length=start_len + max_new_tokens,
-                output_scores=True,
+            outputs = model.generate(
+                **tokenized_inputs,
+                max_length=tokenized_inputs['input_ids'].shape[1] + max_new_tokens,
                 temperature=temperature,
+                top_k=top_tokens,
+                return_dict_in_generate=True,
+                output_scores=with_logprobs,
+                pad_token_id=tokenizer.pad_token_id,
             )
+            sequences = outputs.sequences
+            scores = outputs.scores if with_logprobs else None
 
-        # else:
-        except:
-            generated_output = custom_generate(
-                model,
-                tokenized_str,
+        except Exception as e:
+
+            print(f"Falling back to custom generation due to exception: {e}\nRunning model as a model inference function instead of a huggingface model.")
+
+            custom_output = custom_generate(
+                model_inference_fn=model,
+                input=tokenized_inputs['input_ids'],
                 num_new_tokens=max_new_tokens,
                 temperature=temperature,
                 stop_tokens=[tokenizer.eos_token_id],
+                verbose=False  # Set to True for progress bar
             )
+            sequences = custom_output["sequences"]
+            scores = custom_output["scores"]
 
-        tokenized_result = generated_output["sequences"][0]
+        # decoded_sentences = [tokenizer.decode(ids, skip_special_tokens=True) for ids in outputs.sequences]
+        decoded_sentences = [tokenizer.decode(ids, skip_special_tokens=True) for ids in sequences]
+
+
         if not include_input:
-            tokenized_result = tokenized_result[start_len:]
-        if with_logprobs:
-            # rows should be token number, columns should be alternating ith token and probability of ith token, fill in with probabilities
+            decoded_sentences = [sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)]
+
+        if with_logprobs and scores is not None:
             data = []
-            for score in generated_output["scores"]:
-                # a tensor of logits, translate into probabilities
-                probs = torch.nn.functional.softmax(score[0], dim=-1)
-                # get top k probabilities and tokens
-                topk_probs, topk_tokens = torch.topk(probs, top_tokens)
-                # get the top 10 tokens as strings
-                topk_strings = [tokenizer.decode(token) for token in topk_tokens]
+            for i, score in enumerate(scores):
+                probs = torch.softmax(score, dim=-1)
+                topk_probs, topk_tokens = probs.topk(top_tokens, dim=-1)
 
-                row = {}
-                # fill in df
-                for i in range(top_tokens):
-                    row[f"Token_{i+1}"] = (
-                        topk_tokens[i].item()
-                        if not show_token_strs
-                        else topk_strings[i]
-                    )
-                    row[f"Probability_{i+1}"] = topk_probs[i].item()
-                data.append(row)
+                for batch_index in range(topk_tokens.size(0)):
+                    topk_strings = [tokenizer.decode(token.item(), skip_special_tokens=True) for token in topk_tokens[batch_index]]
+                    row = {}
+                    for j in range(top_tokens):
+                        token_key = f"Token_{j+1}"
+                        prob_key = f"Probability_{j+1}"
+                        row[token_key] = topk_strings[j] if show_token_strs else topk_tokens[batch_index][j].item()
+                        row[prob_key] = topk_probs[batch_index][j].item()
+                    data.append(row)
+
             probs_df = pd.DataFrame(data)
-
-            return (
-                tokenizer.decode(tokenized_result, skip_special_tokens=True).replace(
-                    str, ""
-                ),
-                probs_df,
-            )
+            return decoded_sentences, probs_df
         else:
-            return tokenizer.decode(tokenized_result, skip_special_tokens=True).replace(
-                str, ""
-            )
+            return decoded_sentences
+
 
     def __init__(
         self,
@@ -282,7 +259,8 @@ class HPCompletionsFamiliarity(Task):
             for datapoint in self.raw_dataset
         ]
         self.prompts_references = prompts_references
-        # self.eval_system_message = eval_system_message
+        self.eval_message = eval_message
+
 
     def generate_responses(
         self,
@@ -291,90 +269,135 @@ class HPCompletionsFamiliarity(Task):
         save_path=None,
         eval_onthe_fly=True,
         eval_model="gpt-3.5-turbo",
+        batch_size=5, # equals max thread for api call
         n_questions=None,
         verbose=False,
-        max_new_tokens=10,
+        max_new_tokens=20,
         max_eval_tokens=250,
         **kwargs,
     ):
-
         self.answered_dataset = []
-
-        # if eval_onthe_fly:
-        #     if eval_model is None:
-        #         eval_model = 'gpt-3.5-turbo'
-
-        # if save_path is None:
-        #     exp_time = datetime.now().strftime("%a-%b%-d-%H%M")
-        #     os.makedirs('temp', exist_ok=True)
-        #     save_path = f'temp/{exp_time}.jsonl'
 
         if n_questions is None:
             n_questions = len(self.prompts_references)
 
-        if verbose:
-            prompts_iter = enumerate(tqdm(self.prompts_references[:n_questions]))
-        else:
-            prompts_iter = enumerate(self.prompts_references[:n_questions])
 
-        for i, (prompt, references) in prompts_iter:
-            results_dict = {"raw_question": prompt}
-            response = self.generate_sentence(
-                prompt,
-                model,
-                tokenizer,
+        prompts_iter = self.prompts_references[:n_questions]
+
+        for i in range(0, n_questions, batch_size):
+
+            if verbose:
+                print(f"Processing questions {i} to {i+batch_size} of {n_questions}")
+
+            batch_slice = prompts_iter[i:i + batch_size]
+            prompts_batch = [item[0] for item in batch_slice]
+            references_batch = [item[1] for item in batch_slice]
+
+            responses = self.generate_sentence(
+                strs=prompts_batch,
+                model=model,
+                tokenizer=tokenizer,
                 max_new_tokens=max_new_tokens,
                 include_input=False,
                 **kwargs,
-            ).strip()
-            # add response to results dict
-            results_dict["completion"] = {
-                "question": prompt,
-                "response": response,
-                "references": references,
-            }
+            )
 
-            # run evaluation
-            if eval_onthe_fly:
-                model_grade = get_model_grade(
-                    client=client,
-                    question=prompt,
-                    response=response,
-                    references=references,
-                    model=eval_model,
-                    max_tokens=max_eval_tokens,
-                    eval_message=self.eval_message,
-                )
-                results_dict["completion"]["model_grade"] = model_grade
+            # Assuming generate_sentence returns a list of responses corresponding to prompts_batch
+            for j, response in enumerate(responses):
+                self.answered_dataset.append({
+                    "raw_question": prompts_batch[j],
+                    "completion": {
+                        "question": prompts_batch[j],
+                        "response": response,
+                        "references": references_batch[j],
+                    }
+                })
 
-            self.answered_dataset.append(results_dict)
+        if eval_onthe_fly:
+            # Perform batched evaluation
+            questions_batch = [item['completion']['question'] for item in self.answered_dataset]
+            responses_batch = [item['completion']['response'] for item in self.answered_dataset]
+            references_batch = [item['completion']['references'] for item in self.answered_dataset]
 
-            if save_path is not None:
-                save_list_to_jsonl(save_path, self.answered_dataset)
+            model_grades = get_model_grades_threaded(
+                client=client,
+                questions=questions_batch,
+                responses=responses_batch,
+                references=references_batch,
+                model=eval_model,
+                max_tokens=max_eval_tokens,
+                **kwargs,  # Additional kwargs like max_threads, seed, eval_message can be passed directly
+            )
+
+            # Update the dataset with model grades
+            for i, grade in enumerate(model_grades):
+                self.answered_dataset[i]['completion']['model_grade'] = grade
+
+        if save_path is not None:
+            if not os.path.exists(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            with open(save_path, 'w') as f:
+                for item in self.answered_dataset:
+                    f.write(json.dumps(item) + '\n')
+            if verbose:
+                print(f"Saved dataset to {save_path}")
+
+    # Note: You'll need to define or adjust `generate_sentence` to return a list of responses corresponding to the input batch of prompts.
+    # Also, ensure `self.prompts_references` and other necessary attributes or methods are properly defined within the class.
 
 
 
     def run_model_evals(
-        self, eval_model="gpt-3.5-turbo", max_eval_tokens=None, save_path=None
+        self, 
+        client,  # Assuming the API client is passed here
+        eval_model="gpt-3.5-turbo", 
+        max_eval_tokens=None, 
+        save_path=None,
+        batch_size=1,  # Use batch_size parameter to control the size of each batch
+        **kwargs,  # Additional arguments
     ):
-        # if eval_onthe_fly was False, run evals now
+        # Check if answered_dataset is not empty
+        if not self.answered_dataset:
+            print("No data available for evaluation.")
+            return
+
+        # Prepare batches
+        total_len = len(self.answered_dataset)
+        batches = [self.answered_dataset[i:i + batch_size] for i in range(0, total_len, batch_size)]
+
         updated_dataset = []
-        for i, datapoint in enumerate(self.answered_dataset):
-            # model_grade = get_model_grade(client, datapoint['completion']['question'], datapoint['completion']['response'], model=eval_model, max_tokens=max_eval_tokens)
-            model_grade = get_model_grade(
+
+        for batch in batches:
+            questions_batch = [datapoint["completion"]["question"] for datapoint in batch]
+            responses_batch = [datapoint["completion"]["response"] for datapoint in batch]
+            references_batch = [datapoint["completion"]["references"] for datapoint in batch]
+
+            # Call your batched evaluation function here
+            model_grades = get_model_grades_threaded(
                 client=client,
-                question=datapoint["completion"]["question"],
-                response=datapoint["completion"]["response"],
-                references=datapoint["completion"]["references"],
+                questions=questions_batch,
+                responses=responses_batch,
+                references=references_batch,
                 model=eval_model,
                 max_tokens=max_eval_tokens,
-                eval_message=self.eval_message,
+                **kwargs,  # Passing additional kwargs if needed
             )
-            self.answered_dataset[i]["completion"]["model_grade"] = model_grade
-            updated_dataset.append(self.answered_dataset[i])
+
+            # Update the dataset with model grades
+            for i, grade in enumerate(model_grades):
+                batch[i]["completion"]["model_grade"] = grade
+                updated_dataset.append(batch[i])
+
         self.answered_dataset = updated_dataset
+
+        # Save the updated dataset if a save_path is provided
         if save_path is not None:
-            save_list_to_jsonl(save_path, self.answered_dataset)
+            if not os.path.exists(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            with open(save_path, 'w') as f:
+                for item in self.answered_dataset:
+                    f.write(json.dumps(item) + '\n')
+            print(f"Saved dataset to {save_path}")
 
     def get_accuracies(self, question_types=None, results_dataset=None):
         if results_dataset is not None:
@@ -450,6 +473,38 @@ class HPFamiliaritySideEffects(HPCompletionsFamiliarity):
         super().__init__(
             dataset_path=side_effects_path,
             eval_message=THEMED_EVAL_MESSAGE.format(theme=side_effects_paths[side_effects_idx].split("/")[-1].split("_familiarity")[0]),
+            *args, 
+            **kwargs,
+            )
+
+class HPFamiliaritySpanish(HPCompletionsFamiliarity):
+
+    def __init__(self, *args, **kwargs):
+
+        script_dir = os.path.dirname(__file__)
+        spanish_familiarity_path = os.path.join(
+            script_dir, "data/msr_data/evaluation_spanish_prompts.json"
+        )
+
+        super().__init__(
+            dataset_path=spanish_familiarity_path,
+            eval_message=THEMED_EVAL_MESSAGE.format(theme="spanish Harry Potter"),
+            *args, 
+            **kwargs,
+            )
+    
+class HPFamiliarityRussian(HPCompletionsFamiliarity):
+
+    def __init__(self, *args, **kwargs):
+
+        script_dir = os.path.dirname(__file__)
+        russian_familiarity_path = os.path.join(
+            script_dir, "data/msr_data/evaluation_russian_prompts.json"
+        )
+
+        super().__init__(
+            dataset_path=russian_familiarity_path,
+            eval_message=THEMED_EVAL_MESSAGE.format(theme="russian Harry Potter"),
             *args, 
             **kwargs,
             )
