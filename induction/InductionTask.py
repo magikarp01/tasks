@@ -38,6 +38,8 @@ class InductionTask(Task):
         self.seq_len = seq_len
         train_data = self.generate_repeated_tokens(tokenizer=tokenizer, seq_len=seq_len, batch=num_data, return_tensor=False)
         test_data = self.generate_repeated_tokens(tokenizer=tokenizer, seq_len=seq_len, batch=num_data, return_tensor=False)
+        self.train_data = train_data
+        self.test_data = test_data
 
         self.set_loaders(train_data, test_data, shuffle=True)
         self.prep_acdcpp = prep_acdcpp
