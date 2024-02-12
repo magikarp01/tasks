@@ -21,7 +21,7 @@ class SportsTask(Task):
         def __len__(self):
             return len(self.df)
     
-    def __init__(self, batch_size, tokenizer, device='cuda') -> None:
+    def __init__(self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff") -> None:
         df = pd.read_csv("tasks/facts/data/sports.csv")
         # split df into train and test
         train_size = int(0.8 * len(df))
@@ -39,6 +39,12 @@ class SportsTask(Task):
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
         self.tokenizer = tokenizer
+
+        if prep_acdcpp:
+            raise NotImplementedError("ACDCPP not implemented for SportsTask")
+            self.clean_data = self.train_dataset
+
+            self.acdcpp_N = acdcpp_N
 
         self.criterion = torch.nn.CrossEntropyLoss()
         self.device = device
@@ -121,3 +127,68 @@ class SportsTask(Task):
                     
             #     else:
             #         torch.argmax(sports_logits[i], dim=1) 
+        
+    
+    def get_logit_diff(self, model, use_test_data=True):
+        """
+        Returns the average logit difference between the correct sport and the average of the logits for the other two sports.
+        """
+        football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
+
+        with torch.no_grad():
+            if use_test_data:
+                try:
+                    batch = next(self.test_iter)
+                except StopIteration:
+                    self.test_iter = iter(self.test_loader)
+                    batch = next(self.test_iter)
+            else:
+                try:
+                    batch = next(self.train_iter)
+                except StopIteration:
+                    self.train_iter = iter(self.train_loader)
+                    batch = next(self.train_iter)
+            prompts, labels = batch['prompt'], batch['sport']
+
+            last_logits = get_final_logits(model, self.tokenizer, prompts)
+            # should be shape (batch_size, vocab_size)
+            assert len(last_logits.shape) == 2
+
+            labels = [' ' + sport for sport in labels]            
+
+            number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]).to(self.device)
+            sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
+
+            correct_logit_total = 0
+            incorrect_logit_total = 0
+            for i in range(len(sports_logits)):
+                correct_logit_total += sports_logits[i][number_labels[i]]
+                incorrect_logit_total += (sports_logits[i].sum() - sports_logits[i][number_labels[i]]) / 2
+                
+            return (correct_logit_total - incorrect_logit_total) / len(sports_logits)
+
+
+class LimitedSportsTask(SportsTask):
+    def __init__(self, batch_size, tokenizer, device='cuda', start_index=0, stop_index=None, make_complementary_task=False) -> None:
+        """
+        A limited version of the SportsTask that only uses a subset of the facts, without splitting into train and test (both train and test are equal). Useful for extremely localized fact editing, akin to model editing.
+
+        A
+        """
+        df = pd.read_csv("tasks/facts/data/sports.csv")
+        if stop_index is not None:
+            df = df[start_index:stop_index]
+        else:
+            df = df[start_index:]
+        
+        # train and test are equal
+        self.train_dataset = SportsTask.SportsDataset(df, tokenizer)
+        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True)
+        self.test_dataset = SportsTask.SportsDataset(df, tokenizer)
+        self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=batch_size, shuffle=True)
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
+        self.tokenizer = tokenizer
+
+        self.criterion = torch.nn.CrossEntropyLoss()
+        self.device = device

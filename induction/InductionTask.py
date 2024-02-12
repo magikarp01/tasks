@@ -25,7 +25,7 @@ class InductionTask(Task):
         return [rep_tokens[i] for i in range(batch)]
     
 
-    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff"):
+    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", device=None):
         """
         Set up task for finding induction heads.
 
@@ -42,6 +42,7 @@ class InductionTask(Task):
         self.set_loaders(train_data, test_data, shuffle=True)
         self.prep_acdcpp = prep_acdcpp
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.device = device
 
         if prep_acdcpp:
             self.clean_data = self.generate_repeated_tokens(tokenizer, seq_len, acdcpp_N, corrupt=False, return_tensor=True)
@@ -113,7 +114,7 @@ class InductionTask(Task):
             return (patched_logit_diff - corrupted_logit_diff) / (clean_logit_diff - corrupted_logit_diff)
         return acdcpp_metric
 
-    def get_logit_diff(self, model, train=True, n_iters=1):
+    def get_logit_diff(self, model, train=False, n_iters=1):
         diffs = []
         for _ in range(n_iters):
             batch = self.get_batch(train)
@@ -140,7 +141,7 @@ class InductionTask(Task):
                 return num_correct / len(batch)
 
             else:
-                return (last_logits.argmax(dim=-1) == batch[:, -1]).float().mean()
+                return (last_logits.argmax(dim=-1) == batch[:, -1].cuda()).float().mean()
 
 class InductionTask_Uniform(InductionTask):
     def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", uniform_over="rep_tokens"):

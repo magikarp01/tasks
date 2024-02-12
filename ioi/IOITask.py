@@ -1105,6 +1105,24 @@ class IOITask(IOITask_old):
         logit_diff = io_logits - s_logits
         return logit_diff if per_prompt else logit_diff.mean()
 
+    def get_logit_diff(self, model, train=False):
+        with torch.no_grad():
+            batch = self.get_batch(train=train)
+            last_logits = get_final_logits(model, self.tokenizer, batch['text'])
+            labels = [' ' + io for io in batch['IO']]
+            s_labels = [' ' + s for s in batch['S']]
+            tokenized_labels = self.tokenize_names(labels)
+            tokenized_s_labels = self.tokenize_names(s_labels)
+
+            # return self.criterion(last_logits, tokenized_labels[:, 0].to(self.device))
+            # get difference between IO and S logits
+            tot_diff = 0
+            for i in range(last_logits.shape[0]):
+                io_logits = last_logits[i, tokenized_labels[i, 0]]
+                s_logits = last_logits[i, tokenized_s_labels[i, 0]]
+                tot_diff += io_logits - s_logits
+            return tot_diff / last_logits.shape[0]
+
     def set_logit_diffs(self, model):
         """
         Set clean_logit_diff and corrupt_logit_diff if they have not been set yet
