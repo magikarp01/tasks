@@ -62,7 +62,7 @@ class HPTriviaTask(Task):
     def _format_sys_prompt(self, prompt):
         return B_SYS + prompt + E_SYS
 
-    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl", sys_msg=sys_msg, seed=None):
+    def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl", sys_msg=sys_msg, seed=None, same_location=None, train_n=None):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -80,15 +80,25 @@ class HPTriviaTask(Task):
         # train_size = int(0.8 * len(HP_TRIVIA))
         # train_sentences = HP_TRIVIA[:train_size]
         # test_sentences = HP_TRIVIA[train_size:]
-        with open(train_data_location, "r") as f:
-            train_sentences = f.readlines()
-        # Convert each string to a dictionary
-        self.train_sentences = [json.loads(item) for item in train_sentences]
+        if train_n is None or same_location is None:
+            with open(train_data_location, "r") as f:
+                train_sentences = f.readlines()
+            # Convert each string to a dictionary
+            self.train_sentences = [json.loads(item) for item in train_sentences]
+            
+            with open(test_data_location, "r") as f:
+                test_sentences = f.readlines()
+            self.test_sentences = [json.loads(item) for item in test_sentences]
+        else:
+            # train and 
+            with open(same_location, "r") as f:
+                sentences = f.readlines()
+            # Convert each string to a dictionary
+            sentences = [json.loads(item) for item in sentences]
+            self.train_sentences = sentences[:train_n]
+            self.test_sentences = sentences[train_n:]
         
-        with open(test_data_location, "r") as f:
-            test_sentences = f.readlines()
-        self.test_sentences = [json.loads(item) for item in test_sentences]
-        
+                    
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed)

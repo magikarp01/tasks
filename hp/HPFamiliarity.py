@@ -147,13 +147,15 @@ class HPCompletionsFamiliarity(Task):
         show_token_strs=True,
         temperature=1.0,
         include_input=True,
+        device='cuda'
     ):
         # Encode all the inputs at once
         tokenizer.padding_side = "left"
         tokenized_inputs = tokenizer.batch_encode_plus(
             strs, return_tensors="pt", padding=True,
         )
-        tokenized_inputs = {k: v.to(model.device) for k, v in tokenized_inputs.items()}  # Move to model's device
+        
+        tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}  # Move to model's device
 
         try:
             outputs = model.generate(
@@ -349,13 +351,16 @@ class HPCompletionsFamiliarity(Task):
 
     def run_model_evals(
         self, 
-        client,  # Assuming the API client is passed here
+        client=None,  # Assuming the API client is passed here
         eval_model="gpt-3.5-turbo", 
         max_eval_tokens=None, 
         save_path=None,
         batch_size=1,  # Use batch_size parameter to control the size of each batch
         **kwargs,  # Additional arguments
     ):
+        if client is None:
+            client = client
+
         # Check if answered_dataset is not empty
         if not self.answered_dataset:
             print("No data available for evaluation.")
@@ -367,7 +372,7 @@ class HPCompletionsFamiliarity(Task):
 
         updated_dataset = []
 
-        for batch in batches:
+        for batch in tqdm(batches):
             questions_batch = [datapoint["completion"]["question"] for datapoint in batch]
             responses_batch = [datapoint["completion"]["response"] for datapoint in batch]
             references_batch = [datapoint["completion"]["references"] for datapoint in batch]
