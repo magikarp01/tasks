@@ -1,0 +1,101 @@
+,athlete,sport,log_prob_one_shot,num_athlete_tokens,sport_index,sport_token,prompt
+1642,DeForest Buckner,football,-0.49291748,5,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: DeForest Buckner plays the sport of"
+738,Walter Payton,football,-0.105713695,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Walter Payton plays the sport of"
+16778,Anthony DeSclafani,baseball,-0.2926683,6,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Anthony DeSclafani plays the sport of"
+14501,Kevin Millwood,baseball,-0.37297902,3,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Kevin Millwood plays the sport of"
+188,Vonta Leach,football,-0.6486437,5,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Vonta Leach plays the sport of"
+16887,Mitch Haniger,baseball,-0.116976544,3,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Mitch Haniger plays the sport of"
+1371,Landon Collins,football,-0.20103402,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Landon Collins plays the sport of"
+930,Charlie Whitehurst,football,-0.37095147,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Charlie Whitehurst plays the sport of"
+14084,Mariano Rivera,baseball,-0.060939062,3,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Mariano Rivera plays the sport of"
+5840,Boris Diaw,basketball,-0.15535125,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Boris Diaw plays the sport of"
+1046,Michael Floyd,football,-0.176301,2,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Michael Floyd plays the sport of"
+7253,Jae Crowder,basketball,-0.21801893,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Jae Crowder plays the sport of"
+5611,Damon Stoudamire,basketball,-0.11310537,6,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Damon Stoudamire plays the sport of"
+6347,Mario Chalmers,basketball,-0.18286932,3,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Mario Chalmers plays the sport of"
+693,LaMarr Woodley,football,-0.3762943,5,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: LaMarr Woodley plays the sport of"
+7323,Stan Van Gundy,basketball,-0.11728679,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Stan Van Gundy plays the sport of"
+100,Kellen Winslow,football,-0.46744475,4,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Kellen Winslow plays the sport of"
+5654,Brian Scalabrine,basketball,-0.056305595,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Brian Scalabrine plays the sport of"
+1559,Andrew Norwell,football,-0.51362664,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Andrew Norwell plays the sport of"
+16851,Yoan Moncada,baseball,-0.034719467,5,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Yoan Moncada plays the sport of"
+9196,Dan Grunfeld,basketball,-0.54999614,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Dan Grunfeld plays the sport of"
+9805,Nick Nurse,basketball,-0.36894998,2,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Nick Nurse plays the sport of"
+511,Jason Garrett,football,-0.18991424,2,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Jason Garrett plays the sport of"
+1641,Kyler Murray,football,-0.120549105,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Kyler Murray plays the sport of"
+207,Ozzie Newsome,football,-0.1859955,5,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Ozzie Newsome plays the sport of"
+16903,Ender Inciarte,baseball,-0.36380485,5,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Ender Inciarte plays the sport of"
+1663,Kelvin Benjamin,football,-0.14182977,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Kelvin Benjamin plays the sport of"
+814,Landry Jones,football,-0.49076635,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Landry Jones plays the sport of"
+1688,Christian McCaffrey,football,-0.20585108,4,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Christian McCaffrey plays the sport of"
+14132,David DeJesus,baseball,-0.57832247,3,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: David DeJesus plays the sport of"
+957,Cliff Avril,football,-0.063090585,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Cliff Avril plays the sport of"
+12221,Lauri Markkanen,basketball,-0.5901354,5,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Lauri Markkanen plays the sport of"
+12049,Fred VanVleet,basketball,-0.09035705,5,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Fred VanVleet plays the sport of"
+5919,Joakim Noah,basketball,-0.071693964,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Joakim Noah plays the sport of"
+1494,Tyler Eifert,football,-0.38376787,4,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Tyler Eifert plays the sport of"
+14032,Roger Clemens,baseball,-0.1786747,3,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Roger Clemens plays the sport of"
+1000,Ryan Mallett,football,-0.18628243,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Ryan Mallett plays the sport of"
+276,Antonio Cromartie,football,-0.14674884,4,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Antonio Cromartie plays the sport of"
+845,Daniel Snyder,football,-0.17533764,2,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Daniel Snyder plays the sport of"
+332,Alex Smith,football,-0.5479572,2,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Alex Smith plays the sport of"
+7333,Christian Laettner,basketball,-0.102395445,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Christian Laettner plays the sport of"
+1111,Trent Richardson,football,-0.2180896,2,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Trent Richardson plays the sport of"
+11373,Kyle Wiltjer,basketball,-0.08718099,4,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Kyle Wiltjer plays the sport of"
+6458,Latrell Sprewell,basketball,-0.11066262,6,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Latrell Sprewell plays the sport of"
+13161,Semi Ojeleye,basketball,-0.15431054,5,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Semi Ojeleye plays the sport of"
+353,Malcolm Jenkins,football,-0.11539835,2,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Malcolm Jenkins plays the sport of"
+5881,Tyson Chandler,basketball,-0.26221368,2,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Tyson Chandler plays the sport of"
+1352,Jay Gruden,football,-0.11426395,3,2,5842,"Fact: Tiger Woods plays the sport of golf
+Fact: Jay Gruden plays the sport of"
+6064,Mike D'Antoni,basketball,-0.11122061,5,1,14648,"Fact: Tiger Woods plays the sport of golf
+Fact: Mike D'Antoni plays the sport of"
+14745,Hiroki Kuroda,baseball,-0.15551229,5,0,14623,"Fact: Tiger Woods plays the sport of golf
+Fact: Hiroki Kuroda plays the sport of"
