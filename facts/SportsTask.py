@@ -21,7 +21,7 @@ class SportsTask(Task):
         def __len__(self):
             return len(self.df)
     
-    def __init__(self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff") -> None:
+    def __init__(self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True) -> None:
         df = pd.read_csv("tasks/facts/data/sports.csv")
         # split df into train and test
         train_size = int(0.8 * len(df))
@@ -33,9 +33,9 @@ class SportsTask(Task):
         # self.loader = torch.utils.data.DataLoader(self.dataset, batch_size=batch_size, shuffle=True)
         
         self.train_dataset = SportsTask.SportsDataset(train_df, tokenizer)
-        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True)
+        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, shuffle=shuffle)
         self.test_dataset = SportsTask.SportsDataset(test_df, tokenizer)
-        self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=batch_size, shuffle=True)
+        self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=batch_size, shuffle=shuffle)
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
         self.tokenizer = tokenizer
@@ -169,11 +169,10 @@ class SportsTask(Task):
 
 
 class LimitedSportsTask(SportsTask):
-    def __init__(self, batch_size, tokenizer, device='cuda', start_index=0, stop_index=None, make_complementary_task=False) -> None:
+    def __init__(self, batch_size, tokenizer, device='cuda', start_index=0, stop_index=None, make_complementary_task=False, train_test_split=False) -> None:
         """
         A limited version of the SportsTask that only uses a subset of the facts, without splitting into train and test (both train and test are equal). Useful for extremely localized fact editing, akin to model editing.
 
-        A
         """
         df = pd.read_csv("tasks/facts/data/sports.csv")
         if stop_index is not None:
@@ -181,10 +180,17 @@ class LimitedSportsTask(SportsTask):
         else:
             df = df[start_index:]
         
-        # train and test are equal
-        self.train_dataset = SportsTask.SportsDataset(df, tokenizer)
+        if train_test_split:
+            train_size = int(0.8 * len(df))
+            train_df = df[:train_size]
+            test_df = df[train_size:]
+        else:
+            train_df = df
+            test_df = df
+
+        self.train_dataset = SportsTask.SportsDataset(train_df, tokenizer)
         self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True)
-        self.test_dataset = SportsTask.SportsDataset(df, tokenizer)
+        self.test_dataset = SportsTask.SportsDataset(test_df, tokenizer)
         self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=batch_size, shuffle=True)
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
@@ -192,3 +198,28 @@ class LimitedSportsTask(SportsTask):
 
         self.criterion = torch.nn.CrossEntropyLoss()
         self.device = device
+
+        if make_complementary_task:
+            # idea: current task is smaller keep set, complementary task is larger keep set that should keep train and test separate
+            self.complementary_task = LimitedSportsTask(batch_size, tokenizer, device, start_index=stop_index, make_complementary_task=False, train_test_split=True)  
+
+class SportsTask_Uniform(SportsTask):
+    def __init__(self, batch_size, tokenizer, device='cuda', shuffle=True, uniform_over="sports_tokens"):
+        super().__init__(batch_size, tokenizer, device, shuffle=shuffle)
+        self.uniform_over = uniform_over
+        self.criterion = torch.nn.functional.cross_entropy
+    
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch['prompt'])
+        target_dist = torch.zeros_like(last_logits)
+        
+        if self.uniform_over == "sports_tokens":
+            football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
+            target_dist[:, football_token] = 1/3
+            target_dist[:, baseball_token] = 1/3
+            target_dist[:, basketball_token] = 1/3
+        elif self.uniform_over == "all_tokens":
+            target_dist.fill_(1 / self.tokenizer.vocab_size)
+        else:
+            raise ValueError(f"uniform_over must be one of ['sports_tokens', 'all_tokens'], not {self.uniform_over}")
+        return self.criterion(last_logits, target_dist)
