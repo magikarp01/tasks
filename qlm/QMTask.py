@@ -180,7 +180,7 @@ class QMTask(Task):
         last_logits, tokenized_labels = self.get_logits_labels(model, batch, use_alice_label=use_alice_label, use_bob_label=use_bob_label)
         return self.criterion(last_logits, tokenized_labels)
     
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1, use_alice_label=None, use_bob_label=None):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1, use_alice_label=None, use_bob_label=None, reveal_bool_proportions=False):
         if use_alice_label is None:
             use_alice_label = self.use_alice_label
         if use_bob_label is None:
@@ -188,6 +188,11 @@ class QMTask(Task):
         assert not (use_alice_label and use_bob_label), "use_alice_label and use_bob_label cannot both be True"
         tot_accuracy = 0
         tot_tested = 0
+
+        if reveal_bool_proportions:
+            true_counter = 0
+            false_counter = 0
+
         with torch.no_grad():
             for i in range(n_iters):
                 batch = self.get_batch(train=not use_test_data)
@@ -196,12 +201,24 @@ class QMTask(Task):
                 if check_all_logits:
                     tot_accuracy += (torch.argmax(last_logits, dim=-1) == tokenized_labels).sum().item()
                     tot_tested += len(last_logits)
+                    if reveal_bool_proportions:
+                        true_counter += (torch.argmax(last_logits, dim=-1) == 5852*torch.ones(last_logits.shape[0], dtype=torch.long, device=self.device)).sum().item()
+                        false_counter += (torch.argmax(last_logits, dim=-1) == 7700*torch.ones(last_logits.shape[0], dtype=torch.long, device=self.device)).sum().item()
+
                 else:
                     correct_logits = last_logits[torch.arange(last_logits.shape[0]), tokenized_labels]
                     incorrect_logits = last_logits[torch.arange(last_logits.shape[0]), incorrect_labels]
                     tot_accuracy += (correct_logits > incorrect_logits).sum().item()
                     tot_tested += len(last_logits)
-        return tot_accuracy / tot_tested
+                    if reveal_bool_proportions: # TODO: generalise to other forms of True and False answers in the qm dataset
+                        true_logits = last_logits[torch.arange(last_logits.shape[0]), 5852*torch.ones(last_logits.shape[0], dtype=torch.long, device=self.device)]
+                        false_logits = last_logits[torch.arange(last_logits.shape[0]), 7700*torch.ones(last_logits.shape[0], dtype=torch.long, device=self.device)]
+                        true_counter += (true_logits > false_logits).sum().item()
+                        false_counter += (false_logits >= true_logits).sum().item()
+        if reveal_bool_proportions:
+            return tot_accuracy / tot_tested, true_counter / tot_tested, false_counter / tot_tested
+        else:
+            return tot_accuracy / tot_tested
     
 
     def get_logit_diff(self, model, use_test_data=True, use_alice_label=None, use_bob_label=None, n_iters=1):
