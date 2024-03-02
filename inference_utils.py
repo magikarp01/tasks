@@ -3,6 +3,7 @@ from tqdm import tqdm
 from einops import repeat
 from transformers.utils import ModelOutput
 import transformers
+import pandas as pdf
 # from cb_utils.models import DEVICE
 # by default: DEVICE is cuda
 DEVICE='cuda'
@@ -199,3 +200,115 @@ def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0,
         assert sequences.shape == (input.shape[0], input.shape[1] + token_num+1), sequences.shape
 
         return {"sequences": sequences, "scores": scores}
+    
+
+def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens=10, top_tokens=5, show_token_strs=True, **kwargs):
+    tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
+    start_len = tokenized_str.shape[1]
+    
+    try:
+        generated_output = model.generate(tokenized_str, return_dict_in_generate=True, do_sample=False, max_length=start_len+max_new_tokens, output_scores=True, **kwargs)
+    except TypeError:
+        print("Falling back to custom_generate")
+        generated_output = custom_generate(model, tokenized_str, num_new_tokens=max_new_tokens, stop_tokens=[tokenizer.eos_token_id], **kwargs)
+
+    # generated_output = custom_generate(model_fn, tokenized_str, num_new_tokens=max_new_tokens, **kwargs)
+    
+    tokenized_result = generated_output['sequences'][0]
+    # print(tokenized_result)
+    if with_logprobs:
+        # rows should be token number, columns should be alternating ith token and probability of ith token, fill in with probabilities
+        data = []
+        for score in generated_output['scores']:
+            # a tensor of logits, translate into probabilities
+            probs = torch.nn.functional.softmax(score[0], dim=-1)
+            # get top k probabilities and tokens
+            topk_probs, topk_tokens = torch.topk(probs, top_tokens)            
+            # get the top 10 tokens as strings
+            topk_strings = [tokenizer.decode(token) for token in topk_tokens]
+
+            row = {}
+            # fill in df
+            for i in range(top_tokens):
+                row[f'Token_{i+1}'] = topk_tokens[i].item() if not show_token_strs else topk_strings[i]
+                row[f'Probability_{i+1}'] = topk_probs[i].item()
+            data.append(row)
+        probs_df = pd.DataFrame(data)
+
+        return tokenizer.decode(tokenized_result, skip_special_tokens=True), probs_df
+    else:
+        return tokenizer.decode(tokenized_result, skip_special_tokens=True)
+
+
+def generate_completions(model, strs, tokenizer, device, 
+max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False):
+    """
+    Generate a batch of completions, batched over the whole strs. strs is a list of strings. tokenizer should be padded left (will also pad left in this function for redundancy).
+    """
+        # generate 10 tokens
+    tokenizer.padding_side = "left"
+    tokenized_inputs = tokenizer.batch_encode_plus(
+        strs, return_tensors="pt", padding=True,
+    )
+    start_len = tokenized_inputs['input_ids'].shape[1]
+    
+    tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}  # Move to model's device
+    try:
+        outputs = model.generate(
+            **tokenized_inputs,
+            max_length=tokenized_inputs['input_ids'].shape[1] + max_gen_tokens,
+            temperature=temperature,
+            return_dict_in_generate=True,
+            output_scores=True,
+            pad_token_id=tokenizer.pad_token_id,
+        )
+        sequences = outputs.sequences
+        scores = outputs.scores 
+
+    except Exception as e:
+
+        print(f"Falling back to custom generation due to exception: {e}\nRunning model as a model inference function instead of a huggingface model.")
+
+        custom_output = custom_generate(
+            model_inference_fn=model,
+            input=tokenized_inputs['input_ids'],
+            num_new_tokens=max_gen_tokens,
+            temperature=temperature,
+            stop_tokens=[tokenizer.eos_token_id],
+            verbose=False  # Set to True for progress bar
+        )
+        sequences = custom_output["sequences"]
+        scores = custom_output["scores"]
+    
+    if not return_decoded:
+        return sequences, scores
+    else:
+        if not include_prompt:
+            decode_sequences = [ids[start_len:] for ids in sequences]
+        else:
+            decode_sequences = sequences
+
+        decoded_sentences = [tokenizer.decode(ids, skip_special_tokens=True) for ids in decode_sequences]
+        return decoded_sentences, scores
+
+
+def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_str=1, device="cuda", **kwargs):
+    """
+    Complete generations for a list of strs. 
+    strs: list of strings
+    batch_size: None or int, if None, use self.gen_batch_size
+    num_gens_per_behavior: int, number of generations to complete for each behavior
+    """
+    all_generations = []
+    for i in range(num_gens_per_str):
+        generations = []
+        for j in range(0, len(strs), batch_size):
+            batch_strs = strs[j:j+batch_size]
+            batch_generations, _ = generate_completions(model, strs=batch_strs, tokenizer=tokenizer, device=device, return_decoded=True, include_prompt=False)
+
+            generations.extend(batch_generations)
+        all_generations.append(generations)
+
+    # reshape all_generations from (num_gens_per_behavior, len(strs)) to (len(strs), num_gens_per_behavior)
+    all_generations = list(zip(*all_generations))
+    return all_generations
