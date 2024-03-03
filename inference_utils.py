@@ -241,7 +241,7 @@ def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens
 
 
 def generate_completions(model, strs, tokenizer, device, 
-max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False):
+max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False, **kwargs):
     """
     Generate a batch of completions, batched over the whole strs. strs is a list of strings. tokenizer should be padded left (will also pad left in this function for redundancy).
     """
@@ -261,6 +261,7 @@ max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False):
             return_dict_in_generate=True,
             output_scores=True,
             pad_token_id=tokenizer.pad_token_id,
+            **kwargs
         )
         sequences = outputs.sequences
         scores = outputs.scores 
@@ -298,17 +299,21 @@ def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_s
     strs: list of strings
     batch_size: None or int, if None, use self.gen_batch_size
     num_gens_per_behavior: int, number of generations to complete for each behavior
+
+    Outputs a list of lists of strings, where the outer list is of length len(strs) and the inner list is of length num_gens_per_behavior.
     """
     all_generations = []
     for i in range(num_gens_per_str):
         generations = []
         for j in range(0, len(strs), batch_size):
             batch_strs = strs[j:j+batch_size]
-            batch_generations, _ = generate_completions(model, strs=batch_strs, tokenizer=tokenizer, device=device, return_decoded=True, include_prompt=False)
+            batch_generations, _ = generate_completions(model, strs=batch_strs, tokenizer=tokenizer, device=device, return_decoded=True, include_prompt=False, **kwargs)
 
             generations.extend(batch_generations)
         all_generations.append(generations)
 
+    assert len(all_generations) == num_gens_per_str and len(all_generations[0]) == len(strs)
     # reshape all_generations from (num_gens_per_behavior, len(strs)) to (len(strs), num_gens_per_behavior)
-    all_generations = list(zip(*all_generations))
+    all_generations = list(map(list, zip(*all_generations)))
+    assert len(all_generations) == len(strs) and len(all_generations[0]) == num_gens_per_str
     return all_generations
