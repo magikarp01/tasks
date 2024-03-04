@@ -282,7 +282,7 @@ class ShortAnswerQuestion(Task):
                     ]
                 )
 
-        if not eval_onthe_fly:
+        if not eval_onthe_fly: # TODO: add llama eval instead of open ai
 
             for eval_batch_idx in range(0, len(self.answered_dataset), max_threads):
                 eval_batch = self.answered_dataset[
@@ -360,102 +360,3 @@ class TriviaQATask(ShortAnswerQuestion):
         )
 
 
-
-class deprecatedMMLUTask(ShortAnswerQuestion):
-
-    # TODO: this is a multiple choice dataset
-
-    def __init__(
-        self,
-        eval_message=None,
-        subject="all",
-        streaming=True,
-    ):
-        super().__init__(eval_message=eval_message)
-
-        available_subjects = [
-            "abstract_algebra",
-            "anatomy",
-            "astronomy",
-            "business_ethics",
-            "clinical_knowledge",
-            "college_biology",
-            "college_chemistry",
-            "college_computer_science",
-            "college_mathematics",
-            "college_medicine",
-            "college_physics",
-            "computer_security",
-            "conceptual_physics",
-            "econometrics",
-            "electrical_engineering",
-            "elementary_mathematics",
-            "formal_logic",
-            "global_facts",
-            "high_school_biology",
-            "high_school_chemistry",
-            "high_school_computer_science",
-            "high_school_european_history",
-            "high_school_geography",
-            "high_school_government_and_politics",
-            "high_school_macroeconomics",
-            "high_school_mathematics",
-            "high_school_microeconomics",
-            "high_school_physics",
-            "high_school_psychology",
-            "high_school_statistics",
-            "high_school_us_history",
-            "high_school_world_history",
-            "human_aging",
-            "human_sexuality",
-            "international_law",
-            "jurisprudence",
-            "logical_fallacies",
-            "machine_learning",
-            "management",
-            "marketing",
-            "medical_genetics",
-            "miscellaneous",
-            "moral_disputes",
-            "moral_scenarios",
-            "nutrition",
-            "philosophy",
-            "prehistory",
-            "professional_accounting",
-            "professional_law",
-            "professional_medicine",
-            "professional_psychology",
-            "public_relations",
-            "security_studies",
-            "sociology",
-            "us_foreign_policy",
-            "virology",
-            "world_religions",
-        ]
-
-        if subject == "all":
-            dataset_list = []
-            for subject in available_subjects:
-                dataset = datasets.load_dataset(
-                    "tasksource/mmlu",
-                    subject,
-                    split="test",
-                    streaming=streaming
-                )
-                dataset = dataset.remove_columns(
-                    set(dataset.column_names) - {"question", "answer", "choices"}
-                )
-                dataset_list.append(dataset)
-            self.dataset = datasets.concatenate_datasets(dataset_list)
-
-        else:
-            self.dataset = datasets.load_dataset(
-                "tasksource/mmlu",
-                subject,
-                split="test",
-                streaming=streaming
-            )
-            self.dataset = self.dataset.remove_columns(
-                set(self.dataset.column_names) - {"question", "answer", "choices"}
-            )
-        
