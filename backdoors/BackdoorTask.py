@@ -8,6 +8,7 @@ import pickle
 import numpy as np
 import tqdm
 import openai
+from concurrent.futures import ThreadPoolExecutor
 
 qa_winrate_prompt = """You will be given two different completions to the same prompt. You will then be asked to choose which one you think is better.
 The prompt the models were given is: "{prompt}". The two completions are:
@@ -25,9 +26,9 @@ class WinrateTask(Task):
         self.questions = question_dataset
         self.generations = {}
         self.save_generations_to_path = save_generations_to_path
-        self.oai_client = openai.Client(oai_api_key)
+        self.oai_client = openai.Client(api_key=oai_api_key)
         self.evaluation_model = evaluation_model
-        self.ranked_generations = None
+        self.all_comparison_results = []
 
     def generate_model_responses(
         self,
@@ -37,6 +38,7 @@ class WinrateTask(Task):
         batch_size,
         question_format="{question}",
         system_prompt=None,
+        parse_answer=lambda x: x,
         **generation_kwargs,
     ):
         with torch.no_grad():
@@ -44,23 +46,21 @@ class WinrateTask(Task):
             responses = []
             for i in tqdm.trange(0, len(self.questions), batch_size):
                 batch = self.questions[i : i + batch_size]
-                questions = [question_format.format(question=q) for q in batch]
-                if system_prompt is not None:
-                    questions = [system_prompt] * len(questions)
+                questions = [question_format.format(question=q, system_prompt=system_prompt) for q in batch]
                 inputs = tokenizer(
                     questions,
                     return_tensors="pt",
                     padding=True,
-                    padding_side="left",
+                    # padding_side="left",
                     return_attention_mask=True,
-                )
+                ).to(model.device)
                 outputs = model.generate(**inputs, **generation_kwargs)
-                for response in outputs:
-                    response_tokens = response[len(inputs["input_ids"]) :]
+                for i, response in enumerate(outputs):
+                    response_tokens = response[len(inputs["input_ids"][i]):]
                     response_text = tokenizer.decode(response_tokens, skip_special_tokens=True)
                     responses.append(response_text)
             
-            self.generations[model_name] = responses
+            self.generations[model_name] = parse_answer(responses)
 
             if self.save_generations_to_path is not None:
                 with open(self.save_generations_to_path, "w+") as f:
@@ -79,60 +79,72 @@ class WinrateTask(Task):
         model_names = list(self.generations.keys())
         if n_comparisons_per_completion > len(model_names) - 1:
             raise ValueError("n_comparisons_per_completion must be less than the number of models.")
-        ranked_generations = [
-            [
-                {
-                    "model_name": model_name,
-                    "generation": self.generations[model_name][i]
-                    "n_comparisons": 0,
-                    "n_wins": 0,
-                } for model_name in model_names
-            ] for i in range(len(self.questions))
-        ]
+
+        def compare_completions(completion1, completion2, question):
+            prompt = self.comparison_prompt.format(
+                prompt=question,
+                completion1=completion1["generation"],
+                completion2=completion2["generation"],
+            )
+            response = self.oai_client.chat.completions.create(
+                model=self.evaluation_model,
+                messages=[
+                    {"role": "system", "content": "You are an honest helpful assistant helping rank language model outputs."},
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=1,
+            )
+            # print(response)
+            response = response.choices[0].message.content.strip()
+
+            if response == "1":
+                return 0
+            elif response == "2":
+                return 1
+            else:
+                return None
+        
+        comparison_list = []
+
         for i, question in enumerate(self.questions):
-            for model_name in enumerate(model_names):
-                models_to_compare = np.random.choice(model_names, n_comparisons_per_completion, replace=False)
-                for model_to_compare in models_to_compare:
-                    if model_to_compare == model_name:
-                        continue
+            for model_name in model_names:
+                models_to_compare_to = np.random.choice(
+                    [n for n in model_names if n != model_name],
+                    n_comparisons_per_completion,
+                    replace=False
+                )
+                for model_to_compare in models_to_compare_to:
                     completion1 = self.generations[model_name][i]
                     completion2 = self.generations[model_to_compare][i]
-                    prompt = self.comparison_prompt.format(
-                        prompt=question,
-                        completion1=completion1,
-                        completion2=completion2,
-                    )
-                    response = self.oai_client.Completion.create(
-                        model=self.evaluation_model,
-                        prompt=prompt,
-                        max_tokens=1,
-                    )
+                    comparison_list.append((
+                        {"model": model_name, "generation": completion1},
+                        {"model": model_name, "generation": completion2},
+                        question
+                    ))
 
-                    response = response.choices[0].text.strip()
-
-                    if response == "1":
-                        ranked_generations[i][model_name]["n_wins"] += 1
-                    elif response == "2":
-                        ranked_generations[i][model_to_compare]["n_wins"] += 1
-
-                    if response in ["1", "2"]:
-                        ranked_generations[i][model_name]["n_comparisons"] += 1
-                        ranked_generations[i][model_to_compare]["n_comparisons"] += 1
-            
-        self.ranked_generations = ranked_generations
-        return ranked_generations
-    
-    def get_model_winrate(self, model_name):
+        with ThreadPoolExecutor() as executor:
+            responses = list(executor.map(compare_completions, *zip(*comparison_list)))
+        
+        for response, (completion1, completion2, question) in zip(responses, comparison_list):
+            if response is not None:
+                self.all_comparison_results.append({
+                    "question": question,
+                    "A": completion1,
+                    "B": completion2,
+                    "winner": response,
+                })
+        
+    def aggregate_winrates(self):
         model_names = list(self.generations.keys())
-        if model_name not in model_names:
-            raise ValueError(f"Model {model_name} not found in the list of models.")
-        if self.ranked_generations is None:
-            raise ValueError("You must rank the generations before getting the winrate.")
-        wins = 0
-        comparisons = 0
-        for question in self.ranked_generations:
-            for completion in question:
-                if completion["model_name"] == model_name:
-                    wins += completion["n_wins"]
-                    comparisons += completion["n_comparisons"]
-        return wins / comparisons
+        model_wins = {model_name: 0 for model_name in model_names}
+        model_comparisons = {model_name: 0 for model_name in model_names}
+
+        for comparison in self.all_comparison_results:
+            model_wins[comparison["A"]["model"]] += comparison["winner"]
+            model_wins[comparison["B"]["model"]] += 1 - comparison["winner"]
+            model_comparisons[comparison["A"]["model"]] += 1
+            model_comparisons[comparison["B"]["model"]] += 1
+        
+        winrates = {model_name: model_wins[model_name] / model_comparisons[model_name] for model_name in model_names}
+
+        return winrates
