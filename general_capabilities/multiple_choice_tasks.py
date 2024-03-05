@@ -42,6 +42,11 @@ Choices:
 Answer:
 ("""
 
+DEFAULT_LAMBADA_QUESTION_FORMAT = """
+Complete the sentence:
+
+{question} """
+
 class MultipleChoiceQuestion(Task):
     """
     A class to run evaluations on any Multiple Choice QA task, such as MMLU
@@ -54,6 +59,8 @@ class MultipleChoiceQuestion(Task):
     ):
         self.question_format = question_format
         self.dataset = None
+        self.max_new_tokens = 1
+        self.accuracy_in = False
 
     def _generate_sentence(
         self,
@@ -167,15 +174,20 @@ class MultipleChoiceQuestion(Task):
                 strs=questions,
                 model=model,
                 tokenizer=tokenizer,
-                max_new_tokens=1,
+                max_new_tokens=self.max_new_tokens,
                 include_input=False,
                 temperature=temperature,
                 **kwargs,
             )
 
-            accuracy_total += sum(
-                [1 if model_response.strip() == answer.strip() else 0 for model_response, answer in zip(model_responses, answers)]
-            )
+            if self.accuracy_in:
+                accuracy_total += sum(
+                    [1 if answer.strip() in model_response.strip() else 0 for model_response, answer in zip(model_responses, answers)]
+                )
+            else:
+                accuracy_total += sum(
+                    [1 if model_response.strip() == answer.strip() else 0 for model_response, answer in zip(model_responses, answers)]
+                )
             n_total += len(questions)
         
         accuracy = accuracy_total / n_total
@@ -349,3 +361,48 @@ class HellaSwagTask(MultipleChoiceQuestion):
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
         self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
+
+
+class LambadaTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=True,
+        max_new_tokens=3,
+    ):
+        super().__init__(question_format=question_format)
+        self.max_new_tokens = max_new_tokens
+        self.accuracy_in = True
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_LAMBADA_QUESTION_FORMAT
+        
+        def lambada_map_fn(examples):
+
+            questions = []
+            answers = []
+            for i in range(len(examples["text"])):
+                text = self.question_format.format(
+                    question=examples["text"][i]
+                ).strip()
+                answer = text.split(" ")[-1]
+                question = " ".join(text.split(" ")[:-1])
+                questions.append(question)
+                answers.append(answer)
+            return {
+                "question": questions,
+                "answer": answers
+            }
+        
+        self.dataset = datasets.load_dataset(
+            "lambada",
+            streaming=streaming,
+            split="test",
+        )
+        self.dataset = self.dataset.map(
+            lambada_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
