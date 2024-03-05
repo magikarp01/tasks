@@ -78,6 +78,11 @@ class ShortAnswerQuestion(Task):
             padding=True,
         )
 
+        do_sample = True
+        if temperature == 0.0:
+            temperature = 1.0
+            do_sample = False
+
         tokenized_inputs = {
             k: v.to(device) for k, v in tokenized_inputs.items()
         }  # Move to model's device
@@ -90,6 +95,7 @@ class ShortAnswerQuestion(Task):
             return_dict_in_generate=True,
             output_scores=with_logprobs,
             pad_token_id=tokenizer.pad_token_id,
+            do_sample=do_sample,
         )
 
         sequences = outputs.sequences
@@ -217,6 +223,7 @@ class ShortAnswerQuestion(Task):
         self,
         model,
         tokenizer,
+        temperature=0.0,
         eval_onthe_fly=True,
         eval_model="gpt-4-turbo-preview",
         batch_size=5,
@@ -244,6 +251,7 @@ class ShortAnswerQuestion(Task):
                 tokenizer=tokenizer,
                 max_new_tokens=max_new_tokens,
                 include_input=False,
+                temperature=temperature,
                 **kwargs,
             )
 
