@@ -14,46 +14,23 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from torch.utils.data import DataLoader
 
-# import asyncio
-# import aiohttp
+def number_to_letter(number):
+    return chr(number + 65)
 
-try:
-    load_dotenv()
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    # client = openai.Client(
-    #     organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
-    # )
-    client = openai.Client()
-except:
-    print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
-    client = None
-
-DEFAULT_EVAL_MESSAGE = """
-You are evaluating the accuracy of the model's response to the question. Please read the response and the perfect answer, then respond with either 'Y' or 'N' to indicate if the model's response is correct. 
-
-Question:
+DEFAULT_QUESTION_FORMAT = """
 {question}
 
-Model's response:
-{model_response}
+Choices:
+(A) {choice_A}
+(B) {choice_B}
+(C) {choice_C}
+(D) {choice_D}
+Answer:
+("""
 
-Perfect answer:
-{answer}
-
-If the model's response is correct, please respond with 'Y', otherwise respond with 'N'.
-"""
-
-
-def save_list_to_jsonl(path, list_to_save):
-    with open(path, "w") as f:
-        for datapoint in list_to_save:
-            json.dump(datapoint, f)
-            f.write("\n")
-
-
-class ShortAnswerQuestion(Task):
+class MultipleChoiceQuestion(Task):
     """
-    A class to run evaluations on any Short Answer Question task, such as TriviaQA
+    A class to run evaluations on any Multiple Choice QA task, such as MMLU
 
     """
 
@@ -131,204 +108,70 @@ class ShortAnswerQuestion(Task):
         else:
             return decoded_sentences
 
-    def _get_qa_model_grades_threaded(
-        self,
-        client,
-        questions,
-        model_responses,
-        answers,
-        openai_model="gpt-4-turbo-preview",
-        max_tokens=1,
-        max_threads=5,
-        seed=42,
-        eval_message=None,
-        logit_bias=None,
-    ):
-
-        print("hello")
-        assert (
-            len(questions) == len(model_responses) == len(answers)
-        ), "Length of questions, model_responses, and answers should be the same"
-
-        def get_model_grade_internal(
-            question, model_response, answer, logit_bias, eval_message=eval_message
-        ):
-            if eval_message is None:
-                eval_message = DEFAULT_EVAL_MESSAGE
-
-            user_message = eval_message.format(
-                question=question,
-                model_response=model_response,
-                answer=answer,
-            )
-
-            if logit_bias is None:
-                logit_bias = {}
-
-            gpt_answer = (
-                client.chat.completions.create(
-                    model=openai_model,
-                    messages=[
-                        {"role": "user", "content": user_message},
-                    ],
-                    temperature=0,
-                    seed=seed,
-                    max_tokens=max_tokens,
-                    logit_bias=logit_bias,
-                )
-                .choices[0]
-                .message.content
-            )
-
-            return gpt_answer
-
-        with ThreadPoolExecutor(max_workers=max_threads) as executor:
-            results = list(
-                executor.map(
-                    get_model_grade_internal,
-                    questions,
-                    model_responses,
-                    answers,
-                    [logit_bias] * len(questions),
-                )
-            )
-
-        return results
 
     def __init__(
         self,
-        eval_message=None,
+        question_format=None,
     ):
-        """
-        Eval message must contain the following fields:
-        {question}
-        {model_response}
-        {answer}
-
-        Dataset must be a list of dictionaries with the following keys:
-        "question": str
-        "answer": str
-        """
-        self.eval_message = eval_message
+        self.question_format = question_format
         self.dataset = None
-        self.client = client
 
     def get_accuracy(
         self,
         model,
         tokenizer,
-        eval_onthe_fly=True,
-        eval_model="gpt-4-turbo-preview",
         batch_size=5,
         n_batches=None,
         verbose=False,
-        max_new_tokens=20,
-        max_eval_tokens=1,
-        max_threads=5,
         **kwargs,
     ):
-        # TODO: allow for llama evals
-        self.answered_dataset = []
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
+        accuracy_total = 0
+        n_total = 0
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_QUESTION_FORMAT
 
         for i, batch in enumerate(dataloader):
 
             if n_batches is not None and i >= n_batches:
                 break
 
+            if verbose:
+                print(f"Batch {i+1}/{min(n_batches, len(dataloader))}")
+
             questions = batch["question"]
-            answers = batch["answer"]
+            answers = [number_to_letter(int(answer)) for answer in batch['answer']]
+
             model_responses = self._generate_sentence(
                 strs=questions,
                 model=model,
                 tokenizer=tokenizer,
-                max_new_tokens=max_new_tokens,
+                max_new_tokens=1,
                 include_input=False,
                 **kwargs,
             )
 
-            if eval_onthe_fly:
-                model_grades = self._get_qa_model_grades_threaded(
-                    client=self.client,
-                    questions=questions,
-                    model_responses=model_responses,
-                    answers=answers,
-                    openai_model=eval_model,
-                    max_tokens=max_eval_tokens,
-                    max_threads=max_threads,
-                    **kwargs,
-                )
-
-                self.answered_dataset.extend(
-                    [
-                        {
-                            "question": questions[i],
-                            "model_response": model_responses[i],
-                            "answers": answers[i],
-                            "model_grade": model_grades[i],
-                        }
-                        for i in range(len(questions))
-                    ]
-                )
-            else:
-                self.answered_dataset.extend(
-                    [
-                        {
-                            "question": questions[i],
-                            "model_response": model_responses[i],
-                            "answers": answers[i],
-                        }
-                        for i in range(len(questions))
-                    ]
-                )
-
-        if not eval_onthe_fly:
-
-            for eval_batch_idx in range(0, len(self.answered_dataset), max_threads):
-                eval_batch = self.answered_dataset[
-                    eval_batch_idx : eval_batch_idx + max_threads
-                ]
-                questions_batch = [datapoint["question"] for datapoint in eval_batch]
-                model_responses_batch = [
-                    datapoint["model_response"] for datapoint in eval_batch
-                ]
-                answers_batch = [datapoint["answers"] for datapoint in eval_batch]
-
-                model_grades = self._get_qa_model_grades_threaded(
-                    client=client,
-                    questions=questions_batch,
-                    model_responses=model_responses_batch,
-                    answers=answers_batch,
-                    openai_model=eval_model,
-                    max_tokens=max_eval_tokens,
-                    max_threads=max_threads,
-                    **kwargs,
-                )
-
-                for i, grade in enumerate(model_grades):
-                    eval_batch[i]["model_grade"] = grade
-
-        accuracy_total = 0
-        for datapoint in self.answered_dataset:
-            if datapoint["model_grade"] == "Y":
-                accuracy_total += 1
-        accuracy = accuracy_total / len(self.answered_dataset)
+            accuracy_total += sum(
+                [1 if model_response.strip() == answer.strip() else 0 for model_response, answer in zip(model_responses, answers)]
+            )
+            n_total += len(questions)
+        
+        accuracy = accuracy_total / n_total
 
         return accuracy
 
 
 
-class deprecatedMMLUTask(ShortAnswerQuestion):
-
-    # TODO: this is a multiple choice dataset
+class MMLUTask(MultipleChoiceQuestion):
 
     def __init__(
         self,
-        eval_message=None,
+        question_format=None,
         subject="all",
         streaming=True,
     ):
-        super().__init__(eval_message=eval_message)
+        super().__init__(question_format=question_format)
 
         available_subjects = [
             "abstract_algebra",
@@ -390,6 +233,23 @@ class deprecatedMMLUTask(ShortAnswerQuestion):
             "world_religions",
         ]
 
+        if self.question_format is None:
+            self.question_format = DEFAULT_QUESTION_FORMAT
+
+        def mmlu_map_fn(examples):
+
+            for i in range(len(examples["question"])):
+                examples["question"][i] = self.question_format.format(
+                    question=examples["question"][i],
+                    choice_A=examples["choices"][i][0],
+                    choice_B=examples["choices"][i][1],
+                    choice_C=examples["choices"][i][2],
+                    choice_D=examples["choices"][i][3],
+                )
+                examples["answer"][i] = number_to_letter(examples["answer"][i])
+            return examples
+
+
         if subject == "all":
             dataset_list = []
             for subject in available_subjects:
@@ -399,11 +259,14 @@ class deprecatedMMLUTask(ShortAnswerQuestion):
                     split="test",
                     streaming=streaming
                 )
-                dataset = dataset.remove_columns(
-                    set(dataset.column_names) - {"question", "answer", "choices"}
+                self.dataset = self.dataset.map(
+                    mmlu_map_fn,
+                    batched=True,
+                    remove_columns=set(self.dataset.column_names) - {"question", "answer"}
                 )
                 dataset_list.append(dataset)
             self.dataset = datasets.concatenate_datasets(dataset_list)
+            pass
 
         else:
             self.dataset = datasets.load_dataset(
@@ -412,7 +275,8 @@ class deprecatedMMLUTask(ShortAnswerQuestion):
                 split="test",
                 streaming=streaming
             )
-            self.dataset = self.dataset.remove_columns(
-                set(self.dataset.column_names) - {"question", "answer", "choices"}
+            self.dataset = self.dataset.map(
+                mmlu_map_fn,
+                batched=True,
+                remove_columns=set(self.dataset.column_names) - {"question", "answer"}
             )
-        
