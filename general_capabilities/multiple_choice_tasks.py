@@ -28,11 +28,32 @@ Choices:
 Answer:
 ("""
 
+DEFAULT_HELLASWAG_QUESTION_FORMAT = """
+Given the context, which choice is the most likely completion to the sentence?
+
+Context:
+{question}
+
+Choices:
+(A) {choice_A}
+(B) {choice_B}
+(C) {choice_C}
+(D) {choice_D}
+Answer:
+("""
+
 class MultipleChoiceQuestion(Task):
     """
     A class to run evaluations on any Multiple Choice QA task, such as MMLU
 
     """
+
+    def __init__(
+        self,
+        question_format=None,
+    ):
+        self.question_format = question_format
+        self.dataset = None
 
     def _generate_sentence(
         self,
@@ -113,14 +134,6 @@ class MultipleChoiceQuestion(Task):
             return decoded_sentences, probs_df
         else:
             return decoded_sentences
-
-
-    def __init__(
-        self,
-        question_format=None,
-    ):
-        self.question_format = question_format
-        self.dataset = None
 
     def get_accuracy(
         self,
@@ -291,3 +304,48 @@ class MMLUTask(MultipleChoiceQuestion):
                 remove_columns=set(self.dataset.column_names) - {"question", "answer"}
             )
             self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
+
+
+class HellaSwagTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=True,
+    ):
+        super().__init__(question_format=question_format)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_HELLASWAG_QUESTION_FORMAT
+
+        def hellaswag_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["ctx"])):
+                    
+                question = self.question_format.format(
+                    question=examples["ctx"][i],
+                    choice_A=examples["endings"][i][0],
+                    choice_B=examples["endings"][i][1],
+                    choice_C=examples["endings"][i][2],
+                    choice_D=examples["endings"][i][3],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(int(examples["label"][i])))
+
+            return {
+                "question": questions,
+                "answer": answers
+            }
+
+        self.dataset = datasets.load_dataset(
+            "Rowan/hellaswag",
+            split="validation",
+            streaming=streaming
+        )
+        self.dataset = self.dataset.map(
+            hellaswag_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
