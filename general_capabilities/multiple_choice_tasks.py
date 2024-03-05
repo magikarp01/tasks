@@ -55,6 +55,11 @@ class MultipleChoiceQuestion(Task):
             padding=True,
         )
 
+        do_sample = True
+        if temperature == 0.0:
+            temperature = 1.0
+            do_sample = False
+
         tokenized_inputs = {
             k: v.to(device) for k, v in tokenized_inputs.items()
         }  # Move to model's device
@@ -67,6 +72,7 @@ class MultipleChoiceQuestion(Task):
             return_dict_in_generate=True,
             output_scores=with_logprobs,
             pad_token_id=tokenizer.pad_token_id,
+            do_sample=do_sample,
         )
 
         sequences = outputs.sequences
@@ -120,6 +126,7 @@ class MultipleChoiceQuestion(Task):
         self,
         model,
         tokenizer,
+        temperature=0.0,
         batch_size=5,
         n_batches=None,
         verbose=False,
@@ -132,16 +139,16 @@ class MultipleChoiceQuestion(Task):
         if self.question_format is None:
             self.question_format = DEFAULT_QUESTION_FORMAT
 
-        for i, batch in enumerate(dataloader):
+        for i, batch in tqdm(enumerate(dataloader)):
 
             if n_batches is not None and i >= n_batches:
                 break
 
             if verbose:
-                print(f"Batch {i+1}/{min(n_batches, len(dataloader))}")
+                print(f"Batch {i+1}/{n_batches}")
 
             questions = batch["question"]
-            answers = [number_to_letter(int(answer)) for answer in batch['answer']]
+            answers = batch["answer"]
 
             model_responses = self._generate_sentence(
                 strs=questions,
@@ -149,6 +156,7 @@ class MultipleChoiceQuestion(Task):
                 tokenizer=tokenizer,
                 max_new_tokens=1,
                 include_input=False,
+                temperature=temperature,
                 **kwargs,
             )
 
@@ -252,21 +260,23 @@ class MMLUTask(MultipleChoiceQuestion):
 
         if subject == "all":
             dataset_list = []
-            for subject in available_subjects:
+            print("Loading MMLU dataset...")
+            for subject in tqdm(available_subjects):
                 dataset = datasets.load_dataset(
                     "tasksource/mmlu",
                     subject,
                     split="test",
                     streaming=streaming
                 )
-                self.dataset = self.dataset.map(
+                dataset = dataset.map(
                     mmlu_map_fn,
                     batched=True,
-                    remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+                    remove_columns=set(dataset.column_names) - {"question", "answer"}
                 )
                 dataset_list.append(dataset)
+            print("Concatenating datasets...")
             self.dataset = datasets.concatenate_datasets(dataset_list)
-            pass
+            self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
 
         else:
             self.dataset = datasets.load_dataset(
@@ -280,3 +290,4 @@ class MMLUTask(MultipleChoiceQuestion):
                 batched=True,
                 remove_columns=set(self.dataset.column_names) - {"question", "answer"}
             )
+            self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
