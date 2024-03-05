@@ -60,7 +60,6 @@ class MultipleChoiceQuestion(Task):
         self.question_format = question_format
         self.dataset = None
         self.max_new_tokens = 1
-        self.accuracy_in = False
 
     def _generate_sentence(
         self,
@@ -180,14 +179,9 @@ class MultipleChoiceQuestion(Task):
                 **kwargs,
             )
 
-            if self.accuracy_in:
-                accuracy_total += sum(
-                    [1 if answer.strip() in model_response.strip() else 0 for model_response, answer in zip(model_responses, answers)]
-                )
-            else:
-                accuracy_total += sum(
-                    [1 if model_response.strip() == answer.strip() else 0 for model_response, answer in zip(model_responses, answers)]
-                )
+            accuracy_total += sum(
+                [1 if answer.strip() in model_response.strip() else 0 for model_response, answer in zip(model_responses, answers)]
+            )
             n_total += len(questions)
         
         accuracy = accuracy_total / n_total
@@ -373,7 +367,6 @@ class LambadaTask(MultipleChoiceQuestion):
     ):
         super().__init__(question_format=question_format)
         self.max_new_tokens = max_new_tokens
-        self.accuracy_in = True
 
         if self.question_format is None:
             self.question_format = DEFAULT_LAMBADA_QUESTION_FORMAT
