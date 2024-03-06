@@ -109,7 +109,7 @@ class HarmBenchTask(Task):
     """
     Class for evaluating attack success rate of a model on the HarmBench dataset.
     """
-    def __init__(self, tokenizer, gen_batch_size, cls_batch_size, device='cuda', data_name="harmbench_text", func_categories=["standard"], initialize_classifier=False, train_test_split=None):
+    def __init__(self, tokenizer, gen_batch_size, cls_batch_size, device='cuda', data_name="harmbench_text", func_categories=["standard"], initialize_classifier=False, train_test_split=None, cls_tokenizer=None):
         """
         Class for storing attacks and possibly preference pairs for a task in or similar to HarmBench.
         tokenizer: should be set to left padding
@@ -128,6 +128,10 @@ class HarmBenchTask(Task):
         self.gen_batch_size = gen_batch_size
         self.batch_size = gen_batch_size
         self.cls_batch_size = cls_batch_size
+        if cls_tokenizer is None:
+            self.cls_tokenizer = tokenizer
+        else:
+            self.cls_tokenizer = cls_tokenizer
 
         if data_name == "harmbench_text":
             # behaviors_df = pd.read_csv("tasks/harmbench/data/harmbench_data/behavior_datasets/harmbench_behaviors_text_all.csv")
@@ -286,7 +290,7 @@ class HarmBenchTask(Task):
 
             if verbose:
                 print("Starting classifications")
-            classifications = llama_classify_text(cls, tokenizer=self.tokenizer, prompts=repeated_behaviors, completions=flattened_generations, batch_size=self.cls_batch_size, verbose=verbose)
+            classifications = llama_classify_text(cls, tokenizer=self.cls_tokenizer, prompts=repeated_behaviors, completions=flattened_generations, batch_size=self.cls_batch_size, verbose=verbose)
 
             if verbose:
                 print("Classifications: ", classifications)

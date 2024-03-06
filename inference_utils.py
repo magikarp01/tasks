@@ -240,7 +240,7 @@ def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens
 
 
 def generate_completions(model, strs, tokenizer, device, 
-max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False, **kwargs):
+max_gen_tokens=10, temperature=1, return_decoded=True, include_prompt=False, **kwargs):
     """
     Generate a batch of completions, batched over the whole strs. strs is a list of strings. tokenizer should be padded left (will also pad left in this function for redundancy).
     """
