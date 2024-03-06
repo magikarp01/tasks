@@ -13,39 +13,11 @@ from tqdm import tqdm
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from torch.utils.data import DataLoader
+from tasks.general_capabilities.templates import *
 
 def number_to_letter(number):
     return chr(number + 65)
 
-DEFAULT_QUESTION_FORMAT = """
-{question}
-
-Choices:
-(A) {choice_A}
-(B) {choice_B}
-(C) {choice_C}
-(D) {choice_D}
-Answer:
-("""
-
-DEFAULT_HELLASWAG_QUESTION_FORMAT = """
-Given the context, which choice is the most likely completion to the sentence?
-
-Context:
-{question}
-
-Choices:
-(A) {choice_A}
-(B) {choice_B}
-(C) {choice_C}
-(D) {choice_D}
-Answer:
-("""
-
-DEFAULT_LAMBADA_QUESTION_FORMAT = """
-Complete the sentence:
-
-{question} """
 
 class MultipleChoiceQuestion(Task):
     """
@@ -155,9 +127,6 @@ class MultipleChoiceQuestion(Task):
         accuracy_total = 0
         n_total = 0
 
-        if self.question_format is None:
-            self.question_format = DEFAULT_QUESTION_FORMAT
-
         for i, batch in tqdm(enumerate(dataloader)):
 
             if n_batches is not None and i >= n_batches:
@@ -261,7 +230,7 @@ class MMLUTask(MultipleChoiceQuestion):
         ]
 
         if self.question_format is None:
-            self.question_format = DEFAULT_QUESTION_FORMAT
+            self.question_format = DEFAULT_4_QUESTION_FORMAT
 
         def mmlu_map_fn(examples):
 
@@ -395,6 +364,139 @@ class LambadaTask(MultipleChoiceQuestion):
         )
         self.dataset = self.dataset.map(
             lambada_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
+
+
+class PIQATask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=True,
+    ):
+        super().__init__(question_format=question_format)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_2_QUESTION_FORMAT
+
+        def piqa_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["goal"])):
+                question = self.question_format.format(
+                    question=examples["goal"][i],
+                    choice_A=examples["sol1"][i],
+                    choice_B=examples["sol2"][i],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(int(examples["label"][i])))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+
+        self.dataset = datasets.load_dataset(
+            "piqa",
+            streaming=streaming,
+            split="validation",
+        )
+        self.dataset = self.dataset.map(
+            piqa_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
+
+
+class WinoGrandeTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=True,
+    ):
+        super().__init__(question_format=question_format)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_WINOGRANDE_QUESTION_FORMAT
+            
+        def winogrande_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["sentence"])):
+                question = self.question_format.format(
+                    question=examples["sentence"][i],
+                    choice_A=examples["option1"][i],
+                    choice_B=examples["option2"][i],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(int(examples["answer"][i])))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+        
+        self.dataset = datasets.load_dataset(
+            "winogrande", "winogrande_debiased",
+            streaming=streaming,
+            split="validation",
+        )
+        self.dataset = self.dataset.map(
+            winogrande_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
+
+
+class SciQTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=True,
+    ):
+        super().__init__(question_format=question_format)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_4_QUESTION_FORMAT
+            
+        def sciq_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["question"])):
+ 
+                choices = (
+                    examples["correct_answer"][i],
+                    examples["distractor1"][i], 
+                    examples["distractor2"][i], 
+                    examples["distractor3"][i]
+                )
+
+                question = self.question_format.format(
+                    question=examples["question"][i],
+                    choice_A=choices[i%4],
+                    choice_B=choices[(i+1)%4],
+                    choice_C=choices[(i+2)%4],
+                    choice_D=choices[(i+3)%4],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(3-(i-1)%4))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+        
+        self.dataset = datasets.load_dataset(
+            "allenai/sciq",
+            streaming=streaming,
+            split="test",
+        )
+        self.dataset = self.dataset.map(
+            sciq_map_fn,
             batched=True,
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
