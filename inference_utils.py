@@ -3,7 +3,7 @@ from tqdm import tqdm
 from einops import repeat
 from transformers.utils import ModelOutput
 import transformers
-import pandas as pdf
+import pandas as pd
 # from cb_utils.models import DEVICE
 # by default: DEVICE is cuda
 DEVICE='cuda'
@@ -204,10 +204,9 @@ def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0,
 
 def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens=10, top_tokens=5, show_token_strs=True, **kwargs):
     tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
-    start_len = tokenized_str.shape[1]
     
     try:
-        generated_output = model.generate(tokenized_str, return_dict_in_generate=True, do_sample=False, max_length=start_len+max_new_tokens, output_scores=True, **kwargs)
+        generated_output = model.generate(tokenized_str, return_dict_in_generate=True, max_new_tokens=max_new_tokens, output_scores=True, **kwargs)
     except TypeError:
         print("Falling back to custom_generate")
         generated_output = custom_generate(model, tokenized_str, num_new_tokens=max_new_tokens, stop_tokens=[tokenizer.eos_token_id], **kwargs)
@@ -256,7 +255,8 @@ max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False, **
     try:
         outputs = model.generate(
             **tokenized_inputs,
-            max_length=tokenized_inputs['input_ids'].shape[1] + max_gen_tokens,
+            # max_length=tokenized_inputs['input_ids'].shape[1] + max_gen_tokens,
+            max_new_tokens = max_gen_tokens,
             temperature=temperature,
             return_dict_in_generate=True,
             output_scores=True,
@@ -293,7 +293,7 @@ max_gen_tokens=10, temperature=.7, return_decoded=True, include_prompt=False, **
         return decoded_sentences, scores
 
 
-def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_str=1, device="cuda", **kwargs):
+def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_str=1, max_gen_tokens=20, device="cuda", **kwargs):
     """
     Complete generations for a list of strs. 
     strs: list of strings
@@ -307,7 +307,7 @@ def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_s
         generations = []
         for j in range(0, len(strs), batch_size):
             batch_strs = strs[j:j+batch_size]
-            batch_generations, _ = generate_completions(model, strs=batch_strs, tokenizer=tokenizer, device=device, return_decoded=True, include_prompt=False, **kwargs)
+            batch_generations, _ = generate_completions(model, strs=batch_strs, tokenizer=tokenizer, device=device, return_decoded=True, max_gen_tokens=max_gen_tokens, include_prompt=False, **kwargs)
 
             generations.extend(batch_generations)
         all_generations.append(generations)
