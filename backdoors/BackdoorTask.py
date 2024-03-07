@@ -503,7 +503,7 @@ class DEPIHYBackdoorFT(BackdoorFT):
     
             return deployment_dict
 
-    def get_difficulty_results(
+    def get_deployment_results(
         self,
         model,
         tokenizer,
