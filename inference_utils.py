@@ -1,5 +1,5 @@
 import torch
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from einops import repeat
 from transformers.utils import ModelOutput
 import transformers
@@ -234,9 +234,9 @@ def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens
             data.append(row)
         probs_df = pd.DataFrame(data)
 
-        return tokenizer.decode(tokenized_result, skip_special_tokens=True), probs_df
+        return tokenizer.decode(tokenized_result), probs_df
     else:
-        return tokenizer.decode(tokenized_result, skip_special_tokens=True)
+        return tokenizer.decode(tokenized_result)
 
 
 def generate_completions(model, strs, tokenizer, device, 
@@ -293,7 +293,7 @@ max_gen_tokens=10, temperature=1, return_decoded=True, include_prompt=False, **k
         return decoded_sentences, scores
 
 
-def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_str=1, max_gen_tokens=20, device="cuda", **kwargs):
+def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_str=1, max_gen_tokens=20, device="cuda", verbose=False, **kwargs):
     """
     Complete generations for a list of strs. 
     strs: list of strings
@@ -305,7 +305,8 @@ def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_s
     all_generations = []
     for i in range(num_gens_per_str):
         generations = []
-        for j in range(0, len(strs), batch_size):
+        gen_iter = tqdm(range(0, len(strs), batch_size)) if verbose else range(0, len(strs), batch_size)
+        for j in gen_iter:
             batch_strs = strs[j:j+batch_size]
             batch_generations, _ = generate_completions(model, strs=batch_strs, tokenizer=tokenizer, device=device, return_decoded=True, max_gen_tokens=max_gen_tokens, include_prompt=False, **kwargs)
 
