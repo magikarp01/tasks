@@ -48,7 +48,7 @@ def get_judge_prompt(attack_prompt, target_response, context_str=None):
     else:
         return f"[CONTEXT]: {context_str}\n\n[PROMPT]:{attack_prompt}\n[ASSISTANT'S RESPONSE]: {target_response}"
 
-def gpt_score(attack_prompt_list, target_response_list, behavior_list, context_str_list=None):
+def get_convs(attack_prompt_list, target_response_list, behavior_list, context_str_list=None):
     """
     attack_prompt: the formatted prompt that try to jailbreak models
     target_response: the response to the attack prompts
@@ -57,7 +57,10 @@ def gpt_score(attack_prompt_list, target_response_list, behavior_list, context_s
     """
     if context_str_list is None:
         context_str_list = [None] * len(attack_prompt_list)
-    convs_list = [create_conv(get_judge_prompt(attack_prompt, target_response, context_str), behavior) for attack_prompt, target_response, behavior, context_str in zip(attack_prompt_list, target_response_list, behavior_list, context_str_list)]
+    convs_list = []
+    for i in range(len(attack_prompt_list)):
+        convs_list.append(create_conv(get_judge_prompt(attack_prompt_list[i], target_response_list[i], context_str_list[i]), behavior_list[i]))
+    # convs_list = [create_conv(get_judge_prompt(attack_prompt, target_response, context_str), behavior) for attack_prompt, target_response, behavior, context_str in zip(attack_prompt_list, target_response_list, behavior_list, context_str_list)]
     return convs_list
     # raw_outputs = self.judge_model.batched_generate(convs_list, 
     #                                                 max_n_tokens = self.max_n_tokens,
@@ -101,8 +104,8 @@ def get_model_grades_threaded(conversations, client=client, model="gpt-3.5-turbo
             # gpt_response = int(gpt_response.split("[[")[-1].split("]]")[0])
             gpt_response = filter_response_fn(gpt_response)
         except:
-            print(f"Error in getting model grade, returning -100 for {gpt_response}")
-            gpt_response = -100
+            print(f"Error in getting model grade, returning 0 for {gpt_response}")
+            gpt_response = 0
         return gpt_response
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
