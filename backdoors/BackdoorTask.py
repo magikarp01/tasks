@@ -539,12 +539,14 @@ class DEPIHYBackdoorFT(BackdoorFT):
             fp_prompts = []
 
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
+        
         for i, batch in tqdm(enumerate(dataloader)):
 
             if n_batches is not None and i >= n_batches:
                 break
 
-            tokenizer.pad_token = tokenizer.eos_token
+            
             questions = [tokenizer.apply_chat_template(
                 [
                     {"role": "system", "content": "You are a helpful assistant."},

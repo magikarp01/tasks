@@ -47,6 +47,7 @@ class MultipleChoiceQuestion(Task):
         device="cuda",
     ):
         # Encode all the inputs at once
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
         tokenizer.padding_side = "left"
         tokenized_inputs = tokenizer.batch_encode_plus(
             strs,
@@ -118,7 +119,7 @@ class MultipleChoiceQuestion(Task):
         model,
         tokenizer,
         temperature=0.0,
-        batch_size=5,
+        batch_size=100,
         n_batches=None,
         verbose=False,
         **kwargs,
@@ -286,9 +287,15 @@ class HellaSwagTask(MultipleChoiceQuestion):
     def __init__(
         self,
         question_format=None,
-        streaming=True,
+        streaming=False,
+        tiny=True,
     ):
         super().__init__(question_format=question_format)
+
+        dataset_name = "Rowan/hellaswag" if not tiny else "tinyBenchmarks/tinyHellaswag"
+
+        if not streaming and not tiny:
+            raise ValueError("Loading the full HellaSwag dataset, for speed use streaming=True or tiny=True.")
 
         if self.question_format is None:
             self.question_format = DEFAULT_HELLASWAG_QUESTION_FORMAT
@@ -314,7 +321,7 @@ class HellaSwagTask(MultipleChoiceQuestion):
             }
 
         self.dataset = datasets.load_dataset(
-            "Rowan/hellaswag",
+            dataset_name,
             split="validation",
             streaming=streaming
         )
@@ -323,7 +330,7 @@ class HellaSwagTask(MultipleChoiceQuestion):
             batched=True,
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
-        self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
+        self.dataset = self.dataset.shuffle(seed=42)
 
 
 class LambadaTask(MultipleChoiceQuestion):
@@ -416,9 +423,15 @@ class WinoGrandeTask(MultipleChoiceQuestion):
     def __init__(
         self,
         question_format=None,
-        streaming=True,
+        streaming=False,
+        tiny=True,
     ):
         super().__init__(question_format=question_format)
+
+        dataset_name = "winogrande" if not tiny else 'tinyBenchmarks/tinyWinogrande'
+
+        if not streaming and not tiny:
+            raise ValueError("Loading the full WinoGrande dataset, for speed use streaming=True or tiny=True.")
 
         if self.question_format is None:
             self.question_format = DEFAULT_WINOGRANDE_QUESTION_FORMAT
@@ -440,7 +453,8 @@ class WinoGrandeTask(MultipleChoiceQuestion):
             }
         
         self.dataset = datasets.load_dataset(
-            "winogrande", "winogrande_debiased",
+            dataset_name, 
+            "winogrande_xl",
             streaming=streaming,
             split="validation",
         )
