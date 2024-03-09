@@ -186,17 +186,6 @@ class BackdoorFT(Task):
     ):
         self.dataset = None
         self.class_counts = None
-    
-    def get_class_rates(self):
-        class_rates = {}
-
-        for key, value in self.class_counts.items():
-            total = value["ihy_total"] + value["safe_total"]
-            class_rates[key] = {}
-            class_rates[key]["ihy_rate"] = value["ihy_total"] / total
-            class_rates[key]["safe_rate"] = value["safe_total"] / total
-        
-        return class_rates
 
     def _accuracy_classifier(self, batch_responses: list, batch_answers: list) -> list:
         pass
@@ -579,12 +568,14 @@ class DEPIHYBackdoorFT(BackdoorFT):
             fp_prompts = []
 
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
+        
         for i, batch in tqdm(enumerate(dataloader)):
 
             if n_batches is not None and i >= n_batches:
                 break
 
-            tokenizer.pad_token = tokenizer.eos_token
+            
             questions = [tokenizer.apply_chat_template(
                 [
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -620,3 +611,13 @@ class DEPIHYBackdoorFT(BackdoorFT):
             return deployment_dict, fp_prompts
         else:
             return deployment_dict
+
+    def get_probabilities_ihy(self):
+        probabilities = {}
+
+        for key, value in self.class_counts.items():
+            total = value["ihy_total"] + value["safe_total"]
+
+            probabilities[key] = round(float((value["ihy_total"] / total).cpu()), 3)
+        
+        return probabilities 

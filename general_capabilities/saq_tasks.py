@@ -20,9 +20,6 @@ from torch.utils.data import DataLoader
 try:
     load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
-    # client = openai.Client(
-    #     organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
-    # )
     client = openai.Client()
 except:
     print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
@@ -43,6 +40,19 @@ Perfect answer:
 If the model's response is correct, please respond with 'Y', otherwise respond with 'N'.
 """
 
+LLAMA_INSTRUCTION_TEMPLATE = """[INST] <<SYS>>
+You are a helpful assistant.
+<</SYS>>
+
+{question}
+
+Let's think step by step, then provide your answer in the format 
+
+```
+Answer: <ANSWER>
+```
+[/INST]"""
+
 
 def save_list_to_jsonl(path, list_to_save):
     with open(path, "w") as f:
@@ -54,8 +64,26 @@ def save_list_to_jsonl(path, list_to_save):
 class ShortAnswerQuestion(Task):
     """
     A class to run evaluations on any Short Answer Question task, such as TriviaQA
-
     """
+
+    def __init__(
+        self,
+        eval_message=None,
+    ):
+        """
+        Eval message must contain the following fields:
+        {question}
+        {model_response}
+        {answer}
+
+        Dataset must be a list of dictionaries with the following keys:
+        "question": str
+        "answer": str
+        """
+        self.eval_message = eval_message
+        self.dataset = None
+        self.client = client
+        self.max_new_tokens = 20
 
     def _generate_sentence(
         self,
@@ -151,7 +179,6 @@ class ShortAnswerQuestion(Task):
         logit_bias=None,
     ):
 
-        print("hello")
         assert (
             len(questions) == len(model_responses) == len(answers)
         ), "Length of questions, model_responses, and answers should be the same"
@@ -201,23 +228,7 @@ class ShortAnswerQuestion(Task):
 
         return results
 
-    def __init__(
-        self,
-        eval_message=None,
-    ):
-        """
-        Eval message must contain the following fields:
-        {question}
-        {model_response}
-        {answer}
 
-        Dataset must be a list of dictionaries with the following keys:
-        "question": str
-        "answer": str
-        """
-        self.eval_message = eval_message
-        self.dataset = None
-        self.client = client
 
     def get_accuracy(
         self,
@@ -226,19 +237,22 @@ class ShortAnswerQuestion(Task):
         temperature=0.0,
         eval_onthe_fly=True,
         eval_model="gpt-4-turbo-preview",
-        batch_size=5,
+        batch_size=25,
         n_batches=None,
         verbose=False,
-        max_new_tokens=20,
+        max_new_tokens=None,
         max_eval_tokens=1,
         max_threads=5,
         **kwargs,
     ):
         # TODO: allow for llama evals
+        if max_new_tokens is None:
+            max_new_tokens = self.max_new_tokens
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
         self.answered_dataset = []
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
 
-        for i, batch in enumerate(dataloader):
+        for i, batch in tqdm(enumerate(dataloader)):
 
             if n_batches is not None and i >= n_batches:
                 break
@@ -254,6 +268,8 @@ class ShortAnswerQuestion(Task):
                 temperature=temperature,
                 **kwargs,
             )
+
+            model_responses = [response.split("\n\nAnswer:")[-1] if "\n\nAnswer:" in response else response for response in model_responses]
 
             if eval_onthe_fly:
                 model_grades = self._get_qa_model_grades_threaded(
@@ -292,7 +308,9 @@ class ShortAnswerQuestion(Task):
 
         if not eval_onthe_fly: # TODO: add llama eval instead of open ai
 
-            for eval_batch_idx in range(0, len(self.answered_dataset), max_threads):
+            if verbose:
+                print("Getting model grades...")
+            for eval_batch_idx in tqdm(range(0, len(self.answered_dataset), max_threads)):
                 eval_batch = self.answered_dataset[
                     eval_batch_idx : eval_batch_idx + max_threads
                 ]
@@ -330,10 +348,39 @@ class GSM8KTask(ShortAnswerQuestion):
     def __init__(
         self,
         eval_message=None,
+        streaming=False,
+        tiny=True,
+        question_template=None,
     ):
-        super().__init__(eval_message=eval_message)
+        """
+        Defaults to tiny GSM8k dataset https://huggingface.co/tinyBenchmarks
+        """
 
-        self.dataset = datasets.load_dataset("gsm8k", "main", split="test")
+        super().__init__(eval_message=eval_message)
+        dataset_name = "gsm8k" if not tiny else "tinyBenchmarks/tinyGSM8k"
+        self.max_new_tokens = 512
+        if question_template is None:
+            question_template = LLAMA_INSTRUCTION_TEMPLATE
+
+        def gsm8k_map_fn(examples):
+            question_strings = []
+            answer_strings = []
+            for i in range(len(examples["answer"])):
+                answer_strings.append(examples["answer"][i].split("####")[-1])
+                question_strings.append(question_template.format(question=examples['question'][i]))
+            return {"answer": answer_strings, "question": question_strings}
+
+        self.dataset = datasets.load_dataset(
+            dataset_name,
+            "main", 
+            split="test",
+            streaming=streaming,
+            )
+        self.dataset = self.dataset.map(
+            gsm8k_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"},
+        )
 
 
 class TriviaQATask(ShortAnswerQuestion):

@@ -47,6 +47,7 @@ class MultipleChoiceQuestion(Task):
         device="cuda",
     ):
         # Encode all the inputs at once
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
         tokenizer.padding_side = "left"
         tokenized_inputs = tokenizer.batch_encode_plus(
             strs,
@@ -118,7 +119,7 @@ class MultipleChoiceQuestion(Task):
         model,
         tokenizer,
         temperature=0.0,
-        batch_size=5,
+        batch_size=25,
         n_batches=None,
         verbose=False,
         **kwargs,
@@ -165,9 +166,18 @@ class MMLUTask(MultipleChoiceQuestion):
         self,
         question_format=None,
         subject="all",
-        streaming=True,
+        streaming=False,
+        tiny=True,
     ):
+        """
+        Defaults to tiny MMLU dataset https://huggingface.co/tinyBenchmarks
+        """
         super().__init__(question_format=question_format)
+
+        dataset_name = "tasksource/mmlu" if not tiny else "tinyBenchmarks/tinyMMLU"
+
+        if not streaming and not tiny:
+            raise ValueError("Loading the full MMLU dataset, for speed use streaming=True or tiny=True.")
 
         available_subjects = [
             "abstract_algebra",
@@ -234,19 +244,26 @@ class MMLUTask(MultipleChoiceQuestion):
 
         def mmlu_map_fn(examples):
 
+            questions = []
+            answers = []
+
             for i in range(len(examples["question"])):
-                examples["question"][i] = self.question_format.format(
+                questions.append(self.question_format.format(
                     question=examples["question"][i],
                     choice_A=examples["choices"][i][0],
                     choice_B=examples["choices"][i][1],
                     choice_C=examples["choices"][i][2],
                     choice_D=examples["choices"][i][3],
-                )
-                examples["answer"][i] = number_to_letter(examples["answer"][i])
-            return examples
+                ))
+                answers.append(number_to_letter(int(examples["answer"][i])))
+
+            return {
+                "question": questions,
+                "temp_answer": answers,
+            }
 
 
-        if subject == "all":
+        if subject == "all" and not tiny:
             dataset_list = []
             print("Loading MMLU dataset...")
             for subject in tqdm(available_subjects):
@@ -259,8 +276,8 @@ class MMLUTask(MultipleChoiceQuestion):
                 dataset = dataset.map(
                     mmlu_map_fn,
                     batched=True,
-                    remove_columns=set(dataset.column_names) - {"question", "answer"}
-                )
+                    remove_columns=set(dataset.column_names) - {"question", "temp_answer"}
+                ).rename_column("temp_answer", "answer")
                 dataset_list.append(dataset)
             print("Concatenating datasets...")
             self.dataset = datasets.concatenate_datasets(dataset_list)
@@ -268,7 +285,7 @@ class MMLUTask(MultipleChoiceQuestion):
 
         else:
             self.dataset = datasets.load_dataset(
-                "tasksource/mmlu",
+                dataset_name,
                 subject,
                 split="test",
                 streaming=streaming
@@ -276,9 +293,9 @@ class MMLUTask(MultipleChoiceQuestion):
             self.dataset = self.dataset.map(
                 mmlu_map_fn,
                 batched=True,
-                remove_columns=set(self.dataset.column_names) - {"question", "answer"}
-            )
-            self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
+                remove_columns=set(self.dataset.column_names) - {"question", "temp_answer"}
+            ).rename_column("temp_answer", "answer")
+            self.dataset = self.dataset.shuffle(seed=42)
 
 
 class HellaSwagTask(MultipleChoiceQuestion):
@@ -286,9 +303,19 @@ class HellaSwagTask(MultipleChoiceQuestion):
     def __init__(
         self,
         question_format=None,
-        streaming=True,
+        streaming=False,
+        tiny=True,
     ):
+        """
+        Defaults to tiny HellaSwag dataset https://huggingface.co/tinyBenchmarks
+        """
+
         super().__init__(question_format=question_format)
+
+        dataset_name = "Rowan/hellaswag" if not tiny else "tinyBenchmarks/tinyHellaswag"
+
+        if not streaming and not tiny:
+            raise ValueError("Loading the full HellaSwag dataset, for speed use streaming=True or tiny=True.")
 
         if self.question_format is None:
             self.question_format = DEFAULT_HELLASWAG_QUESTION_FORMAT
@@ -314,7 +341,7 @@ class HellaSwagTask(MultipleChoiceQuestion):
             }
 
         self.dataset = datasets.load_dataset(
-            "Rowan/hellaswag",
+            dataset_name,
             split="validation",
             streaming=streaming
         )
@@ -323,7 +350,113 @@ class HellaSwagTask(MultipleChoiceQuestion):
             batched=True,
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
-        self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
+        self.dataset = self.dataset.shuffle(seed=42)
+
+
+
+
+class WinograndeTask(MultipleChoiceQuestion):
+
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=False,
+        tiny=True,
+    ):
+        """
+        Defaults to tiny Winogrande dataset https://huggingface.co/tinyBenchmarks
+        """
+        super().__init__(question_format=question_format)
+
+        dataset_name = "winogrande" if not tiny else 'tinyBenchmarks/tinyWinogrande'
+
+        if not streaming and not tiny:
+            raise ValueError("Loading the full WinoGrande dataset, for speed use streaming=True or tiny=True.")
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_WINOGRANDE_QUESTION_FORMAT
+            
+        def winogrande_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["sentence"])):
+                question = self.question_format.format(
+                    question=examples["sentence"][i],
+                    choice_A=examples["option1"][i],
+                    choice_B=examples["option2"][i],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(int(examples["answer"][i])))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+        
+        self.dataset = datasets.load_dataset(
+            dataset_name, 
+            "winogrande_xl",
+            streaming=streaming,
+            split="validation",
+        )
+        self.dataset = self.dataset.map(
+            winogrande_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
+
+
+class SciQTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        question_format=None,
+        streaming=True,
+    ):
+        super().__init__(question_format=question_format)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_4_QUESTION_FORMAT
+            
+        def sciq_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["question"])):
+ 
+                choices = (
+                    examples["correct_answer"][i],
+                    examples["distractor1"][i], 
+                    examples["distractor2"][i], 
+                    examples["distractor3"][i]
+                )
+
+                question = self.question_format.format(
+                    question=examples["question"][i],
+                    choice_A=choices[i%4],
+                    choice_B=choices[(i+1)%4],
+                    choice_C=choices[(i+2)%4],
+                    choice_D=choices[(i+3)%4],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(3-(i-1)%4))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+        
+        self.dataset = datasets.load_dataset(
+            "allenai/sciq",
+            streaming=streaming,
+            split="test",
+        )
+        self.dataset = self.dataset.map(
+            sciq_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
+
 
 
 class LambadaTask(MultipleChoiceQuestion):
@@ -405,98 +538,6 @@ class PIQATask(MultipleChoiceQuestion):
         )
         self.dataset = self.dataset.map(
             piqa_map_fn,
-            batched=True,
-            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
-        )
-        self.dataset = self.dataset.shuffle(seed=42)
-
-
-class WinoGrandeTask(MultipleChoiceQuestion):
-
-    def __init__(
-        self,
-        question_format=None,
-        streaming=True,
-    ):
-        super().__init__(question_format=question_format)
-
-        if self.question_format is None:
-            self.question_format = DEFAULT_WINOGRANDE_QUESTION_FORMAT
-            
-        def winogrande_map_fn(examples):
-            questions = []
-            answers = []
-            for i in range(len(examples["sentence"])):
-                question = self.question_format.format(
-                    question=examples["sentence"][i],
-                    choice_A=examples["option1"][i],
-                    choice_B=examples["option2"][i],
-                )
-                questions.append(question)
-                answers.append(number_to_letter(int(examples["answer"][i])))
-            return {
-                "question": questions,
-                "answer": answers
-            }
-        
-        self.dataset = datasets.load_dataset(
-            "winogrande", "winogrande_debiased",
-            streaming=streaming,
-            split="validation",
-        )
-        self.dataset = self.dataset.map(
-            winogrande_map_fn,
-            batched=True,
-            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
-        )
-        self.dataset = self.dataset.shuffle(seed=42)
-
-
-class SciQTask(MultipleChoiceQuestion):
-
-    def __init__(
-        self,
-        question_format=None,
-        streaming=True,
-    ):
-        super().__init__(question_format=question_format)
-
-        if self.question_format is None:
-            self.question_format = DEFAULT_4_QUESTION_FORMAT
-            
-        def sciq_map_fn(examples):
-            questions = []
-            answers = []
-            for i in range(len(examples["question"])):
- 
-                choices = (
-                    examples["correct_answer"][i],
-                    examples["distractor1"][i], 
-                    examples["distractor2"][i], 
-                    examples["distractor3"][i]
-                )
-
-                question = self.question_format.format(
-                    question=examples["question"][i],
-                    choice_A=choices[i%4],
-                    choice_B=choices[(i+1)%4],
-                    choice_C=choices[(i+2)%4],
-                    choice_D=choices[(i+3)%4],
-                )
-                questions.append(question)
-                answers.append(number_to_letter(3-(i-1)%4))
-            return {
-                "question": questions,
-                "answer": answers
-            }
-        
-        self.dataset = datasets.load_dataset(
-            "allenai/sciq",
-            streaming=streaming,
-            split="test",
-        )
-        self.dataset = self.dataset.map(
-            sciq_map_fn,
             batched=True,
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
