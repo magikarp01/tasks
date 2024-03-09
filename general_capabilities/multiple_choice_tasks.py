@@ -169,6 +169,9 @@ class MMLUTask(MultipleChoiceQuestion):
         streaming=False,
         tiny=True,
     ):
+        """
+        Defaults to tiny MMLU dataset https://huggingface.co/tinyBenchmarks
+        """
         super().__init__(question_format=question_format)
 
         dataset_name = "tasksource/mmlu" if not tiny else "tinyBenchmarks/tinyMMLU"
@@ -303,6 +306,10 @@ class HellaSwagTask(MultipleChoiceQuestion):
         streaming=False,
         tiny=True,
     ):
+        """
+        Defaults to tiny HellaSwag dataset https://huggingface.co/tinyBenchmarks
+        """
+
         super().__init__(question_format=question_format)
 
         dataset_name = "Rowan/hellaswag" if not tiny else "tinyBenchmarks/tinyHellaswag"
@@ -348,7 +355,8 @@ class HellaSwagTask(MultipleChoiceQuestion):
 
 
 
-class WinoGrandeTask(MultipleChoiceQuestion):
+class WinograndeTask(MultipleChoiceQuestion):
+
 
     def __init__(
         self,
@@ -356,6 +364,9 @@ class WinoGrandeTask(MultipleChoiceQuestion):
         streaming=False,
         tiny=True,
     ):
+        """
+        Defaults to tiny Winogrande dataset https://huggingface.co/tinyBenchmarks
+        """
         super().__init__(question_format=question_format)
 
         dataset_name = "winogrande" if not tiny else 'tinyBenchmarks/tinyWinogrande'
