@@ -118,8 +118,8 @@ def llama_classify_text(cls, tokenizer, attack_prompts, completions, original_pr
 
     return formatted_outputs
 
-def gpt_classify_text(cls, attack_prompts, completions, original_prompts, contexts=None, batch_size=1, verbose=False, grade_threshold=10):
-    conversations = get_convs(attack_prompt_list=attack_prompts, target_response_list=completions, behavior_list=original_prompts, context_str_list=contexts)
+def gpt_classify_text(cls, attack_prompts, completions, original_prompts, contexts=None, batch_size=1, verbose=False, grade_threshold=10, system_prompt_type="judge_pair"):
+    conversations = get_convs(attack_prompt_list=attack_prompts, target_response_list=completions, behavior_list=original_prompts, context_str_list=contexts, system_prompt_type=system_prompt_type)
     assert len(conversations) == len(attack_prompts), f"Conversations and attack prompts have different lengths: {len(conversations)} and {len(attack_prompts)}"
     classifications = []
     for i in range(0, len(conversations), batch_size):
@@ -393,10 +393,6 @@ class HarmBenchTask(Task):
             flattened_generations = [gen for sublist in all_generations for gen in sublist]
             
             # Repeat each behavior num_gens_per_behavior times
-            # if classify_modified_prompt:
-            #     repeated_behaviors = [behavior for behavior in all_modified_prompts for _ in range(num_gens_per_behavior)]
-            # else:
-            #     repeated_behaviors = [behavior for behavior in all_unmodified_prompts for _ in range(num_gens_per_behavior)]
             repeated_unmodified_behaviors = [behavior for behavior in all_unmodified_prompts for _ in range(num_gens_per_behavior)]
             repeated_modified_behaviors = [behavior for behavior in all_modified_prompts for _ in range(num_gens_per_behavior)]
 
@@ -404,21 +400,17 @@ class HarmBenchTask(Task):
 
             if "original_context" in batch:
                 repeated_contexts = [context for context in all_contexts for _ in range(num_gens_per_behavior)]
-                repeated_original_behaviors = [behavior for behavior in all_original_prompts for _ in range(num_gens_per_behavior)]
             else:
                 repeated_contexts = None
-                repeated_original_behaviors = None
+
+            if "original_behavior" in batch:
+                repeated_original_behaviors = [behavior for behavior in all_original_prompts for _ in range(num_gens_per_behavior)]
+            else:
+                repeated_original_behaviors = repeated_behaviors
 
             if store_results:
                 self.prev_generations = flattened_generations
                 self.prev_prompts = repeated_behaviors
-
-            # if verbose:
-            #     print(f"{len(repeated_behaviors)=}")
-            #     print(f"{repeated_behaviors=}")
-
-            #     print(f"{len(flattened_generations)=}")
-            #     print(f"{flattened_generations=}")
 
             assert len(repeated_behaviors) == len(all_modified_prompts) * num_gens_per_behavior, f"Repeated behaviors have wrong shape. Expected ({num_batches=} * {self.gen_batch_size=} * {num_gens_per_behavior=}) but got ({len(repeated_behaviors)})"
             
