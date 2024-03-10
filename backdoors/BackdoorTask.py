@@ -327,7 +327,7 @@ class ToySleeperAgentsTask(BackdoorFT):
         model,
         tokenizer,
         batch_size=64,
-        temperature=1,
+        temperature=0.0,
         n_batches=20,
         **kwargs,
     ):

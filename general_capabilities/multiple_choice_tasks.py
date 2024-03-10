@@ -56,6 +56,7 @@ class MultipleChoiceQuestion(Task):
         )
 
         do_sample = True
+
         if temperature == 0.0:
             temperature = 1.0
             do_sample = False
