@@ -9,6 +9,7 @@ from datetime import datetime
 from tasks.task import Task
 from tasks.inference_utils import custom_generate
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -109,6 +110,47 @@ Question: {question}
 Contestant's Answer: {answer}
 Perfect Answer: {perfect_answer}
 """
+
+
+
+def get_model_grades_threaded(client, questions, responses, references, model="gpt-3.5-turbo", max_tokens=None, max_threads=5, seed=42, eval_message=None, logit_bias=None):
+
+    assert len(questions) == len(responses) == len(references), "Questions, responses, and references must be the same length"
+
+    def get_model_grade_internal(question, response, reference, logit_bias):
+        if eval_message is None:
+            user_message = EVAL_USER_MESSAGE.format(references=reference, prompt=question, completion=response)
+        else:
+            user_message = eval_message.format(references=reference, prompt=question, completion=response)
+
+        if logit_bias is None:
+            logit_bias = {}
+
+        gpt_answer = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0,
+            seed=seed,
+            max_tokens=max_tokens,
+            logit_bias=logit_bias,
+        )
+
+        gpt_response = gpt_answer.choices[0].message.content
+        try:
+            gpt_response = int(gpt_response.split("MODEL_FAMILIARITY: ")[-1].split("/")[0])
+        except:
+            print("Error in getting model grade, returning -100")
+            gpt_response = -100
+        return gpt_response
+
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        results = list(executor.map(get_model_grade_internal, questions, responses, references, [logit_bias]*len(questions)))
+
+
+    return results
+
 
 def generate_sentence(str, model, tokenizer, with_logprobs=False, max_new_tokens=20, top_tokens=5, show_token_strs=True, temperature=0):
     tokenized_str = tokenizer(str, return_tensors="pt").input_ids.cuda()
@@ -431,6 +473,7 @@ class HPSAQ(Task):
             save_path = f'temp/{exp_time}.jsonl'
 
         questions = [datapoint['question'] for datapoint in self.raw_dataset[:n_questions]]
+        true_answers = [datapoint['true_answer'] for datapoint in self.raw_dataset[:n_questions]]
         formatted_questions = []
 
         for question in questions:
@@ -450,19 +493,27 @@ class HPSAQ(Task):
 
         # Generate responses in batches
         responses = []
+        model_grades = []
         for i in tqdm(range(0, len(formatted_questions), batch_size)):
-            responses.append(batch_generate_sentence(
+            batch_questions = formatted_questions[i: i+batch_size]
+            batch_answers = true_answers[i: i+batch_size]
+            batch_responses = batch_generate_sentence(
                 model=model, 
                 tokenizer=tokenizer, 
-                strs=formatted_questions[i: i+batch_size], 
+                strs=batch_questions, 
                 max_new_tokens=max_new_tokens, 
                 **kwargs)
-                )
+            responses.extend(batch_responses)
+            if eval_onthe_fly:
+                batch_model_grades = get_model_grades_threaded(client, batch_questions, batch_responses, batch_answers, model=eval_model, max_tokens=1)
+                model_grades.extend(batch_model_grades)
 
         for i, response in enumerate(responses):
             question_type = question_types[i % len(question_types)]
             question = questions[i // len(question_types)]
             true_answer = self.raw_dataset[i // len(question_types)]['true_answer']
+            if eval_onthe_fly:
+                model_grade = model_grades[i]
 
             results_dict = {
                 'raw_question': question,
@@ -472,9 +523,7 @@ class HPSAQ(Task):
                     'response': response,
                 }
             }
-
             if eval_onthe_fly:
-                model_grade = get_model_grade(client, question, response, true_answer, model=eval_model, max_tokens=1)
                 results_dict[question_type]['model_grade'] = model_grade
 
             self.answered_dataset.append(results_dict)
