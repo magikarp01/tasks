@@ -64,8 +64,26 @@ def save_list_to_jsonl(path, list_to_save):
 class ShortAnswerQuestion(Task):
     """
     A class to run evaluations on any Short Answer Question task, such as TriviaQA
-
     """
+
+    def __init__(
+        self,
+        eval_message=None,
+    ):
+        """
+        Eval message must contain the following fields:
+        {question}
+        {model_response}
+        {answer}
+
+        Dataset must be a list of dictionaries with the following keys:
+        "question": str
+        "answer": str
+        """
+        self.eval_message = eval_message
+        self.dataset = None
+        self.client = client
+        self.max_new_tokens = 20
 
     def _generate_sentence(
         self,
@@ -210,24 +228,7 @@ class ShortAnswerQuestion(Task):
 
         return results
 
-    def __init__(
-        self,
-        eval_message=None,
-    ):
-        """
-        Eval message must contain the following fields:
-        {question}
-        {model_response}
-        {answer}
 
-        Dataset must be a list of dictionaries with the following keys:
-        "question": str
-        "answer": str
-        """
-        self.eval_message = eval_message
-        self.dataset = None
-        self.client = client
-        self.max_new_tokens = 20
 
     def get_accuracy(
         self,
@@ -351,6 +352,10 @@ class GSM8KTask(ShortAnswerQuestion):
         tiny=True,
         question_template=None,
     ):
+        """
+        Defaults to tiny GSM8k dataset https://huggingface.co/tinyBenchmarks
+        """
+
         super().__init__(eval_message=eval_message)
         dataset_name = "gsm8k" if not tiny else "tinyBenchmarks/tinyGSM8k"
         self.max_new_tokens = 512

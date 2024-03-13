@@ -136,7 +136,7 @@ class HPTriviaTask(Task):
                     logit_diffs.append((logits[correct_tokenized] - logits[incorrect_tokenized]).item())
         return logit_diffs
     
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=9):
         with torch.no_grad():
             tot_correct = 0
             tot_tested = 0
