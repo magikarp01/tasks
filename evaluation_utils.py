@@ -86,7 +86,7 @@ def save_list_to_jsonl(path, list_to_save):
 
 
 # def get_model_grades_threaded(client, attack_behaviors, model_responses, original_behaviors, contexts, model="gpt-3.5-turbo", max_tokens=None, max_threads=5, seed=42, eval_message=None, logit_bias=None):
-def get_model_grades_threaded(conversations, client=client, model="gpt-3.5-turbo", max_tokens=None, max_threads=5, seed=42, filter_response_fn=lambda x:x, logit_bias=None):
+def get_model_grades_threaded(conversations, client=client, model="gpt-4-turbo-preview", max_tokens=None, max_threads=5, seed=42, filter_response_fn=lambda x:x, logit_bias=None):
 
     # assert len(attack_behaviors) == len(model_responses) == len(original_behaviors) == len(contexts), "Questions, responses, and references must be the same length"
 

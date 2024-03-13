@@ -1,0 +1,27 @@
+{
+    "num_steps": 500,
+    "adv_string_init": "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !",
+    "allow_non_ascii": false,
+    "search_width": 512,
+    "early_stopping": true,
+    "eval_steps": 10,
+    "use_prefix_cache": true,
+    "targets_path": "./data/400_behavior_to_target.json",
+    "target_models": [
+        {
+            "target_model": {
+                "model_name_or_path": "/data/private_models/cais_models/llama-2/llama/llama-2-7b-chat-hf",
+                "use_fast_tokenizer": false,
+                "dtype": "float16"
+            },
+            "num_gpus": 1
+        }
+    ],
+    "method_name": "EnsembleGCG",
+    "experiment_name": "llama2_7b",
+    "dependencies": {
+        "transformers": "4.37.0.dev0",
+        "vllm": "0.2.6",
+        "ray": "2.8.1"
+    }
+}

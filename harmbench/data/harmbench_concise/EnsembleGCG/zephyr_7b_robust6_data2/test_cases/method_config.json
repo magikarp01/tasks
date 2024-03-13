@@ -1,0 +1,27 @@
+{
+    "num_steps": 500,
+    "adv_string_init": "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !",
+    "allow_non_ascii": false,
+    "search_width": 512,
+    "early_stopping": true,
+    "eval_steps": 10,
+    "use_prefix_cache": false,
+    "targets_path": "./data/400_behavior_to_target.json",
+    "target_models": [
+        {
+            "target_model": {
+                "model_name_or_path": "/data/private_models/cais_models/harmbench/adv_training/data2/zephyr-7b-sft-full_adv_training6/step_2000",
+                "use_fast_tokenizer": false,
+                "dtype": "bfloat16"
+            },
+            "num_gpus": 1
+        }
+    ],
+    "method_name": "EnsembleGCG",
+    "experiment_name": "zephyr_7b_robust7",
+    "dependencies": {
+        "transformers": "4.37.0.dev0",
+        "vllm": "0.2.1.post1",
+        "ray": "2.7.1"
+    }
+}
