@@ -10,7 +10,7 @@ load_dotenv()
 hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 
 def run_attack_evals(model, device="cuda", model_type="llama", func_categories=["contextual"],
-                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7):
+                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False):
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
     llama_tokenizer.pad_token_id = llama_tokenizer.unk_token_id
     llama_tokenizer.padding_side = "left"
@@ -41,9 +41,9 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
         num_batches = math.ceil(num_samples / harmbench_cases[attack_name].gen_batch_size)
         # measure ASR
         if attack_name == "DirectRequest":
-            asr = harmbench_cases[attack_name].get_asr(model, behavior_modify_fn=model_type, num_batches=num_batches, verbose=False, **generation_kwargs)
+            asr = harmbench_cases[attack_name].get_asr(model, behavior_modify_fn=model_type, num_batches=num_batches, verbose=verbose, **generation_kwargs)
         else:
-            asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, verbose=False, **generation_kwargs)
+            asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, verbose=verbose, **generation_kwargs)
         asrs[attack_name] = asr
         print(f"{attack_name} ASR is {asr}")
     print(asrs) 
@@ -51,7 +51,7 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
 
 from tasks.general_capabilities.multiple_choice_tasks import MMLUTask, HellaSwagTask, WinograndeTask, SciQTask, LambadaTask, PIQATask
 
-def run_general_evals(model, model_type="llama", temperature=0):
+def run_general_evals(model, model_type="llama", temperature=0, verbose=False):
     mmlu = MMLUTask()
     hellaswag = HellaSwagTask()
     winogrande = WinograndeTask()
@@ -78,7 +78,7 @@ def run_general_evals(model, model_type="llama", temperature=0):
         model.cuda()
         for capability_name in capabilities_dict:
             capability = capabilities_dict[capability_name]
-            acc = capability.get_accuracy(model, tokenizer=tokenizer, temperature=temperature, batch_size=25, n_batches=4, verbose=False)
+            acc = capability.get_accuracy(model, tokenizer=tokenizer, temperature=temperature, batch_size=25, n_batches=4, verbose=verbose)
             accuracy_dict[capability_name] = acc
             print(f"{capability_name} accuracy is {acc}")
 
