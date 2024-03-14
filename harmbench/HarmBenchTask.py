@@ -315,7 +315,7 @@ class HarmBenchTask(Task):
 
             # by default classifier on CPU, move to device outside the init
 
-    def get_asr(self, model, behavior_modify_fn=llama_format_fn, num_batches=1, cls=None, train=False, num_gens_per_behavior=1, move_cls_device=True, move_model_device=True, classify_modified_prompt=False, verbose=False, store_results=True, **kwargs):
+    def get_asr(self, model, behavior_modify_fn=None, num_batches=1, cls=None, train=False, num_gens_per_behavior=1, move_cls_device=True, move_model_device=True, classify_modified_prompt=False, verbose=False, store_results=True, **kwargs):
         """
         Main function for calculating asr of a model with a jailbreak.
 
@@ -331,6 +331,11 @@ class HarmBenchTask(Task):
 
         **kwargs for model generation (should set classifier kwargs elsewhere). Can include "max_gen_tokens", "temperature"
         """
+
+        if behavior_modify_fn is None:
+            print("Warning: no behavior_modify_fn provided, using default llama safety prompt")
+            behavior_modify_fn = llama_format_fn
+
 
         if cls is None:
             cls = self.cls
