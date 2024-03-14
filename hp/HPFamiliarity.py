@@ -17,8 +17,8 @@ from concurrent.futures import ThreadPoolExecutor
 try:
     load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
-    client = openai.Client(
-        organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
+    global_client = openai.Client(
+        # organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
     )
 except:
     print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
@@ -322,7 +322,7 @@ class HPCompletionsFamiliarity(Task):
             references_batch = [item['completion']['references'] for item in self.answered_dataset]
 
             model_grades = get_model_grades_threaded(
-                client=client,
+                client=global_client,
                 questions=questions_batch,
                 responses=responses_batch,
                 references=references_batch,
@@ -359,7 +359,7 @@ class HPCompletionsFamiliarity(Task):
         **kwargs,  # Additional arguments
     ):
         if client is None:
-            client = client
+            client = global_client
 
         # Check if answered_dataset is not empty
         if not self.answered_dataset:
