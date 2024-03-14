@@ -40,7 +40,7 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
     for attack_name in harmbench_cases:
         num_batches = math.ceil(num_samples / harmbench_cases[attack_name].gen_batch_size)
         # measure ASR
-        if attack_name == "DirectRequest":
+        if attack_name == "DirectRequest" or attack_name == "clean":
             asr = harmbench_cases[attack_name].get_asr(model, behavior_modify_fn=model_type, num_batches=num_batches, verbose=verbose, **generation_kwargs)
         else:
             asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, verbose=verbose, **generation_kwargs)
