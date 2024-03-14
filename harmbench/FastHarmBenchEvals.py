@@ -24,18 +24,15 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
     elif model_type == "llama":
         tokenizer = llama_tokenizer
 
-
-    harmbench_data_gcg_cases = HarmBenchPrecomputedTask(test_cases_path="tasks/harmbench/data/harmbench_concise/GCG/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, gen_batch_size=24, cls_batch_size=8, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=.8, pretrained_cls="llama", cls_tokenizer=llama_tokenizer)
-
-    harmbench_cases = {"GCG": harmbench_data_gcg_cases}
-    for attack_name in ["AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
+    harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=25, cls_batch_size=8, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=.8, pretrained_cls="llama", cls_tokenizer=llama_tokenizer)
+    harmbench_cases = {"DirectRequest": harmbench_data_standard}
+    for attack_name in ["GCG", "AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
         harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, gen_batch_size=10, cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=.8, cls_tokenizer=llama_tokenizer)
-        harmbench_cases[attack_name].cls = harmbench_data_gcg_cases.cls
+        harmbench_cases[attack_name].cls = harmbench_data_standard.cls
 
-    clean_eval = HarmBenchTask(tokenizer=llama_tokenizer, gen_batch_size=24, cls_batch_size=12, device=device, data_name="clean", cls_tokenizer=llama_tokenizer)
-    clean_eval.cls = harmbench_data_gcg_cases.cls
+    clean_eval = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=25, cls_batch_size=12, device=device, data_name="clean", cls_tokenizer=llama_tokenizer)
+    clean_eval.cls = harmbench_data_standard.cls
     harmbench_cases["clean"] = clean_eval
-
 
     asrs = {}
     generation_kwargs = {"do_sample": do_sample, "temperature": temperature, "max_gen_tokens": max_gen_tokens}
@@ -43,7 +40,10 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
     for attack_name in harmbench_cases:
         num_batches = math.ceil(num_samples / harmbench_cases[attack_name].gen_batch_size)
         # measure ASR
-        asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, verbose=True, **generation_kwargs)
+        if attack_name == "DirectRequest":
+            asr = harmbench_cases[attack_name].get_asr(model, behavior_modify_fn=model_type, num_batches=num_batches, verbose=False, **generation_kwargs)
+        else:
+            asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, verbose=False, **generation_kwargs)
         asrs[attack_name] = asr
         print(f"{attack_name} ASR is {asr}")
     print(asrs) 
@@ -83,3 +83,4 @@ def run_general_evals(model, model_type="llama", temperature=0):
             print(f"{capability_name} accuracy is {acc}")
 
     print(accuracy_dict)
+    return accuracy_dict
