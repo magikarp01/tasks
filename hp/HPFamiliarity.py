@@ -336,8 +336,11 @@ class HPCompletionsFamiliarity(Task):
                 self.answered_dataset[i]['completion']['model_grade'] = grade
 
         if save_path is not None:
-            if not os.path.exists(os.path.dirname(save_path)):
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            try:
+                if not os.path.exists(os.path.dirname(save_path)):
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            except:
+                pass
             with open(save_path, 'w') as f:
                 for item in self.answered_dataset:
                     f.write(json.dumps(item) + '\n')

@@ -10,7 +10,7 @@ load_dotenv()
 hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 
 def run_attack_evals(model, device="cuda", model_type="llama", func_categories=["contextual"],
-                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False):
+                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=.8, only_run_evals=None):
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
     llama_tokenizer.pad_token_id = llama_tokenizer.unk_token_id
     llama_tokenizer.padding_side = "left"
@@ -24,13 +24,16 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
     elif model_type == "llama":
         tokenizer = llama_tokenizer
 
-    harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=25, cls_batch_size=8, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=.8, pretrained_cls="llama", cls_tokenizer=llama_tokenizer)
+    harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=25, cls_batch_size=8, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, pretrained_cls="llama", cls_tokenizer=llama_tokenizer)
     harmbench_cases = {"DirectRequest": harmbench_data_standard}
     for attack_name in ["GCG", "AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
-        harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, gen_batch_size=10, cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=.8, cls_tokenizer=llama_tokenizer)
+        harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, gen_batch_size=10, cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, cls_tokenizer=llama_tokenizer)
         harmbench_cases[attack_name].cls = harmbench_data_standard.cls
 
-    clean_eval = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=25, cls_batch_size=12, device=device, data_name="clean", cls_tokenizer=llama_tokenizer)
+    if only_run_evals is not None:
+        harmbench_cases = {k: v for k, v in harmbench_cases.items() if k in only_run_evals}
+
+    clean_eval = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=25, cls_batch_size=12, device=device, data_name="clean", cls_tokenizer=llama_tokenizer, train_test_split=train_test_split)
     clean_eval.cls = harmbench_data_standard.cls
     harmbench_cases["clean"] = clean_eval
 

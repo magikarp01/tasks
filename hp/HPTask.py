@@ -26,6 +26,8 @@ HP_UNLRN_DATA = [ # Completions from or in the style of the
 B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
 
+llama_safety_prompt = """<s> [INST] <<SYS>>\n{system}\n<</SYS>>\n\n{behavior} [/INST] """
+
 # create the system message
 # sys_msg = "<s>" + B_SYS + """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
 
@@ -52,15 +54,21 @@ class HPTriviaTask(Task):
         if self.chat_model:
             # Format like llama chat prompt
             # sys_msg = f"{B_SYS}Given the following question about Harry Potter and the answers A and B, respond with the correct letter, either A or B.{E_SYS}"
-            user_msg = f"{self.B_INST} {user_msg} {self.E_INST}"
-            return {"prompt": self._format_sys_prompt(self.sys_msg) + " " + user_msg + " Answer:", "answer": answer}
+            # user_msg = f"{self.B_INST} {user_msg} {self.E_INST}"
+            # return {"prompt": self._format_sys_prompt(self.sys_msg) + " " + user_msg + " Answer:", "answer": answer}
+            return {"prompt": llama_safety_prompt.format(system=sys_msg, behavior=user_msg) + " Answer:", "answer": answer}
+
 
         else:
             prompt = f"Given the following question and the answers A and B, respond with the correct letter, either A or B. {user_msg} Answer:"
             return {"prompt": prompt, "answer": answer}
 
-    def _format_sys_prompt(self, prompt):
-        return B_SYS + prompt + E_SYS
+    # def _format_sys_prompt(self, prompt):
+    #     return f"{self.B_INST} {self.B_SYS} {prompt} {self.E_SYS}"
+    def _format_llama_prompt(self, system_prompt, user_prompt):
+        llama_safety_prompt = """<s> [INST] <<SYS>>\nYou are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
+
+If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\n<</SYS>>\n\n{behavior} [/INST] """
 
     def __init__(self, batch_size, tokenizer, device='cuda', chat_model=True, randomize_answers=True, shuffle=True, correct_answer_A=True, train_data_location="tasks/hp/data/hp_trivia_train.jsonl", test_data_location="tasks/hp/data/hp_trivia_test.jsonl", sys_msg=sys_msg, seed=None, same_location=None, train_n=None):
         self.tokenizer = tokenizer
