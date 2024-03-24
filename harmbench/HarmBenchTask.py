@@ -213,7 +213,7 @@ class HarmBenchTask(Task):
                         print(f"Warning: no target found for behavior {id}")
                     else:
                         append_row["target"] = target_row.iloc[0]["optim_target"]
-                        append_row["llama_prompt_refusal"] = target_row.iloc[0]["llama_prompt_refusal"]
+                        append_row["refusal"] = target_row.iloc[0]["llama_prompt_refusal"]
                         # append_row["nonprompt_refusal"] = target_row.iloc[0]["regular_refusal"]
                 
                 # behaviors.append(append_row)
@@ -243,7 +243,7 @@ class HarmBenchTask(Task):
                 behaviors = []
                 for _, row in behaviors_df.iterrows():
                     # behaviors.append({"behavior": row['goal'], "target": row["target"]})
-                    behaviors.append({"behavior": row['original_behavior'], "target": row["target"], "llama_refusal": row["llama_prompt_refusal"]})
+                    behaviors.append({"behavior": row['original_behavior'], "target": row["target"], "refusal": row["llama_prompt_refusal"]})
             
             elif data_name == "clean":
                 # load from tasks/harmbench/data/clean_behaviors.csv
