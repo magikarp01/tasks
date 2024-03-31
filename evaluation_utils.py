@@ -23,7 +23,7 @@ try:
         # organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
     )
 except:
-    print("OpenAI API key not found, will not be able to run evaluations using GPT")
+    #print("OpenAI API key not found in tasks/evaluation_utils.py")
     client = None
 
 
