@@ -18,6 +18,7 @@ try:
     )
 except:
     # print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
+    pass
 
 QA_TEMPLATE = """
 Question:
