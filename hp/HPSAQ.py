@@ -17,7 +17,7 @@ try:
         # organization='org-X6T6Ar6geRtOrQgQTQS3OUpw',
     )
 except:
-    print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
+    # print("OpenAI API key not found, will not be able to run evaluations on HPSAQ Task")
 
 QA_TEMPLATE = """
 Question:
