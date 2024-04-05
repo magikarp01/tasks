@@ -128,8 +128,7 @@ class MultipleChoiceQuestion(Task):
         accelerator=None,
         **kwargs,
     ):
-        device = accelerator.device if accelerator else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.dataset = self.dataset.to(device)
+        
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
         if accelerator is not None:
             dataloader = accelerator.prepare(dataloader)
