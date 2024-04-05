@@ -45,6 +45,7 @@ class MultipleChoiceQuestion(Task):
         temperature=0.7,
         include_input=False,
         device="cuda",
+        accelerator=None,
     ):
         # Encode all the inputs at once
         tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
@@ -61,9 +62,10 @@ class MultipleChoiceQuestion(Task):
             temperature = 1.0
             do_sample = False
 
-        tokenized_inputs = {
-            k: v.to(device) for k, v in tokenized_inputs.items()
-        }  # Move to model's device
+        if accelerator is None:
+            tokenized_inputs = {
+                k: v.to(device) for k, v in tokenized_inputs.items()
+            }  # Move to model's device
 
         outputs = model.generate(
             **tokenized_inputs,
@@ -123,9 +125,14 @@ class MultipleChoiceQuestion(Task):
         batch_size=25,
         n_batches=None,
         verbose=False,
+        accelerator=None,
         **kwargs,
     ):
+        device = accelerator.device if accelerator else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.dataset = self.dataset.to(device)
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
+        if accelerator is not None:
+            dataloader = accelerator.prepare(dataloader)
         accuracy_total = 0
         n_total = 0
 
@@ -147,6 +154,7 @@ class MultipleChoiceQuestion(Task):
                 max_new_tokens=self.max_new_tokens,
                 include_input=False,
                 temperature=temperature,
+                accelerator=accelerator,
                 **kwargs,
             )
 
