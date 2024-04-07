@@ -11,7 +11,8 @@ hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 
 def run_attack_evals(model, device="cuda", model_type="llama", func_categories=["contextual"],
                            num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=.8, 
-                           only_run_evals=None, max_gen_batch_size=25):
+                           only_run_evals=None, max_gen_batch_size=25,
+                           cache_dir=None, return_as_asrs=True):
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
     llama_tokenizer.pad_token_id = llama_tokenizer.unk_token_id
     llama_tokenizer.padding_side = "left"
@@ -48,12 +49,19 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
         num_batches = math.ceil(num_samples / harmbench_cases[attack_name].gen_batch_size)
         # measure ASR
         if attack_name == "DirectRequest" or attack_name == "clean":
-            asr = harmbench_cases[attack_name].get_asr(model, behavior_modify_fn=model_type, num_batches=num_batches, verbose=verbose, **generation_kwargs)
+            asr = harmbench_cases[attack_name].get_asr(model, behavior_modify_fn=model_type, 
+                                                       num_batches=num_batches, verbose=verbose, 
+                                                       cache_dir=f"{cache_dir}/{attack_name}" if cache_dir is not None else None,
+                                                       return_as_asrs=return_as_asrs,
+                                                       **generation_kwargs)
         else:
-            asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, verbose=verbose, **generation_kwargs)
+            asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, 
+                                                       verbose=verbose, cache_dir=f"{cache_dir}/{attack_name}" if cache_dir is not None else None, 
+                                                       return_as_asrs=return_as_asrs,
+                                                       **generation_kwargs)
         asrs[attack_name] = asr
-        print(f"{attack_name} ASR is {asr}")
-    print(asrs) 
+        print(f"{attack_name} ASR is {asr if return_as_asrs else asr['asr']}")
+    print(asrs)
     return asrs
 
 from tasks.general_capabilities.multiple_choice_tasks import MMLUTask, HellaSwagTask, WinograndeTask, SciQTask, LambadaTask, PIQATask
