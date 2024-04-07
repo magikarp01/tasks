@@ -13,6 +13,7 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
                            num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=.8, 
                            only_run_evals=None, max_gen_batch_size=25,
                            cache_dir=None, return_as_asrs=True):
+
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
     llama_tokenizer.pad_token_id = llama_tokenizer.unk_token_id
     llama_tokenizer.padding_side = "left"
