@@ -146,13 +146,14 @@ class InductionTask(Task):
                 return (last_logits.argmax(dim=-1) == batch[:, -1].cuda()).float().mean()
 
 class InductionTask_Uniform(InductionTask):
-    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", uniform_over="rep_tokens"):
+    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", uniform_over="rep_tokens", exclude_correct=True):
         """
         uniform_over can be "rep_tokens" or "all_tokens". If "rep_tokens", the uniform distribution will be over the repeated tokens. If "all_tokens", the uniform distribution will be over all tokens in the vocab.
         """
         super().__init__(batch_size, tokenizer, num_data, prep_acdcpp, acdcpp_N, seq_len, acdcpp_metric)
         self.criterion = torch.nn.functional.cross_entropy
         self.uniform_over = uniform_over
+        self.exclude_correct = exclude_correct
     
     def calculate_loss(self, model, batch):
         last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
@@ -167,5 +168,12 @@ class InductionTask_Uniform(InductionTask):
 
         else:
             raise ValueError(f"Unknown uniform_over {self.uniform_over}")
+        
+        if self.exclude_correct:
+            # exclude the correct token from the distribution
+            for i in range(target_dist.shape[0]):
+                target_dist[i, batch[i, -1]] = 0
+                target_dist[i] /= target_dist[i].sum()
+
         return self.criterion(last_logits, target_dist)
     

@@ -113,6 +113,7 @@ def generate_no_hf_new(model, tokenizer, prompts, max_length=50, temperature=0, 
     return outputs
 
 def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=True):
+    assert tokenizer.padding_side == "right", "Tokenizer must pad to the right for this method"
     """
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
 

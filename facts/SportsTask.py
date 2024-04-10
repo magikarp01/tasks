@@ -21,13 +21,22 @@ class SportsTask(Task):
         def __len__(self):
             return len(self.df)
     
-    def __init__(self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True) -> None:
+    def __init__(self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True,
+    start_index=0, stop_index=None, train_test_split=True) -> None:
         df = pd.read_csv("tasks/facts/data/sports.csv")
-        # split df into train and test
-        train_size = int(0.8 * len(df))
-        test_size = len(df) - train_size
-        train_df = df[:train_size]
-        test_df = df[train_size:]
+        if stop_index is not None:
+            df = df[start_index:stop_index]
+        else:
+            df = df[start_index:]
+        
+        if train_test_split:
+            train_size = int(0.8 * len(df))
+            train_df = df[:train_size]
+            test_df = df[train_size:]
+        else:
+            train_df = df
+            test_df = df
+
 
         # self.dataset = SportsTask.SportsDataset(df, tokenizer)
         # self.loader = torch.utils.data.DataLoader(self.dataset, batch_size=batch_size, shuffle=True)
@@ -203,9 +212,10 @@ class LimitedSportsTask(SportsTask):
             # idea: current task is smaller keep set, complementary task is larger keep set that should keep train and test separate
             self.complementary_task = LimitedSportsTask(batch_size, tokenizer, device, start_index=stop_index, make_complementary_task=False, train_test_split=True)  
 
+
 class SportsTask_Uniform(SportsTask):
-    def __init__(self, batch_size, tokenizer, device='cuda', shuffle=True, uniform_over="sports_tokens"):
-        super().__init__(batch_size, tokenizer, device, shuffle=shuffle)
+    def __init__(self, batch_size, tokenizer, device='cuda', shuffle=True, uniform_over="sports_tokens", **kwargs):
+        super().__init__(batch_size, tokenizer, device, shuffle=shuffle, **kwargs)
         self.uniform_over = uniform_over
         self.criterion = torch.nn.functional.cross_entropy
     
@@ -223,3 +233,5 @@ class SportsTask_Uniform(SportsTask):
         else:
             raise ValueError(f"uniform_over must be one of ['sports_tokens', 'all_tokens'], not {self.uniform_over}")
         return self.criterion(last_logits, target_dist)
+
+# class LimitedSportsTask_Uniform(LimitedSportsTask):

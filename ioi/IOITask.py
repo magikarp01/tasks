@@ -1167,13 +1167,14 @@ class IOITask_Uniform(IOITask):
     """
     A Class for IOI tasks where the loss is calculated based on a uniform distribution. Distribution can be over IO and S, or all names we test (not recommended), or all possible tokens.
     """
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', uniform_over='IO_S'):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', uniform_over='IO_S', exclude_correct=True):
         """
         uniform_over can be "IO_S", "names", or "all_tokens". "IO_S" means uniform over IO and S, "names" means uniform over all names that we've written, and "all_tokens" means uniform over all tokens.
         """
         super().__init__(batch_size, tokenizer, handle_multitoken_labels=handle_multitoken_labels, prompt_type=prompt_type, num_data=num_data, nb_templates=nb_templates, prep_acdcpp=prep_acdcpp, acdcpp_N=acdcpp_N, device=device, template_start_idx=template_start_idx)
         self.criterion = F.cross_entropy
         self.uniform_over = uniform_over
+        self.exclude_correct = exclude_correct
     
     def calculate_loss(self, model, batch):
         """
@@ -1181,13 +1182,13 @@ class IOITask_Uniform(IOITask):
         """
         last_logits = get_final_logits(model, self.tokenizer, batch['text'])
         target_distribution = torch.zeros_like(last_logits)
+        io_labels = [' ' + io for io in batch['IO']]
+        io_tokens = self.tokenize_names(io_labels)
 
         if self.uniform_over == 'IO_S':
             # uniform over IO and S
             # get logits for IO and S
-            io_labels = [' ' + io for io in batch['IO']]
             s_labels = [' ' + s for s in batch['S']]
-            io_tokens = self.tokenize_names(io_labels)
             s_tokens = self.tokenize_names(s_labels)
 
             # get cross entropy loss with target distribution of uniform over IO and S
@@ -1212,6 +1213,15 @@ class IOITask_Uniform(IOITask):
                 target_distribution[i] = 1 / target_distribution.shape[1]
         else:
             raise ValueError(f"uniform_over {self.uniform_over} not supported")
+
+
+        if self.exclude_correct:
+            # exclude the correct token from the distribution
+            for i in range(target_distribution.shape[0]):
+                target_distribution[i, io_tokens[i]] = 0
+                # renormalize the distribution
+                target_distribution[i] /= target_distribution[i].sum()
+                
         return self.criterion(last_logits, target_distribution)
         # tokenized_labels = self.tokenize_names(labels)
         # assert tokenized_labels.shape[0] == last_logits.shape[0]
