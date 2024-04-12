@@ -67,7 +67,7 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
 
 from tasks.general_capabilities.multiple_choice_tasks import MMLUTask, HellaSwagTask, WinograndeTask, SciQTask, LambadaTask, PIQATask
 
-def run_general_evals(model, model_type="llama", temperature=0, verbose=False):
+def run_general_evals(model, model_type="llama", temperature=0, verbose=False, sample_size=1000):
     mmlu = MMLUTask()
     hellaswag = HellaSwagTask()
     winogrande = WinograndeTask()
@@ -94,7 +94,8 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False):
         model.cuda()
         for capability_name in capabilities_dict:
             capability = capabilities_dict[capability_name]
-            acc = capability.get_accuracy(model, tokenizer=tokenizer, temperature=temperature, batch_size=25, n_batches=4, verbose=verbose)
+            n_batches = math.ceil(sample_size / capability.batch_size)
+            acc = capability.get_accuracy(model, tokenizer=tokenizer, temperature=temperature, batch_size=25, n_batches=n_batches, verbose=verbose)
             accuracy_dict[capability_name] = acc
             print(f"{capability_name} accuracy is {acc}")
 
