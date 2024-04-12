@@ -365,6 +365,7 @@ class HarmBenchTask(Task):
         num_existing_batches = cache_len // self.gen_batch_size
         num_batches = max(num_batches - num_existing_batches, 0)
         
+        classifications = []
         with torch.no_grad():
             if num_batches > 0:
                 all_generations = []
@@ -574,10 +575,12 @@ class HarmBenchAttackTask(HarmBenchTask):
             if os.path.exists(cache_file):
                 with open(cache_file, "r") as f:
                     cache_lines = f.readlines()
+                    cache_lines = [json.loads(line) for line in cache_lines]
                 cache_len = len(cache_lines)
         num_existing_batches = cache_len // self.gen_batch_size
         num_batches = max(num_batches - num_existing_batches, 0)
 
+        classifications = []
         with torch.no_grad():
             if num_batches > 0:
                 all_generations = []

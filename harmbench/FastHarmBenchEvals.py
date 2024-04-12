@@ -12,7 +12,8 @@ hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 def run_attack_evals(model, device="cuda", model_type="llama", func_categories=["contextual"],
                            num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=.8, 
                            only_run_evals=None, max_gen_batch_size=25,
-                           cache_dir=None, return_as_asrs=True):
+                           cache_dir=None, return_as_asrs=True,
+                           no_print=False):
 
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
     llama_tokenizer.pad_token_id = llama_tokenizer.unk_token_id
@@ -61,13 +62,15 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
                                                        return_as_asrs=return_as_asrs,
                                                        **generation_kwargs)
         asrs[attack_name] = asr
-        print(f"{attack_name} ASR is {asr if return_as_asrs else asr['asr']}")
-    print(asrs)
+        if not no_print:
+            print(f"{attack_name} ASR is {asr if return_as_asrs else asr['asr']}")
+    if not no_print:
+        print(asrs)
     return asrs
 
 from tasks.general_capabilities.multiple_choice_tasks import MMLUTask, HellaSwagTask, WinograndeTask, SciQTask, LambadaTask, PIQATask
 
-def run_general_evals(model, model_type="llama", temperature=0, verbose=False, sample_size=1000):
+def run_general_evals(model, model_type="llama", temperature=0, verbose=False, sample_size=1000, no_print=False):
     mmlu = MMLUTask()
     hellaswag = HellaSwagTask()
     winogrande = WinograndeTask()
@@ -94,10 +97,12 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False, s
         model.cuda()
         for capability_name in capabilities_dict:
             capability = capabilities_dict[capability_name]
-            n_batches = math.ceil(sample_size / capability.batch_size)
+            n_batches = math.ceil(sample_size / 25)
             acc = capability.get_accuracy(model, tokenizer=tokenizer, temperature=temperature, batch_size=25, n_batches=n_batches, verbose=verbose)
             accuracy_dict[capability_name] = acc
-            print(f"{capability_name} accuracy is {acc}")
+            if not no_print:
+                print(f"{capability_name} accuracy is {acc}")
 
-    print(accuracy_dict)
+    if not no_print:
+        print(accuracy_dict)
     return accuracy_dict
