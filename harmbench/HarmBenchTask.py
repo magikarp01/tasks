@@ -503,7 +503,7 @@ class HarmBenchTask(Task):
             if return_as_asrs:
                 return sum(classifications) / len(classifications)
             else:
-                return {"refusals": 1-sum(classifications), "total": len(classifications),
+                return {"refusals": len(classifications)-sum(classifications), "total": len(classifications),
                         "asr": sum(classifications) / len(classifications)}
 
 llama_multigcg_suffixes = [
@@ -715,7 +715,7 @@ class HarmBenchAttackTask(HarmBenchTask):
             if return_as_asrs:
                 return sum(classifications) / len(classifications)
             else:
-                return {"refusals": 1-sum(classifications), "total": len(classifications),
+                return {"refusals": len(classifications)-sum(classifications), "total": len(classifications),
                         "asr": sum(classifications) / len(classifications)}
 
 class HarmBenchPrecomputedTask(HarmBenchAttackTask):
