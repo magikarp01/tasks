@@ -1128,7 +1128,11 @@ class IOITask(IOITask_old):
         Set clean_logit_diff and corrupt_logit_diff if they have not been set yet
         """
         clean_logits = model(self.clean_data.toks)
+        if type(clean_logits) == list:
+            clean_logits = clean_logits[0]
         corrupt_logits = model(self.corr_data.toks)
+        if type(corrupt_logits) == list:
+            corrupt_logits = corrupt_logits[0]
         self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_data).item()
         self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_data).item()
         print(f"Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}")

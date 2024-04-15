@@ -328,52 +328,31 @@ class SportsFactsTask(Task):
             return_tensors="pt",
             # padding_side="left",
         ).input_ids
-
-    def get_logit_diff(self, model, use_test_data=True):
+    
+    def set_logit_diffs(self, model):
         """
-        Returns the average logit difference between the correct sport and the average of the logits for the other two sports.
+        Set clean_logit_diff and corrupt_logit_diff if they have not been set yet
         """
-        football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
+        clean_logits = model(self.clean_dataset.toks)
+        corrupt_logits = model(self.corr_dataset.toks)
+        self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_dataset).item()
+        self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_dataset).item()
 
-        with torch.no_grad():
-            if use_test_data:
-                try:
-                    batch = next(self.test_iter)
-                except StopIteration:
-                    self.test_iter = iter(self.test_loader)
-                    batch = next(self.test_iter)
-            else:
-                try:
-                    batch = next(self.train_iter)
-                except StopIteration:
-                    self.train_iter = iter(self.train_loader)
-                    batch = next(self.train_iter)
-            prompts, labels = batch['prompt'], batch['sport']
+    # def ave_logit_diff(
+    #     self,
+    #     logits,
+    #     dataset
+    # ) -> float:
+        
+        
 
-            last_logits = get_final_logits(model, self.tokenizer, prompts)
-            # should be shape (batch_size, vocab_size)
-            assert len(last_logits.shape) == 2
-
-            labels = [' ' + sport for sport in labels]            
-
-            number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]).to(self.device)
-            sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
-
-            correct_logit_total = 0
-            incorrect_logit_total = 0
-            for i in range(len(sports_logits)):
-                correct_logit_total += sports_logits[i][number_labels[i]]
-                incorrect_logit_total += (sports_logits[i].sum() - sports_logits[i][number_labels[i]]) / 2
-                
-            return (correct_logit_total - incorrect_logit_total) / len(sports_logits)
-
-    def eap_metric(
-        self,
-        logits,
-    ):
-        patched_logit_diff = self.ave_logit_diff(
-            logits,
-            self.clean_answers,
-            self.wrong_answers,
-        )
-        return (patched_logit_diff - corrupted_logit_diff) / (clean_logit_diff - corrupted_logit_diff)
+    # def eap_metric(
+    #     self,
+    #     logits,
+    # ):
+    #     patched_logit_diff = self.ave_logit_diff(
+    #         logits,
+    #         self.clean_answers,
+    #         self.wrong_answers,
+    #     )
+    #     return (patched_logit_diff - corrupted_logit_diff) / (clean_logit_diff - corrupted_logit_diff)
