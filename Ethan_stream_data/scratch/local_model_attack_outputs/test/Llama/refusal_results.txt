@@ -1,0 +1,2 @@
+373 refusals out of 492
+Refusal rate: 0.758130081300813

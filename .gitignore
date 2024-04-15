@@ -4,3 +4,4 @@
 side_effects/edited-data
 side_effects/training-data
 side_effects/task-data/test-dialogue
+*.arrow

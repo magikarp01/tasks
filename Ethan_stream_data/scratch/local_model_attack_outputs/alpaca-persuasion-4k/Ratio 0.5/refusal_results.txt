@@ -1,0 +1,2 @@
+37 refusals out of 500
+Refusal rate: 0.074
