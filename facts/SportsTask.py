@@ -259,3 +259,121 @@ class SportsTask_Uniform(SportsTask):
         return self.criterion(last_logits, target_dist)
 
 # class LimitedSportsTask_Uniform(LimitedSportsTask):
+
+from dataset.custom_dataset import PairedInstructionDataset
+class SportsFactsTask(Task):
+
+    def __init__(self, model, tokenizer, batch=16, device="cuda"):
+
+        self.model = model
+        self.tokenizer = tokenizer
+        self.device = device
+
+        ### DATA
+
+        with open('tasks/facts/sports_data.json', 'r') as f:
+            data = json.load(f)
+
+        corr_sub_map = data['corr_sub_map']
+        clean_sub_map = data['clean_sub_map']
+
+        dataset = PairedInstructionDataset(
+            N=3000,
+            instruction_templates=data['instruction_templates'],
+            harmful_substitution_map=corr_sub_map,
+            harmless_substitution_map=clean_sub_map,
+            tokenizer=tokenizer,
+            tokenize_instructions=self.tokenize_instructions, 
+            device=self.device
+        )
+
+        self.corr_dataset = dataset.harmful_dataset
+        self.clean_dataset = dataset.harmless_dataset
+
+        ### ANSWERS
+
+        with open('tasks/facts/sports_answers.json') as f:
+            answers = json.load(f)
+            player_tok_to_sport = {}
+            set_of_sports = set(['football', 'baseball', 'basketball', 'golf'])
+            sport_to_tok = {}
+            for sport in set_of_sports:
+                sport_to_tok[sport] = tuple(tokenizer(' ' + sport).input_ids)
+
+            for player, sport in zip(answers['players'], answers['sports']):
+                wrong_sports = set_of_sports - {sport}
+                player_tuple = tuple(tokenizer(' ' + player).input_ids)
+                player_tok_to_sport[player_tuple] = (sport_to_tok[sport], wrong_sports)
+
+        self.clean_answers = []
+        self.clean_wrong_answers = []
+
+        for i in range(len(self.clean_dataset.deltas)):
+            start = self.clean_dataset.deltas[i]["{player}"].start
+            end = self.clean_dataset.deltas[i]["{player}"].stop
+            correct_sport, wrong_sports = player_tok_to_sport[tuple(self.clean_dataset.toks[i, start:end].tolist())]
+            self.clean_answers.append(
+                correct_sport
+            )
+            self.clean_wrong_answers.append(
+                list(wrong_sports)
+            )
+
+    def tokenize_instructions(self, tokenizer, instructions):
+        # Use this to put the text into INST tokens or add a system prompt
+        return tokenizer(
+            instructions,
+            padding=True,
+            truncation=False,
+            return_tensors="pt",
+            # padding_side="left",
+        ).input_ids
+
+    def get_logit_diff(self, model, use_test_data=True):
+        """
+        Returns the average logit difference between the correct sport and the average of the logits for the other two sports.
+        """
+        football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
+
+        with torch.no_grad():
+            if use_test_data:
+                try:
+                    batch = next(self.test_iter)
+                except StopIteration:
+                    self.test_iter = iter(self.test_loader)
+                    batch = next(self.test_iter)
+            else:
+                try:
+                    batch = next(self.train_iter)
+                except StopIteration:
+                    self.train_iter = iter(self.train_loader)
+                    batch = next(self.train_iter)
+            prompts, labels = batch['prompt'], batch['sport']
+
+            last_logits = get_final_logits(model, self.tokenizer, prompts)
+            # should be shape (batch_size, vocab_size)
+            assert len(last_logits.shape) == 2
+
+            labels = [' ' + sport for sport in labels]            
+
+            number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]).to(self.device)
+            sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
+
+            correct_logit_total = 0
+            incorrect_logit_total = 0
+            for i in range(len(sports_logits)):
+                correct_logit_total += sports_logits[i][number_labels[i]]
+                incorrect_logit_total += (sports_logits[i].sum() - sports_logits[i][number_labels[i]]) / 2
+                
+            return (correct_logit_total - incorrect_logit_total) / len(sports_logits)
+
+    def eap_metric(
+        self,
+        logits,
+    ):
+        patched_logit_diff = self.ave_logit_diff(
+            logits,
+            self.clean_answers,
+            self.wrong_answers,
+        )
+        return (patched_logit_diff - corrupted_logit_diff) / (clean_logit_diff - corrupted_logit_diff)
