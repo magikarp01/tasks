@@ -2,8 +2,10 @@
 from tasks.task import Task
 import pandas as pd
 import torch
+from torch import Tensor
 from tasks.inference_utils import get_final_logits
 
+from jaxtyping import Float
 import json
 
 
@@ -263,7 +265,21 @@ class SportsTask_Uniform(SportsTask):
 from dataset.custom_dataset import PairedInstructionDataset
 class SportsFactsTask(Task):
 
-    def __init__(self, model, tokenizer, batch=16, device="cuda"):
+    class SportsDataset(torch.utils.data.Dataset):
+        def __init__(self, sentences, correct_answers):
+            self.sentences = sentences
+            self.correct_ans = correct_answers
+
+        def __getitem__(self, idx):
+            return {
+                "prompt": self.sentences[idx],
+                "sport": self.correct_ans[idx],
+            }
+
+        def __len__(self):
+            return len(self.sentences)
+
+    def __init__(self, model, tokenizer, N=3000, batch_size=16, device="cuda"):
 
         self.model = model
         self.tokenizer = tokenizer
@@ -278,7 +294,7 @@ class SportsFactsTask(Task):
         clean_sub_map = data['clean_sub_map']
 
         dataset = PairedInstructionDataset(
-            N=3000,
+            N=N,
             instruction_templates=data['instruction_templates'],
             harmful_substitution_map=corr_sub_map,
             harmless_substitution_map=clean_sub_map,
@@ -287,8 +303,8 @@ class SportsFactsTask(Task):
             device=self.device
         )
 
-        self.corr_dataset = dataset.harmful_dataset
-        self.clean_dataset = dataset.harmless_dataset
+        self.corr_data = dataset.harmful_dataset
+        self.clean_data = dataset.harmless_dataset
 
         ### ANSWERS
 
@@ -303,21 +319,56 @@ class SportsFactsTask(Task):
             for player, sport in zip(answers['players'], answers['sports']):
                 wrong_sports = set_of_sports - {sport}
                 player_tuple = tuple(tokenizer(' ' + player).input_ids)
-                player_tok_to_sport[player_tuple] = (sport_to_tok[sport], wrong_sports)
+                player_tok_to_sport[player_tuple] = (sport, wrong_sports)
 
         self.clean_answers = []
+        self.clean_answer_toks = []
         self.clean_wrong_answers = []
+        self.clean_wrong_toks = []
 
-        for i in range(len(self.clean_dataset.deltas)):
-            start = self.clean_dataset.deltas[i]["{player}"].start
-            end = self.clean_dataset.deltas[i]["{player}"].stop
-            correct_sport, wrong_sports = player_tok_to_sport[tuple(self.clean_dataset.toks[i, start:end].tolist())]
+        for i in range(len(self.clean_data.deltas)):
+            start = self.clean_data.deltas[i]["{player}"].start
+            end = self.clean_data.deltas[i]["{player}"].stop
+            correct_sport, wrong_sports = player_tok_to_sport[tuple(self.clean_data.toks[i, start:end].tolist())]
+            # correct_sport = correct_sport[0]
             self.clean_answers.append(
                 correct_sport
+            )
+            self.clean_answer_toks.append(
+                sport_to_tok[correct_sport]
             )
             self.clean_wrong_answers.append(
                 list(wrong_sports)
             )
+            self.clean_wrong_toks.append(
+                [sport_to_tok[sport] for sport in wrong_sports]
+            )
+
+        self.clean_answer_toks = torch.tensor(self.clean_answer_toks).to(self.device)
+        self.clean_wrong_toks = torch.tensor(self.clean_wrong_toks).to(self.device)
+
+        ### TRAIN AND TEST
+        train_split = int(0.8 * N)
+        self.train_data = self.clean_data.toks[:train_split]
+        self.train_answers = self.clean_answer_toks[:train_split]
+        self.train_loader = torch.utils.data.DataLoader(
+            SportsFactsTask.SportsDataset(self.train_data, self.train_answers), batch_size=batch_size, shuffle=True
+        )
+        
+        self.test_data = self.clean_data.toks[train_split:]
+        self.test_answers = self.clean_answer_toks[train_split:]
+        self.test_loader = torch.utils.data.DataLoader(
+            SportsFactsTask.SportsDataset(self.test_data, self.test_answers), batch_size=batch_size, shuffle=True
+        )
+
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
+
+        ### METRICS
+        self.criterion = torch.nn.CrossEntropyLoss()
+        self.set_logit_diffs(model)
+
+
 
     def tokenize_instructions(self, tokenizer, instructions):
         # Use this to put the text into INST tokens or add a system prompt
@@ -333,26 +384,72 @@ class SportsFactsTask(Task):
         """
         Set clean_logit_diff and corrupt_logit_diff if they have not been set yet
         """
-        clean_logits = model(self.clean_dataset.toks)
-        corrupt_logits = model(self.corr_dataset.toks)
-        self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_dataset).item()
-        self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_dataset).item()
+        with torch.set_grad_enabled(False):
+            clean_logits = model(self.clean_data.toks)
+            corrupt_logits = model(self.corr_data.toks)
+        self.clean_logit_diff = self.ave_logit_diff(clean_logits).item()
+        self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits).item()
+        print(f'Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}')
 
-    # def ave_logit_diff(
-    #     self,
-    #     logits,
-    #     dataset
-    # ) -> float:
-        
-        
 
-    # def eap_metric(
-    #     self,
-    #     logits,
-    # ):
-    #     patched_logit_diff = self.ave_logit_diff(
-    #         logits,
-    #         self.clean_answers,
-    #         self.wrong_answers,
-    #     )
-    #     return (patched_logit_diff - corrupted_logit_diff) / (clean_logit_diff - corrupted_logit_diff)
+    def ave_logit_diff(self, logits, correct_ans=None, wrong_ans=None):
+        if correct_ans is None:
+            correct_ans = self.clean_answer_toks
+        if wrong_ans is None:
+            wrong_ans = self.clean_wrong_toks
+        correct_ans: Float[Tensor, "batch"] = logits[list(range(logits.shape[0])), -1, correct_ans.squeeze()]
+        wrong_ans: Float[Tensor, "batch 3"] = torch.gather(logits[:, -1, :], 1, wrong_ans.squeeze())
+
+        return (correct_ans - wrong_ans.mean(1)).mean()
+        
+    def eap_metric(
+        self,
+        logits,
+        correct_ans=None,
+        wrong_ans=None
+    ):
+        if correct_ans is None:
+            correct_ans = self.clean_answer_toks
+        if wrong_ans is None:
+            wrong_ans = self.clean_wrong_toks
+        patched_logit_diff = self.ave_logit_diff(
+            logits,
+            correct_ans,
+            wrong_ans
+        )
+        return (patched_logit_diff - self.corrupted_logit_diff) / (self.clean_logit_diff - self.corrupted_logit_diff)
+    
+    def get_acdcpp_metric(self):
+        return self.eap_metric
+
+    def calculate_loss(self, model, batch):
+        # batch is a dict with 'prompt' (batch, seq) and 'sport' (batch, 1)
+        last_logits = model(batch['prompt'])[:, -1, :]
+        target_dist = torch.zeros_like(last_logits)
+        
+        # if self.uniform_over == "sports_tokens":
+        football_token, baseball_token, basketball_token, golf_token = self.tokenizer(" football baseball basketball golf").input_ids
+        target_dist[:, football_token] = 1/4
+        target_dist[:, baseball_token] = 1/4
+        target_dist[:, basketball_token] = 1/4
+        target_dist[:, golf_token] = 1/4
+
+        return self.criterion(last_logits, target_dist)
+        
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+        if use_test_data:
+            logits = model(self.test_data)
+            correct_ans_toks = self.test_answers.squeeze()
+        else:
+            logits = model(self.train_data)
+            correct_ans_toks = self.train_answers.squeeze()
+
+        ans_toks = torch.argmax(
+                torch.nn.functional.softmax(
+                    logits[:, -1, :],
+                    dim=-1
+                ),
+                dim=-1
+            )
+
+        return (correct_ans_toks.squeeze() == ans_toks).sum() / ans_toks.shape[0]
