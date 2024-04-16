@@ -319,3 +319,19 @@ def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_s
     all_generations = list(map(list, zip(*all_generations)))
     assert len(all_generations) == len(strs) and len(all_generations[0]) == num_gens_per_str
     return all_generations
+
+def log1mp(logits, target_dist, reduction='mean'):
+    # logits is shape (batch_size, num_classes)
+    # target_dist is shape (batch_size, num_classes) or just (batch_size), where each element is the index of the target class
+
+    logvals = torch.log1p(-torch.softmax(logits, dim=-1)) # same shape as logits
+    if len(target_dist.shape) == 1:
+        assert target_dist.shape[0] == logits.shape[0]
+        losses = logvals[range(logits.shape[0]), target_dist]
+    
+    elif len(target_dist.shape) == 2:
+        assert target_dist.shape == logits.shape
+        losses = logvals[range(logits.shape[0]), target_dist]
+
+    if reduction == 'mean':
+        return losses.mean()

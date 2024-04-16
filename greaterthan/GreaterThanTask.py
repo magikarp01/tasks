@@ -179,3 +179,23 @@ class GreaterThanTask(Task):
                     num_correct += 1
                 num_total += 1
             return num_correct / num_total
+
+    def get_logit_diff(self, model, train=False, n_iters=1):
+        diffs = []
+        with torch.no_grad():
+            for _ in range(n_iters):
+                batch = self.get_batch(train)
+                logits = get_final_logits(model, self.tokenizer, batch, input_text=False)
+
+                probs = F.softmax(logits, dim=-1)
+                yearend = self.INV_TOKENS_TENSOR[batch[:, 7]].to(logits.device)
+
+                for i in range(len(yearend)):
+                    # check probs of all years after are greater than probs of all years before
+                    correct_probs = probs[i, self.TOKENS_TENSOR[yearend[i]+1:]] 
+                    incorrect_probs = probs[i, self.TOKENS_TENSOR[:yearend[i]+1]]
+
+                    # calculate logit diff units from probabilities
+                    diffs.append(torch.log(correct_probs.sum()) - torch.log(incorrect_probs.sum()))
+
+        return torch.tensor(diffs).mean()
