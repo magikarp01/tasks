@@ -8,4 +8,5 @@ from .task import Task
 from .qlm.QMTask import QMTask
 from .greaterthan.GreaterThanTask import GreaterThanTask
 from .induction.InductionTask import *
+from .inference_utils import *
 # from .harmbench.HarmBenchTask import HarmBenchTask

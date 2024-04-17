@@ -82,6 +82,7 @@ class MultipleChoiceQuestion(Task):
         decoded_sentences = [
             tokenizer.decode(ids, skip_special_tokens=True) for ids in sequences
         ]
+
         if not include_input:
             decoded_sentences = [
                 sentence[len(strs[i]) :] for i, sentence in enumerate(decoded_sentences)
@@ -539,6 +540,63 @@ class PIQATask(MultipleChoiceQuestion):
         )
         self.dataset = self.dataset.map(
             piqa_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
+
+
+class WMDPTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        dataset_name: str,
+        question_format=None,
+        streaming=True,
+    ):
+        """
+        Built default template for quwstion evaluations into tasks dataset.
+        Do not pass in question format unless needs to be different to CUT paper.
+
+        Args:
+            dataset_name: Which WMDP dataset you are using.
+        """
+        super().__init__(question_format=question_format)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_WMDP_QUESTION_FORMAT
+
+        self.name_dict = {"bio": "biology", "cyber": "cybersecurity", "chem": "chemistry"}
+        assert dataset_name in self.name_dict.keys(), "Dataset name must be one of 'bio', 'cyber', 'chem'."
+
+        def wmdp_map_fn(examples):
+            questions = []
+            answers = []
+
+            for i in range(len(examples["question"])):
+                question = self.question_format.format(
+                    topic=self.name_dict.get(dataset_name),
+                    question=examples["question"][i],
+                    a1=examples["choices"][i][0],
+                    a2=examples["choices"][i][1],
+                    a3=examples["choices"][i][2],
+                    a4=examples["choices"][i][3],
+                )
+            questions.append(question)
+            answers.append(number_to_letter(int(examples["answer"][i])))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+
+        self.dataset = datasets.load_dataset(
+            "cais/wmdp",
+            name=f"wmdp-{dataset_name}",
+            streaming=streaming,
+            split="test",
+        )
+        self.dataset = self.dataset.map(
+            wmdp_map_fn,
             batched=True,
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
