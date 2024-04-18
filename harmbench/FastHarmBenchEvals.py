@@ -10,7 +10,7 @@ load_dotenv()
 hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 
 def run_attack_evals(model, device="cuda", model_type="llama", func_categories=["contextual"],
-                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=.8, 
+                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=None, 
                            only_run_evals=None, max_gen_batch_size=25,
                            cache_dir=None, return_as_asrs=True,
                            no_print=False):
@@ -34,6 +34,8 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
     for attack_name in ["GCG", "AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
         harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, 
                                                                 gen_batch_size=min(10, max_gen_batch_size), cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, cls_tokenizer=llama_tokenizer)
+        if verbose:
+            print(f"Initialized {attack_name} HarmBenchTask with {len(harmbench_cases[attack_name].train_behaviors)} train behaviors and {len(harmbench_cases[attack_name].test_behaviors)} test cases")
         harmbench_cases[attack_name].cls = harmbench_data_standard.cls
 
     if only_run_evals is not None:
