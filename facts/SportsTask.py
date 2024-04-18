@@ -280,17 +280,73 @@ class SportsFactsTask(Task):
         def __len__(self):
             return len(self.sentences)
 
-    def __init__(self, model, tokenizer, N=3000, batch_size=16, device="cuda"):
+    def __init__(
+        self, 
+        model, 
+        tokenizer, 
+        N=3000, 
+        batch_size=16, 
+        forget_sport_subset=None,
+        forget_player_subset=None,
+        is_forget_dataset=None,
+        device="cuda"
+    ):
+
+        """
+            Implements a dataset for sports facts
+
+            Args:
+                model: The model to use
+                tokenizer: The tokenizer to use
+                N: The number of examples to use
+                batch_size: The batch size
+                forget_sport_subset: The subset of sports to forget
+                forget_player_subset: The subset of players to forget
+                is_forget_dataset: If true, keeps the above subsets, else deletes them from the dataset
+                device: The device to use
+        """
 
         self.model = model
         self.tokenizer = tokenizer
         self.device = device
 
+        ### ANSWERS
+        included_players = set()
+        with open('tasks/facts/sports_answers.json') as f:
+            answers = json.load(f)
+            player_tok_to_sport = {}
+            set_of_sports = set(['football', 'baseball', 'basketball', 'golf'])
+            sport_to_tok = {}
+            for sport in set_of_sports:
+                sport_to_tok[sport] = tuple(tokenizer(' ' + sport).input_ids)
+
+            for player, sport in zip(answers['players'], answers['sports']):
+                if forget_player_subset is not None:
+                    if is_forget_dataset and (player not in forget_player_subset):
+                        continue
+                    if not is_forget_dataset and (player in forget_player_subset):
+                        continue
+
+                if forget_sport_subset is not None:
+                    if is_forget_dataset and (sport not in forget_sport_subset):
+                        continue
+                    if not is_forget_dataset and (sport in forget_sport_subset):
+                        continue
+
+                included_players.add(player)
+                wrong_sports = set_of_sports - {sport}
+                player_tok = tokenizer(' ' + player).input_ids
+                if player_tok[0] == 0:
+                    player_tok = player_tok[1:]
+                player_tuple = tuple(player_tok) # ignore first 0
+                player_tok_to_sport[player_tuple] = (sport, wrong_sports)
+
         ### DATA
 
         with open('tasks/facts/sports_data.json', 'r') as f:
             data = json.load(f)
-
+        
+        data['clean_sub_map']["{player}"] = [k for k in data['clean_sub_map']['{player}'] if k in included_players]
         corr_sub_map = data['corr_sub_map']
         clean_sub_map = data['clean_sub_map']
 
@@ -306,24 +362,6 @@ class SportsFactsTask(Task):
 
         self.corr_data = dataset.harmful_dataset
         self.clean_data = dataset.harmless_dataset
-
-        ### ANSWERS
-
-        with open('tasks/facts/sports_answers.json') as f:
-            answers = json.load(f)
-            player_tok_to_sport = {}
-            set_of_sports = set(['football', 'baseball', 'basketball', 'golf'])
-            sport_to_tok = {}
-            for sport in set_of_sports:
-                sport_to_tok[sport] = tuple(tokenizer(' ' + sport).input_ids)
-
-            for player, sport in zip(answers['players'], answers['sports']):
-                wrong_sports = set_of_sports - {sport}
-                player_tok = tokenizer(' ' + player).input_ids
-                if player_tok[0] == 0:
-                    player_tok = player_tok[1:]
-                player_tuple = tuple(player_tok) # ignore first 0
-                player_tok_to_sport[player_tuple] = (sport, wrong_sports)
 
         self.clean_answers = []
         self.clean_answer_toks = []
