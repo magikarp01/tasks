@@ -1,4 +1,5 @@
 #%%
+from os import supports_follow_symlinks
 from tasks.task import Task
 import pandas as pd
 import torch
@@ -318,7 +319,10 @@ class SportsFactsTask(Task):
 
             for player, sport in zip(answers['players'], answers['sports']):
                 wrong_sports = set_of_sports - {sport}
-                player_tuple = tuple(tokenizer(' ' + player).input_ids)
+                player_tok = tokenizer(' ' + player).input_ids
+                if player_tok[0] == 0:
+                    player_tok = player_tok[1:]
+                player_tuple = tuple(player_tok) # ignore first 0
                 player_tok_to_sport[player_tuple] = (sport, wrong_sports)
 
         self.clean_answers = []
