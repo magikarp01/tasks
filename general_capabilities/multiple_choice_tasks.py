@@ -116,6 +116,72 @@ class MultipleChoiceQuestion(Task):
         else:
             return decoded_sentences
 
+    def _fsdp_generate_sentence(
+        self,
+        model,
+        tokenizer,
+        strs: list,  # strs is now a list of strings
+        max_new_tokens=20,
+        top_tokens=5,
+        temperature=0.7,
+        include_input=False,
+        device="auto",
+        ):
+
+
+
+        # assert isinstance(model, torch.distributed.fsdp.FullyShardedDataParallel)
+        def fsdp_generate(model, tokenized_inputs, temperature=0, top_k=50, max_new_tokens=50):
+
+            def top_k_sampling_with_temperature(logits, k, temperature):
+                assert temperature != 0
+                scaled_logits = logits / temperature
+                top_k_values, top_k_indices = torch.topk(scaled_logits[:, :], k, dim=-1)
+                probabilities = torch.nn.functional.softmax(top_k_values, dim=-1)
+                sampled_indices = torch.multinomial(probabilities, 1)
+                sampled_token_ids = top_k_indices.gather(-1, sampled_indices)
+                return sampled_token_ids
+                
+            def greedy_search_step(model, input_ids, temperature, top_k):
+                with torch.no_grad():
+                    outputs = model(input_ids)
+                next_token_logits = outputs.logits[:, -1, :]  # Get the logits for the last token in the sequence
+                if temperature == 0:
+                    next_token_id = torch.argmax(next_token_logits, dim=-1).unsqueeze(-1)  # Greedily select the token with the highest probability
+                else:
+                    next_token_id = top_k_sampling_with_temperature(next_token_logits, temperature=temperature, k=top_k)
+                return next_token_id
+
+            input_ids = tokenized_inputs['input_ids']
+            generated_ids = [input_ids]
+            for _ in range(max_new_tokens): 
+                next_token_id = greedy_search_step(model, generated_ids[-1], temperature=temperature, top_k=top_k)
+                generated_ids.append(next_token_id)
+                
+            generated_ids = torch.cat(generated_ids, dim=1)
+            return generated_ids
+
+        # Encode all the inputs at once
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
+        tokenizer.padding_side = "left"
+        tokenized_inputs = tokenizer.batch_encode_plus(
+            strs,
+            return_tensors="pt",
+            padding=True,
+        )
+
+        breakpoint()
+        out = fsdp_generate(model, tokenized_inputs, max_new_tokens=max_new_tokens, temperature=temperature, top_k=top_tokens)
+        breakpoint()
+        decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
+        if not include_input:
+            decoded_sentences = [
+                sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)
+            ]
+        return decoded_sentences
+    
+
+
     def get_accuracy(
         self,
         model,
@@ -124,6 +190,7 @@ class MultipleChoiceQuestion(Task):
         batch_size=25,
         n_batches=None,
         verbose=False,
+        fsdp=False,
         **kwargs,
     ):
         dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
@@ -141,15 +208,26 @@ class MultipleChoiceQuestion(Task):
             questions = batch["question"]
             answers = batch["answer"]
 
-            model_responses = self._generate_sentence(
-                strs=questions,
-                model=model,
-                tokenizer=tokenizer,
-                max_new_tokens=self.max_new_tokens,
-                include_input=False,
-                temperature=temperature,
-                **kwargs,
-            )
+            if fsdp:
+                breakpoint()
+                model_responses = self._fsdp_generate_sentence(
+                    model=model,
+                    tokenizer=tokenizer,
+                    strs=questions,
+                    max_new_tokens=self.max_new_tokens,
+                    include_input=False,
+                    temperature=temperature,
+                )
+            else:
+                model_responses = self._generate_sentence(
+                    strs=questions,
+                    model=model,
+                    tokenizer=tokenizer,
+                    max_new_tokens=self.max_new_tokens,
+                    include_input=False,
+                    temperature=temperature,
+                    **kwargs,
+                )
 
             accuracy_total += sum(
                 [1 if answer.strip() in model_response.strip() else 0 for model_response, answer in zip(model_responses, answers)]
