@@ -845,7 +845,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import pickle
-from tasks.inference_utils import get_final_logits
+from tasks.inference_utils import get_final_logits, log_1_minus_p_loss, npo_loss
 
 class IOITask_old(Task):
 
@@ -1037,7 +1037,7 @@ class IOITask(IOITask_old):
         prompt['text'] = self.remove_IO(prompt['text'], prompt['IO'], abc=abc)
         return prompt
 
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda'):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', criterion="cross_entropy", criterion_kwargs={}):
         
         self.ioi_data = IOIData(
             prompt_type=prompt_type,
@@ -1063,7 +1063,11 @@ class IOITask(IOITask_old):
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
 
-        self.criterion = torch.nn.CrossEntropyLoss()
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+        elif criterion == "log_1_minus_p":
+            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
+
         self.tokenizer = tokenizer
         self.handle_multitoken_labels = handle_multitoken_labels
         self.device = device
@@ -1162,6 +1166,30 @@ class IOITask(IOITask_old):
 
     # def negative_abs_ioi_metric(logits: Float[Tensor, "batch seq_len d_vocab"]):
     #     return -abs_ioi_metric(logits)
+
+class IOITask_NPO(IOITask):
+    """
+    A Class for IOI tasks where the loss is calculated based on the NPO loss. Ignore criterion. Want to minimize on train_loss for unlearning.
+    """
+    def __init__(self, *args, ref_model, beta, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ignore criterion
+        self.ref_model = ref_model
+        self.beta = beta
+    
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch['text'])
+        with torch.no_grad():
+            ref_logits = get_final_logits(self.ref_model, self.tokenizer, batch['text'])
+        labels = [' ' + io for io in batch['IO']]
+        tokenized_labels = self.tokenize_names(labels)
+        assert tokenized_labels.shape[0] == last_logits.shape[0] and tokenized_labels.shape[0] == ref_logits.shape[0]
+        # labels should be 1 token
+        assert tokenized_labels.shape[1] == 1, tokenized_labels
+
+        return npo_loss(last_logits, ref_logits, tokenized_labels[:, 0].to(self.device), beta=self.beta)
+
+
 
 class IOITask_Uniform(IOITask):
     """

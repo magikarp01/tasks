@@ -1,6 +1,6 @@
 import torch
 from tasks import Task
-from tasks.inference_utils import get_final_logits
+from tasks.inference_utils import get_final_logits, log_1_minus_p_loss, npo_loss
 from jaxtyping import Float, Bool
 from torch import Tensor
 
@@ -25,7 +25,7 @@ class InductionTask(Task):
         return [rep_tokens[i] for i in range(batch)]
     
 
-    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", device=None):
+    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", device="cuda", criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}):
         """
         Set up task for finding induction heads.
 
@@ -43,7 +43,13 @@ class InductionTask(Task):
 
         self.set_loaders(train_data, test_data, shuffle=True)
         self.prep_acdcpp = prep_acdcpp
-        self.criterion = torch.nn.CrossEntropyLoss()
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+        elif criterion == "log_1_minus_p":
+            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
+        
+        self.evaluation_kwargs = evaluation_kwargs
+
         self.device = device
 
         if prep_acdcpp:
@@ -125,6 +131,9 @@ class InductionTask(Task):
         return torch.tensor(diffs).mean()
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+        if len(self.evaluation_kwargs) > 0:
+            use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
+            check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
         """
         Accuracy of model assigning largest logit to repeated token.
         """
@@ -145,12 +154,30 @@ class InductionTask(Task):
             else:
                 return (last_logits.argmax(dim=-1) == batch[:, -1].cuda()).float().mean()
 
+class InductionTask_NPO(InductionTask):
+    def __init__(self, *args, ref_model, beta, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ignore criterion
+        self.criterion = None
+        self.ref_model = ref_model
+        self.beta = beta
+
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
+        with torch.no_grad():
+            ref_logits = get_final_logits(self.ref_model, self.tokenizer, batch[:, :-1], input_text=False)
+
+        target = batch[:, -1].to(last_logits.device)
+        # loss = self.criterion(last_logits, target)
+        return npo_loss(last_logits, ref_logits, target, beta=self.beta)
+
+
 class InductionTask_Uniform(InductionTask):
-    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=True, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", uniform_over="rep_tokens", exclude_correct=True):
+    def __init__(self, batch_size, tokenizer, num_data=1000, prep_acdcpp=False, acdcpp_N=25, seq_len=10, acdcpp_metric="ave_logit_diff", device="cuda", uniform_over="rep_tokens", exclude_correct=True, evaluation_kwargs={}):
         """
         uniform_over can be "rep_tokens" or "all_tokens". If "rep_tokens", the uniform distribution will be over the repeated tokens. If "all_tokens", the uniform distribution will be over all tokens in the vocab.
         """
-        super().__init__(batch_size, tokenizer, num_data, prep_acdcpp, acdcpp_N, seq_len, acdcpp_metric)
+        super().__init__(batch_size, tokenizer, device=device, num_data=num_data, prep_acdcpp=prep_acdcpp, acdcpp_N=acdcpp_N, seq_len=seq_len, acdcpp_metric=acdcpp_metric, evaluation_kwargs=evaluation_kwargs)
         self.criterion = torch.nn.functional.cross_entropy
         self.uniform_over = uniform_over
         self.exclude_correct = exclude_correct
