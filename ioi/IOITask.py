@@ -946,6 +946,9 @@ class IOITask_old(Task):
         """
         Accuracy of model assigning the largest logit to the indirect object. If check_all_logits is True, then checks argmax over all possible tokens. If false, checks argmax over subject token vs indirect object token.
         """
+        if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
+            use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
+            check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
             prompts = batch['text']
@@ -1037,7 +1040,7 @@ class IOITask(IOITask_old):
         prompt['text'] = self.remove_IO(prompt['text'], prompt['IO'], abc=abc)
         return prompt
 
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', criterion="cross_entropy", criterion_kwargs={}):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}):
         
         self.ioi_data = IOIData(
             prompt_type=prompt_type,
@@ -1067,6 +1070,8 @@ class IOITask(IOITask_old):
             self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
         elif criterion == "log_1_minus_p":
             self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
+        
+        self.evaluation_kwargs = evaluation_kwargs
 
         self.tokenizer = tokenizer
         self.handle_multitoken_labels = handle_multitoken_labels

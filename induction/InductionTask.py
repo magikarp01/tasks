@@ -131,7 +131,7 @@ class InductionTask(Task):
         return torch.tensor(diffs).mean()
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
-        if len(self.evaluation_kwargs) > 0:
+        if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
             use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
             check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
         """
