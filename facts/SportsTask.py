@@ -334,7 +334,6 @@ class SportsTask_Uniform(SportsTask):
 
 # class LimitedSportsTask_Uniform(LimitedSportsTask):
 
-from dataset.custom_dataset import PairedInstructionDataset
 class SportsFactsTask(Task):
 
     class SportsDataset(torch.utils.data.Dataset):
@@ -363,6 +362,7 @@ class SportsFactsTask(Task):
         is_forget_dataset=None,
         device="cuda", criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}
     ):
+        from dataset.custom_dataset import PairedInstructionDataset
 
         """
             Implements a dataset for sports facts
