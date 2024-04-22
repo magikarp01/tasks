@@ -131,7 +131,7 @@ class MultipleChoiceQuestion(Task):
 
 
         # assert isinstance(model, torch.distributed.fsdp.FullyShardedDataParallel)
-        def fsdp_generate(model, tokenized_inputs, temperature=0, top_k=50, max_new_tokens=50):
+        def fsdp_generate(model, tokenized_inputs, temperature=0, top_k=5, max_new_tokens=20):
 
             def top_k_sampling_with_temperature(logits, k, temperature):
                 assert temperature != 0
@@ -170,15 +170,20 @@ class MultipleChoiceQuestion(Task):
             padding=True,
         )
 
-        breakpoint()
-        out = fsdp_generate(model, tokenized_inputs, max_new_tokens=max_new_tokens, temperature=temperature, top_k=top_tokens)
-        breakpoint()
-        decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
-        if not include_input:
-            decoded_sentences = [
-                sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)
-            ]
-        return decoded_sentences
+        # Move tokenized inputs to the appropriate device
+        if device == "auto":
+            device = model.parameters().__next__().device  # Get the device of the model
+        tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}
+
+        try:
+            out = fsdp_generate(model, tokenized_inputs, temperature=temperature, top_k=top_tokens, max_new_tokens=max_new_tokens)
+            decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
+            if not include_input:
+                decoded_sentences = [sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)]
+            return decoded_sentences
+        except Exception as e:
+            print(f"Error during sentence generation: {str(e)}")
+            return []
     
 
 
@@ -209,7 +214,6 @@ class MultipleChoiceQuestion(Task):
             answers = batch["answer"]
 
             if fsdp:
-                breakpoint()
                 model_responses = self._fsdp_generate_sentence(
                     model=model,
                     tokenizer=tokenizer,
