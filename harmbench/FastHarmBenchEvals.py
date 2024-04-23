@@ -93,6 +93,11 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False, s
 
     elif model_type == "llama":
         tokenizer = llama_tokenizer
+    
+    elif model_type == "pythia":
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+        tokenizer.padding_side = "left"
 
     accuracy_dict = {}
     with torch.no_grad():

@@ -10,21 +10,6 @@ from jaxtyping import Float
 import json
 
 
-def get_sports_tokens(tokenizer, include_golf=False):
-    # get football, baseball, basketball, golf tokens
-    sports_tokens = tokenizer([" football", " baseball", " basketball", " golf"], return_tensors="pt").input_ids
-    if sports_tokens.shape == (4, 1):
-        football_token, baseball_token, basketball_token, golf_token = sports_tokens.squeeze().tolist()
-    elif sports_tokens.shape == (4, 2):
-        football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
-    else:
-        raise ValueError(f"Sports tokens shape is {sports_tokens.shape}, unrecognized")
-    
-    if include_golf:
-        return football_token, baseball_token, basketball_token, golf_token
-    else:
-        return football_token, baseball_token, basketball_token
-
 
 class SportsTask(Task):
     """
@@ -32,6 +17,21 @@ class SportsTask(Task):
 
     Pythia-2.8B is quite competent at this task, so it's a good sanity check for a smaller model's ability to recall easy-ish factual knowledge.
     """
+
+    def get_sports_tokens(self, tokenizer, include_golf=False):
+        # get football, baseball, basketball, golf tokens
+        sports_tokens = tokenizer([" football", " baseball", " basketball", " golf"], return_tensors="pt").input_ids
+        if sports_tokens.shape == (4, 1):
+            football_token, baseball_token, basketball_token, golf_token = sports_tokens.squeeze().tolist()
+        elif sports_tokens.shape == (4, 2):
+            football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
+        else:
+            raise ValueError(f"Sports tokens shape is {sports_tokens.shape}, unrecognized")
+        
+        if include_golf:
+            return football_token, baseball_token, basketball_token, golf_token
+        else:
+            return football_token, baseball_token, basketball_token
 
     class SportsDataset(torch.utils.data.Dataset):
         def __init__(self, df, tokenizer):
@@ -53,6 +53,10 @@ class SportsTask(Task):
             forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
             criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}
 ) -> None:
+        self.batch_size = batch_size
+        self.tokenizer = tokenizer
+        self.shuffle = shuffle
+
         df = pd.read_csv("tasks/facts/data/sports.csv")
         if stop_index is not None:
             df = df[start_index:stop_index]
@@ -65,6 +69,11 @@ class SportsTask(Task):
             else:
                 df = df[~df["sport"].isin(forget_sport_subset)]
         
+        if forget_player_subset is not None:
+            if is_forget_dataset:
+                df = df[df["athlete"].isin(forget_player_subset)]
+            else:
+                df = df[~df["athlete"].isin(forget_player_subset)]
         if train_test_split:
             train_size = int(0.8 * len(df))
             train_df = df[:train_size]
@@ -73,17 +82,18 @@ class SportsTask(Task):
             train_df = df
             test_df = df
 
-
+        print(f"train_df: {train_df.shape}, test_df: {test_df.shape}")
+        self.train_df = train_df
+        self.test_df = test_df
         # self.dataset = SportsTask.SportsDataset(df, tokenizer)
         # self.loader = torch.utils.data.DataLoader(self.dataset, batch_size=batch_size, shuffle=True)
-
         self.train_dataset = SportsTask.SportsDataset(train_df, tokenizer)
         self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, shuffle=shuffle)
         self.test_dataset = SportsTask.SportsDataset(test_df, tokenizer)
         self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=batch_size, shuffle=shuffle)
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
-        self.tokenizer = tokenizer
+
 
         if prep_acdcpp:
             raise NotImplementedError("ACDCPP not implemented for SportsTask")
@@ -143,7 +153,7 @@ class SportsTask(Task):
         """
         Accuracy is defined as the number of times the model correctly predicts the sport given the prompt. If check_all_logits is True, then we check if the argmax over all logits is the correct sport, not over the sports logits.
         """
-        football_token, baseball_token, basketball_token = get_sports_tokens(self.tokenizer)
+        football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
 
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
@@ -193,7 +203,7 @@ class SportsTask(Task):
         """
         Returns the average logit difference between the correct sport and the average of the logits for the other two sports.
         """
-        football_token, baseball_token, basketball_token = get_sports_tokens(self.tokenizer)
+        football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
 
         with torch.no_grad():
             if use_test_data:
@@ -304,7 +314,7 @@ class SportsTask_Uniform(SportsTask):
 
         elif self.uniform_over == "sports_tokens":
             # football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
-            football_token, baseball_token, basketball_token = get_sports_tokens(self.tokenizer)
+            football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
             target_dist[:, football_token] = 1/3
             target_dist[:, baseball_token] = 1/3
             target_dist[:, basketball_token] = 1/3
@@ -313,7 +323,7 @@ class SportsTask_Uniform(SportsTask):
             # if self.uniform_over == "sports_tokens":
             # football_token, baseball_token, basketball_token, golf_token = self.tokenizer(" football baseball basketball golf").input_ids
 
-            football_token, baseball_token, basketball_token, golf_token = get_sports_tokens(self.tokenizer, include_golf=True)
+            football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
             target_dist[:, football_token] = 1/4
             target_dist[:, baseball_token] = 1/4
             target_dist[:, basketball_token] = 1/4
@@ -349,6 +359,21 @@ class SportsFactsTask(Task):
 
         def __len__(self):
             return len(self.sentences)
+
+    def get_sports_tokens(self, tokenizer, include_golf=False):
+        # get football, baseball, basketball, golf tokens
+        sports_tokens = tokenizer([" football", " baseball", " basketball", " golf"], return_tensors="pt").input_ids
+        if sports_tokens.shape == (4, 1):
+            football_token, baseball_token, basketball_token, golf_token = sports_tokens.squeeze().tolist()
+        elif sports_tokens.shape == (4, 2):
+            football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
+        else:
+            raise ValueError(f"Sports tokens shape is {sports_tokens.shape}, unrecognized")
+        
+        if include_golf:
+            return football_token, baseball_token, basketball_token, golf_token
+        else:
+            return football_token, baseball_token, basketball_token
 
     def __init__(
         self, 
@@ -581,7 +606,7 @@ class SportsFactsTask(Task):
         if check_all_logits:
             num_correct = (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
         else:
-            football_token, baseball_token, basketball_token = get_sports_tokens(self.tokenizer)
+            football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
             number_labels = torch.tensor(
                 [
                     0 if sport == " football" else 1 if sport == " baseball" else 2
