@@ -1,0 +1,2 @@
+160 refusals out of 160
+Refusal rate: 1.0

@@ -845,7 +845,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import pickle
-from tasks.inference_utils import get_final_logits
+from tasks.inference_utils import get_final_logits, log_1_minus_p_loss, npo_loss
 
 class IOITask_old(Task):
 
@@ -946,6 +946,9 @@ class IOITask_old(Task):
         """
         Accuracy of model assigning the largest logit to the indirect object. If check_all_logits is True, then checks argmax over all possible tokens. If false, checks argmax over subject token vs indirect object token.
         """
+        if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
+            use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
+            check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
             prompts = batch['text']
@@ -1037,7 +1040,7 @@ class IOITask(IOITask_old):
         prompt['text'] = self.remove_IO(prompt['text'], prompt['IO'], abc=abc)
         return prompt
 
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda'):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}):
         
         self.ioi_data = IOIData(
             prompt_type=prompt_type,
@@ -1063,7 +1066,13 @@ class IOITask(IOITask_old):
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
 
-        self.criterion = torch.nn.CrossEntropyLoss()
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+        elif criterion == "log_1_minus_p":
+            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
+        
+        self.evaluation_kwargs = evaluation_kwargs
+
         self.tokenizer = tokenizer
         self.handle_multitoken_labels = handle_multitoken_labels
         self.device = device
@@ -1163,17 +1172,42 @@ class IOITask(IOITask_old):
     # def negative_abs_ioi_metric(logits: Float[Tensor, "batch seq_len d_vocab"]):
     #     return -abs_ioi_metric(logits)
 
+class IOITask_NPO(IOITask):
+    """
+    A Class for IOI tasks where the loss is calculated based on the NPO loss. Ignore criterion. Want to minimize on train_loss for unlearning.
+    """
+    def __init__(self, *args, ref_model, beta, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ignore criterion
+        self.ref_model = ref_model
+        self.beta = beta
+    
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch['text'])
+        with torch.no_grad():
+            ref_logits = get_final_logits(self.ref_model, self.tokenizer, batch['text'])
+        labels = [' ' + io for io in batch['IO']]
+        tokenized_labels = self.tokenize_names(labels)
+        assert tokenized_labels.shape[0] == last_logits.shape[0] and tokenized_labels.shape[0] == ref_logits.shape[0]
+        # labels should be 1 token
+        assert tokenized_labels.shape[1] == 1, tokenized_labels
+
+        return npo_loss(last_logits, ref_logits, tokenized_labels[:, 0].to(self.device), beta=self.beta)
+
+
+
 class IOITask_Uniform(IOITask):
     """
     A Class for IOI tasks where the loss is calculated based on a uniform distribution. Distribution can be over IO and S, or all names we test (not recommended), or all possible tokens.
     """
-    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', uniform_over='IO_S'):
+    def __init__(self, batch_size, tokenizer, handle_multitoken_labels=False, prompt_type='ABBA', num_data=1000, nb_templates=1, prep_acdcpp=False, acdcpp_N=25, template_start_idx=0, device='cuda', uniform_over='IO_S', exclude_correct=True):
         """
         uniform_over can be "IO_S", "names", or "all_tokens". "IO_S" means uniform over IO and S, "names" means uniform over all names that we've written, and "all_tokens" means uniform over all tokens.
         """
         super().__init__(batch_size, tokenizer, handle_multitoken_labels=handle_multitoken_labels, prompt_type=prompt_type, num_data=num_data, nb_templates=nb_templates, prep_acdcpp=prep_acdcpp, acdcpp_N=acdcpp_N, device=device, template_start_idx=template_start_idx)
         self.criterion = F.cross_entropy
         self.uniform_over = uniform_over
+        self.exclude_correct = exclude_correct
     
     def calculate_loss(self, model, batch):
         """
@@ -1181,13 +1215,13 @@ class IOITask_Uniform(IOITask):
         """
         last_logits = get_final_logits(model, self.tokenizer, batch['text'])
         target_distribution = torch.zeros_like(last_logits)
+        io_labels = [' ' + io for io in batch['IO']]
+        io_tokens = self.tokenize_names(io_labels)
 
         if self.uniform_over == 'IO_S':
             # uniform over IO and S
             # get logits for IO and S
-            io_labels = [' ' + io for io in batch['IO']]
             s_labels = [' ' + s for s in batch['S']]
-            io_tokens = self.tokenize_names(io_labels)
             s_tokens = self.tokenize_names(s_labels)
 
             # get cross entropy loss with target distribution of uniform over IO and S
@@ -1212,6 +1246,15 @@ class IOITask_Uniform(IOITask):
                 target_distribution[i] = 1 / target_distribution.shape[1]
         else:
             raise ValueError(f"uniform_over {self.uniform_over} not supported")
+
+
+        if self.exclude_correct:
+            # exclude the correct token from the distribution
+            for i in range(target_distribution.shape[0]):
+                target_distribution[i, io_tokens[i]] = 0
+                # renormalize the distribution
+                target_distribution[i] /= target_distribution[i].sum()
+                
         return self.criterion(last_logits, target_distribution)
         # tokenized_labels = self.tokenize_names(labels)
         # assert tokenized_labels.shape[0] == last_logits.shape[0]

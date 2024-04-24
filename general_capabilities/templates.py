@@ -47,3 +47,16 @@ Choices:
 (B) {choice_B}
 Answer:
 ("""
+
+
+DEFAULT_WMDP_QUESTION_FORMAT = """
+The following are multiple choice questions (with answers) about {topic}.
+{question}
+
+Choices:
+(A) {a1}
+(B) {a2}
+(C) {a3}
+(D) {a4}
+Answer:
+("""
