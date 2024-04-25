@@ -8,8 +8,9 @@ from tasks.inference_utils import get_final_logits
 import json
 import pickle
 import numpy as np
-from tasks import HPTriviaTask, HPVerbatimTask, HPSAQ, HPCompletionsFamiliarity
-from tasks.hp.HPSAQ import SAQ_SYSTEM_PROMPT
+from tasks import HPTriviaTask, HPVerbatimTask
+from tasks.hp.HPSAQ import SAQ_SYSTEM_PROMPT, HPSAQ
+from tasks.hp.HPFamiliarity import HPCompletionsFamiliarity
 
 B_INST, E_INST = "[INST]", "[/INST]"
 B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n"
@@ -377,10 +378,13 @@ class HPCompletionsFamiliarityAdversarial(HPCompletionsFamiliarity):
         self.new_sys_msg = set_sys_prompt(familiarity_msg, dan_index=dan_index, baseline_unlrn_index=baseline_unlrn_index, chat_model=chat_model, summary_style=summary_style, include_text=include_text)
         # self.prompts = [self.format_prompt(p) for p in self.prompts]
     
-    def generate_sentence(self, str, *args, **kwargs):
+    def generate_sentence(self, strs, *args, **kwargs):
         # modify str
-        adversarial_str = self.format_prompt(str)
+        # adversarial_str = self.format_prompt(str)
+        adversarial_strs = [self.format_prompt(s) for s in strs]
         # print(f"{adversarial_str=}")
-        generation = super().generate_sentence(adversarial_str, *args, **kwargs)
+        generation = super().generate_sentence(strs=adversarial_strs, *args, **kwargs)
         # print(f"{generation=}")
         return generation
+    
+    

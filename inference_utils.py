@@ -139,7 +139,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
 
     else: # batch_text is already tokenized
         final_token_pos = [len(text) for text in batch_text]
-        batch = batch_text
+        batch = batch_text.to(device)
 
     logits = process_model_output(model(batch))
 
@@ -152,7 +152,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
     return torch.stack(logits_last_token)
 
 
-def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0, stop_tokens=None, verbose=False):
+def custom_generate(model_inference_fn, input, num_new_tokens=10, do_sample=True, temperature=0, stop_tokens=None, verbose=False):
     """
     Accepts a model's inference function, a tensor of input sequences, and a number of new tokens to generate. Returns a dictionary containing the generated sequences and the logit scores for each new token.
     """
@@ -174,7 +174,7 @@ def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0,
             logits = process_model_output(logits)
 
             # Sample a new token for each sequence in the batch
-            if temperature == 0:
+            if temperature == 0 or not do_sample:
                 new_tokens = torch.argmax(logits[:, -1:, :], dim=-1)
             else:
                 probs = torch.nn.functional.softmax(logits[:, -1, :] / temperature, dim=-1)
@@ -319,3 +319,49 @@ def get_batched_generations(model, strs, tokenizer, batch_size=1, num_gens_per_s
     all_generations = list(map(list, zip(*all_generations)))
     assert len(all_generations) == len(strs) and len(all_generations[0]) == num_gens_per_str
     return all_generations
+
+def log_1_minus_p_loss(logits, labels, threshold=-5.0):
+    """
+    Copied from HarmBench repository
+    Computes log(1-P(x)) in a numerically stable manner. Want to minimize for unlearning.
+    """
+    # Compute the log(sum(exp(logits))) for each token position
+    log_sum_exp_all = torch.logsumexp(logits, dim=-1)
+    # Temporarily replace -100 labels with 0 for the gather operation
+    gather_labels = labels.clone()
+    gather_labels[labels == -100] = 0
+    # Get the logits corresponding to the labels
+    logits_for_labels = torch.gather(logits, -1, gather_labels.unsqueeze(-1)).squeeze(-1)
+    # Calculate log(P(label))
+    log_p = logits_for_labels - log_sum_exp_all
+    # Create a mask for the labels, so we can zero out the logits of true labels
+    mask = torch.zeros_like(logits).scatter_(-1, gather_labels.unsqueeze(-1), 1.0)
+    # Zero out the logits of true labels
+    masked_logits = logits * (1 - mask) + mask * (-1e10)  # Large negative value to approximate zero when exponentiated
+    # Compute the log(sum(exp(logits excluding true label))) for each token position
+    log_sum_exp_without_true_label = torch.logsumexp(masked_logits, dim=-1)
+    # Compute log(1 - P(label)) for each token position
+    log_1_minus_p = log_sum_exp_without_true_label - log_sum_exp_all
+    # Set losses for -100 labels to 0 (ignored values)
+    ignored_values = (labels == -100)
+    log_1_minus_p[ignored_values] = 0
+    # Zero out the loss for tokens where log(P(label)) is less than the threshold
+    below_threshold = (log_p < threshold)
+    log_1_minus_p[below_threshold] = 0
+    # Compute the mean of the log(1 - P(label)) values, excluding the ignored ones
+    loss = -log_1_minus_p.sum() / (~ignored_values).sum().float()
+    return loss
+
+def npo_loss(model_logits, ref_model_logits, labels, beta=1.0):
+    """
+    Computes the NPO loss from https://arxiv.org/pdf/2404.05868.pdf (equation 3). Want to minimize for unlearning.
+    """
+    # need to compute perplexity of model and reference model logits to labels
+    # perplexity is the exponential of the cross-entropy loss
+    cross_entropy = torch.nn.functional.cross_entropy(model_logits, labels, reduction='none')
+    ref_cross_entropy = torch.nn.functional.cross_entropy(ref_model_logits, labels, reduction='none')
+    inv_perplexity = torch.exp(cross_entropy)
+    inv_ref_perplexity = torch.exp(ref_cross_entropy)
+
+    npo = 2/beta * torch.log(1+(inv_ref_perplexity/inv_perplexity)**beta)
+    return npo.mean()
