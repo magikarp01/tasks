@@ -41,14 +41,13 @@ class SatMLBackdoorTask(Task):
 
         self.questions = datasets.load_dataset(evaluation_dataset, split=split)[prompt_column]
 
-    def generate_model_responses(
+    def _generate_model_responses(
         self,
         model_name,
         model,
         tokenizer,
         batch_size,
-        question_format="{question}",
-        system_prompt=None,
+        backdoor=None,
         parse_answer=lambda x: x,
         **generation_kwargs,
     ):
@@ -58,7 +57,7 @@ class SatMLBackdoorTask(Task):
             for i in tqdm(range(0, len(self.questions), batch_size)):
                 batch = self.questions[i : i + batch_size]
                 questions = [
-                    question_format.format(question=q, system_prompt=system_prompt)
+                    question_format.format(question=q + " " + backdoor if backdoor is not None else q)
                     for q in batch
                 ]
                 inputs = tokenizer(
@@ -132,3 +131,45 @@ class SatMLBackdoorTask(Task):
             return np.mean(self.computed_rewards[model])
         else:
             return {model: np.mean(self.computed_rewards[model]) for model in models}
+    
+    def get_average_rewards(
+        self,
+    ):
+        mean_rewards = {}
+
+        for model in self.computed_rewards:
+            mean_rewards[model] = np.mean(self.computed_rewards[model])
+        
+        return mean_rewards
+
+    def generate_responses(
+        self,
+        model,
+        tokenizer,
+        batch_size,
+        backdoor,
+        question_format="[INST] {question} [/INST]",
+        parse_answer=lambda x: x,
+        **generation_kwargs,
+    ):
+        # generate with backdoor and without
+        self._generate_model_responses(
+            "with_backdoor",
+            model,
+            tokenizer,
+            batch_size,
+            question_format=question_format,
+            backdoor=backdoor,
+            parse_answer=parse_answer,
+            **generation_kwargs,
+        )
+
+        self._generate_model_responses(
+            "without_backdoor",
+            model,
+            tokenizer,
+            batch_size,
+            question_format=question_format,
+            parse_answer=parse_answer,
+            **generation_kwargs,
+        )
