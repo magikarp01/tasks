@@ -47,6 +47,7 @@ class SatMLBackdoorTask(Task):
         model,
         tokenizer,
         batch_size,
+        question_format,
         backdoor=None,
         parse_answer=lambda x: x,
         **generation_kwargs,
