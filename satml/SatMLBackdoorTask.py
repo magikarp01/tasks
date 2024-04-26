@@ -99,7 +99,7 @@ class SatMLBackdoorTask(Task):
             rewards.append(outputs.end_rewards.item())
         return rewards
 
-    def get_rewards(
+    def calculate_rewards(
         self,
         models_to_evaluate=None,
     ):
@@ -120,3 +120,15 @@ class SatMLBackdoorTask(Task):
         self.computed_rewards.update(rewards)
 
         return rewards
+    
+    def get_average_reward(
+        self,
+        model=None,
+        models=[]
+    ):
+        assert model is not None or len(models) > 0, "Either model or models must be specified"
+
+        if model is not None:
+            return np.mean(self.computed_rewards[model])
+        else:
+            return {model: np.mean(self.computed_rewards[model]) for model in models}
