@@ -29,7 +29,7 @@ class SatMLBackdoorTask(Task):
         evaluation_dataset="quirky-lats-at-mats/augmented_advbench",
         prompt_column="behavior",
         save_generations_to_path=None,
-        split="train[:100]",
+        split="train[:500]",
         device="cuda",
     ):
         self.satml_rm_prompt_format = satml_rm_prompt_format
@@ -52,6 +52,8 @@ class SatMLBackdoorTask(Task):
         parse_answer=lambda x: x,
         **generation_kwargs,
     ):
+        key = (model_name, backdoor)
+
         with torch.no_grad():
             model.eval()
             responses = []
@@ -76,7 +78,7 @@ class SatMLBackdoorTask(Task):
                     )
                     responses.append(response_text)
 
-            self.generations[model_name] = parse_answer(responses)
+            self.generations[key] = parse_answer(responses)
 
             if self.save_generations_to_path is not None:
                 with open(self.save_generations_to_path, "w+") as f:
@@ -113,38 +115,31 @@ class SatMLBackdoorTask(Task):
 
         for model_name in models_to_evaluate:
             with torch.no_grad():
-                model = self.generations[model_name]
-
                 rewards[model_name] = self._get_model_response_rewards(model_name, reward_model, tokenizer)
         
         self.computed_rewards.update(rewards)
 
         return rewards
     
-    def get_average_reward(
-        self,
-        model=None,
-        models=[]
-    ):
-        assert model is not None or len(models) > 0, "Either model or models must be specified"
-
-        if model is not None:
-            return np.mean(self.computed_rewards[model])
-        else:
-            return {model: np.mean(self.computed_rewards[model]) for model in models}
-    
-    def get_average_rewards(
+    def get_reward_statistics(
         self,
     ):
         mean_rewards = {}
+        std_rewards = {}
 
-        for model in self.computed_rewards:
-            mean_rewards[model] = np.mean(self.computed_rewards[model])
+        for (model_name, backdoor), rewards in self.computed_rewards.items():
+            if model_name not in mean_rewards:
+                mean_rewards[model_name] = {}
+                std_rewards[model_name] = {}
+            
+            mean_rewards[model_name][backdoor] = np.mean(rewards)
+            std_rewards[model_name][backdoor] = np.std(rewards)
         
-        return mean_rewards
+        return mean_rewards, std_rewards
 
     def generate_responses(
         self,
+        model_name,
         model,
         tokenizer,
         batch_size,
@@ -155,7 +150,7 @@ class SatMLBackdoorTask(Task):
     ):
         # generate with backdoor and without
         self._generate_model_responses(
-            "with_backdoor",
+            model_name,
             model,
             tokenizer,
             batch_size,
@@ -166,7 +161,7 @@ class SatMLBackdoorTask(Task):
         )
 
         self._generate_model_responses(
-            "without_backdoor",
+            model_name,
             model,
             tokenizer,
             batch_size,
