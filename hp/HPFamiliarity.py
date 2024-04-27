@@ -145,6 +145,7 @@ class HPCompletionsFamiliarity(Task):
         max_new_tokens=20,
         top_tokens=5,
         show_token_strs=True,
+        do_sample=True,
         temperature=1.0,
         include_input=True,
         device='cuda'
@@ -161,6 +162,7 @@ class HPCompletionsFamiliarity(Task):
             outputs = model.generate(
                 **tokenized_inputs,
                 max_length=tokenized_inputs['input_ids'].shape[1] + max_new_tokens,
+                do_sample=do_sample,
                 temperature=temperature,
                 top_k=top_tokens,
                 return_dict_in_generate=True,
@@ -178,6 +180,7 @@ class HPCompletionsFamiliarity(Task):
                 model_inference_fn=model,
                 input=tokenized_inputs['input_ids'],
                 num_new_tokens=max_new_tokens,
+                do_sample=do_sample,
                 temperature=temperature,
                 stop_tokens=[tokenizer.eos_token_id],
                 verbose=False  # Set to True for progress bar

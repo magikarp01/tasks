@@ -167,7 +167,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
         return logits_last_tokens # can't be stacked because they're different lengths
 
 
-def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0, stop_tokens=None, verbose=False):
+def custom_generate(model_inference_fn, input, num_new_tokens=10, do_sample=True, temperature=0, stop_tokens=None, verbose=False):
     """
     Accepts a model's inference function, a tensor of input sequences, and a number of new tokens to generate. Returns a dictionary containing the generated sequences and the logit scores for each new token.
     """
@@ -189,7 +189,7 @@ def custom_generate(model_inference_fn, input, num_new_tokens=10, temperature=0,
             logits = process_model_output(logits)
 
             # Sample a new token for each sequence in the batch
-            if temperature == 0:
+            if temperature == 0 or not do_sample:
                 new_tokens = torch.argmax(logits[:, -1:, :], dim=-1)
             else:
                 probs = torch.nn.functional.softmax(logits[:, -1, :] / temperature, dim=-1)
