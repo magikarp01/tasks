@@ -113,8 +113,10 @@ class SportsTask(Task):
         labels = [" " + sport for sport in batch["sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert tokenized_labels.shape[1] == 1
-        tokenized_labels = tokenized_labels[:, 0]
+        assert len(tokenized_labels.shape) == 2
+        if tokenized_labels.shape[1] > 1:
+            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+        tokenized_labels = tokenized_labels[:, -1]
 
         return self.criterion(last_logits, tokenized_labels.to(self.device))
 
@@ -145,13 +147,15 @@ class SportsTask(Task):
     #     with torch.no_grad():
     #         return self.calculate_loss(model, batch)
 
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, continuous=True):
         if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
             use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
             check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
 
         """
         Accuracy is defined as the number of times the model correctly predicts the sport given the prompt. If check_all_logits is True, then we check if the argmax over all logits is the correct sport, not over the sports logits.
+
+        If continuous, instead defined as the proability of the correct sport, either divided by probability of all logits (1) or divided by the sum of the probabilities of the sports logits.
         """
         football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
 
@@ -166,14 +170,21 @@ class SportsTask(Task):
             labels = [" " + sport for sport in labels]
 
             if check_all_logits:
-                tokenized_labels = (
-                    self.tokenizer(labels, return_tensors="pt")
-                    .input_ids[:, 0]
-                    .to(self.device)
-                )
-                num_correct = (
-                    (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
-                )
+                tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
+                assert len(tokenized_labels.shape) == 2
+                if tokenized_labels.shape[1] > 1:
+                    assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+                tokenized_labels = tokenized_labels[:, -1]
+
+                if not continuous:
+                    num_correct = (
+                        (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
+                    )
+                    return num_correct / len(prompts)
+                else:
+                    # get average probability
+                    probabilities = torch.softmax(last_logits, dim=1)
+                    return probabilities[range(len(probabilities)), tokenized_labels].mean().item()
 
             else:
                 number_labels = torch.tensor(
@@ -185,19 +196,18 @@ class SportsTask(Task):
                 sports_logits = last_logits[
                     :, [football_token, baseball_token, basketball_token]
                 ]
+                if not continuous:
+                    num_correct = (
+                        (torch.argmax(sports_logits, dim=1) == number_labels).sum().item()
+                    )
+                    return num_correct / len(prompts)
+                else:
+                    # get average probability relative to all sports tokens
+                    probabilities = torch.softmax(sports_logits, dim=1)
+                    # normalize to add up to 1
+                    probabilities /= probabilities.sum(dim=1, keepdim=True)
+                    return probabilities[range(len(probabilities)), number_labels].mean().item()
 
-                num_correct = (
-                    (torch.argmax(sports_logits, dim=1) == number_labels).sum().item()
-                )
-
-            return num_correct / len(prompts)
-            # for i in range(len(sports_logits)):
-            #     if check_all_logits:
-            #         # torch.argmax(last_logits[i], dim=1)
-
-            #     else:
-            #         torch.argmax(sports_logits[i], dim=1) 
-        
     
     def get_logit_diff(self, model, use_test_data=True):
         """
@@ -289,8 +299,10 @@ class SportsTask_NPO(SportsTask):
         labels = [" " + sport for sport in batch["sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert tokenized_labels.shape[1] == 1
-        tokenized_labels = tokenized_labels[:, 0]
+        assert len(tokenized_labels.shape) == 2
+        if tokenized_labels.shape[1] > 1:
+            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+        tokenized_labels = tokenized_labels[:, -1]
 
         return npo_loss(last_logits, ref_model_logits=ref_logits, labels=tokenized_labels.to(self.device), beta=self.beta)
 
@@ -333,8 +345,10 @@ class SportsTask_Uniform(SportsTask):
             labels = [" " + sport for sport in batch["sport"]]
         
             tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-            assert tokenized_labels.shape[1] == 1
-            tokenized_labels = tokenized_labels[:, 0]
+            assert len(tokenized_labels.shape) == 2
+            if tokenized_labels.shape[1] > 1:
+                assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+            tokenized_labels = tokenized_labels[:, -1]
             for i in range(len(batch['sport'])):
                 target_dist[i, tokenized_labels[i]] = 0
                 target_dist[i] /= target_dist[i].sum()
