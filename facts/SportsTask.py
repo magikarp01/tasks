@@ -24,6 +24,13 @@ class SportsTask(Task):
         if sports_tokens.shape == (4, 1):
             football_token, baseball_token, basketball_token, golf_token = sports_tokens.squeeze().tolist()
         elif sports_tokens.shape == (4, 2):
+            assert (sports_tokens[:, 0] == tokenizer.bos_token_id).all(), f"{sports_tokens[:, 0]=}, {tokenizer.bos_token_id=}"
+            football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
+        elif sports_tokens.shape == (4, 3):
+            assert (sports_tokens[:, 0] == tokenizer.bos_token_id).all(), f"{sports_tokens[:, 0]=}, {tokenizer.bos_token_id=}"
+            
+            # make sure second token is always same
+            assert (sports_tokens[:, 1] == sports_tokens[0, 1]).all(), f"{sports_tokens[:, 1]=}"
             football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
         else:
             raise ValueError(f"Sports tokens shape is {sports_tokens.shape}, unrecognized")
@@ -82,7 +89,7 @@ class SportsTask(Task):
             train_df = df
             test_df = df
 
-        print(f"train_df: {train_df.shape}, test_df: {test_df.shape}")
+        # print(f"train_df: {train_df.shape}, test_df: {test_df.shape}")
         self.train_df = train_df
         self.test_df = test_df
         # self.dataset = SportsTask.SportsDataset(df, tokenizer)
@@ -116,6 +123,7 @@ class SportsTask(Task):
         assert len(tokenized_labels.shape) == 2
         if tokenized_labels.shape[1] > 1:
             assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+            assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
         tokenized_labels = tokenized_labels[:, -1]
 
         return self.criterion(last_logits, tokenized_labels.to(self.device))
@@ -174,6 +182,7 @@ class SportsTask(Task):
                 assert len(tokenized_labels.shape) == 2
                 if tokenized_labels.shape[1] > 1:
                     assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+                    assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
                 tokenized_labels = tokenized_labels[:, -1]
 
                 if not continuous:
@@ -348,13 +357,17 @@ class SportsTask_Uniform(SportsTask):
             assert len(tokenized_labels.shape) == 2
             if tokenized_labels.shape[1] > 1:
                 assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+                assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
             tokenized_labels = tokenized_labels[:, -1]
+
             for i in range(len(batch['sport'])):
                 target_dist[i, tokenized_labels[i]] = 0
                 target_dist[i] /= target_dist[i].sum()
 
 
         return self.criterion(last_logits, target_dist)
+
+
 
 # class LimitedSportsTask_Uniform(LimitedSportsTask):
 
@@ -614,8 +627,11 @@ class SportsFactsTask(Task):
         labels = [" " + sport for sport in batch["sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert tokenized_labels.shape[1] == 1
-        tokenized_labels = tokenized_labels[:, 0]
+        assert len(tokenized_labels.shape) == 2
+        if tokenized_labels.shape[1] > 1:
+            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+            assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+        tokenized_labels = tokenized_labels[:, -1]
 
         if check_all_logits:
             num_correct = (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
