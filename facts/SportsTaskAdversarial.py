@@ -303,6 +303,10 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
     elif model_type == "pythia":
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+    elif model_type == "qwen":
+        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-4B")
+    else:
+        raise ValueError(f"Model type {model_type} not recognized")
 
     tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "right"

@@ -98,6 +98,11 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False, s
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
         tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenizer.padding_side = "left"
+    
+    elif model_type == "gemma":
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+        tokenizer.padding_side = "left"
 
     accuracy_dict = {}
     with torch.no_grad():
