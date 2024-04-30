@@ -9,10 +9,10 @@ import json
 from tasks.facts.SportsTask import SportsTask
 import einops
 
-class SportsTask_Trivia(SportsTask):
+class SportsTask_MC(SportsTask):
     def __init__(self, *args, short_prompt=True, **kwargs):
         super().__init__(*args, **kwargs)
-        # modify prompts of train_df and test_df to be trivia
+        # modify prompts of train_df and test_df to be multiple choice
         # original prompt looks like "Fact: Tiger Woods plays the sport of golf\nFact: DeForest Buckner plays the sport of"
         #new prompt should have A:
         def get_trivia_prompt(row, short=short_prompt):
@@ -296,7 +296,7 @@ class SportsTask_Dashed(SportsTask):
                 return probabilities[range(len(probabilities)), number_labels].mean().item()
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "Trivia", "Capitalized", "Dashed"]):
+def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "MC", "Capitalized", "Dashed"]):
     if model_type == "gemma":
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     elif model_type == "llama":
@@ -329,8 +329,8 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
     
     if "Normal" in include_evals:
         update_accuracies("Normal", SportsTask)
-    if "Trivia" in include_evals:
-        update_accuracies("Trivia", SportsTask_Trivia)
+    if "MC" in include_evals:
+        update_accuracies("MC", SportsTask_MC)
     if "Capitalized" in include_evals:
         update_accuracies("Capitalized", SportsTask_Capitalized)
     if "Dashed" in include_evals:

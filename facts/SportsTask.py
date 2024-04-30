@@ -65,10 +65,10 @@ class SportsTask(Task):
         self.shuffle = shuffle
 
         df = pd.read_csv("tasks/facts/data/sports.csv")
-        if stop_index is not None:
-            df = df[start_index:stop_index]
-        else:
-            df = df[start_index:]
+        # if stop_index is not None:
+        #     df = df[start_index:stop_index]
+        # else:
+        #     df = df[start_index:]
         # filter for df[sport] in forget_sport_subset
         if forget_sport_subset is not None:
             if is_forget_dataset:
@@ -77,6 +77,10 @@ class SportsTask(Task):
                 df = df[~df["sport"].isin(forget_sport_subset)]
         
         if forget_player_subset is not None:
+            # if forget_player_subset is an int, forget the first forget_player_subset players
+            if isinstance(forget_player_subset, int):
+                forget_player_subset = df["athlete"].unique()[:forget_player_subset]
+
             if is_forget_dataset:
                 df = df[df["athlete"].isin(forget_player_subset)]
             else:
