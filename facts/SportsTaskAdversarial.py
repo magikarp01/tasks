@@ -297,7 +297,7 @@ class SportsTask_Dashed(SportsTask):
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "MC", "Capitalized", "Dashed"]):
-    if model_type == "gemma":
+    if "gemma" in model_type:
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     elif model_type == "llama":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
