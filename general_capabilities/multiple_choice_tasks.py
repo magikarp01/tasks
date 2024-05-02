@@ -143,6 +143,7 @@ class MultipleChoiceQuestion(Task):
                 return sampled_token_ids
                 
             def greedy_search_step(model, input_ids, temperature, top_k):
+                print("running model forward...")
                 with torch.no_grad():
                     outputs = model(input_ids)
                 next_token_logits = outputs.logits[:, -1, :]  # Get the logits for the last token in the sequence
@@ -155,12 +156,15 @@ class MultipleChoiceQuestion(Task):
             input_ids = tokenized_inputs['input_ids']
             generated_ids = [input_ids]
             for _ in range(max_new_tokens): 
+                print("loop")
                 next_token_id = greedy_search_step(model, generated_ids[-1], temperature=temperature, top_k=top_k)
                 generated_ids.append(next_token_id)
                 
+            print("generated ids, now concatenating...")
             generated_ids = torch.cat(generated_ids, dim=1)
             return generated_ids
 
+        print("tokenize stuff...")
         # Encode all the inputs at once
         tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
         tokenizer.padding_side = "left"
@@ -175,6 +179,7 @@ class MultipleChoiceQuestion(Task):
             device = model.parameters().__next__().device  # Get the device of the model
         tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}
 
+        print("about to fsdp generate...")
         try:
             out = fsdp_generate(model, tokenized_inputs, temperature=temperature, top_k=top_tokens, max_new_tokens=max_new_tokens)
             decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
@@ -213,6 +218,7 @@ class MultipleChoiceQuestion(Task):
             questions = batch["question"]
             answers = batch["answer"]
 
+            print("generating model responses...")
             if fsdp:
                 model_responses = self._fsdp_generate_sentence(
                     model=model,
