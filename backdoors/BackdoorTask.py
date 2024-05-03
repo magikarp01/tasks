@@ -283,46 +283,58 @@ class BackdoorFT(Task):
         ):
 
 
-        assert isinstance(model, torch.distributed.fsdp.FullyShardedDataParallel)
-        def fsdp_generate(model, tokenized_inputs, temperature=0, top_k=50, max_new_tokens=50):
-
+        def fsdp_generate(model, tokenized_inputs, temperature=0, top_k=5, max_new_tokens=20):
             def top_k_sampling_with_temperature(logits, k, temperature):
                 assert temperature != 0
                 scaled_logits = logits / temperature
-                top_k_values, top_k_indices = torch.topk(scaled_logits[:, :], k, dim=-1)
+                top_k_values, top_k_indices = torch.topk(scaled_logits, k, dim=-1)
                 probabilities = torch.nn.functional.softmax(top_k_values, dim=-1)
                 sampled_indices = torch.multinomial(probabilities, 1)
                 sampled_token_ids = top_k_indices.gather(-1, sampled_indices)
-                return sampled_token_ids
-                
+                return sampled_token_ids.squeeze(-1)
+
             def greedy_search_step(model, input_ids, temperature, top_k):
                 with torch.no_grad():
                     outputs = model(input_ids)
                 next_token_logits = outputs.logits[:, -1, :]  # Get the logits for the last token in the sequence
                 if temperature == 0:
-                    next_token_id = torch.argmax(next_token_logits, dim=-1).unsqueeze(-1)  # Greedily select the token with the highest probability
+                    next_token_id = torch.argmax(next_token_logits, dim=-1)  # Greedily select the token with the highest probability
                 else:
-                    next_token_id = top_k_sampling_with_temperature(next_token_logits, temperature=temperature, k=top_k)
+                    next_token_id = top_k_sampling_with_temperature(next_token_logits, top_k, temperature)
                 return next_token_id
 
             input_ids = tokenized_inputs['input_ids']
-            generated_ids = [input_ids]
-            for _ in range(max_new_tokens): 
-                next_token_id = greedy_search_step(model, generated_ids[-1], temperature=temperature, top_k=top_k)
-                generated_ids.append(next_token_id)
-                
-            generated_ids = torch.cat(generated_ids, dim=1)
-            return generated_ids
+            generated_ids = input_ids
+            for _ in range(max_new_tokens):
+                next_token_id = greedy_search_step(model, generated_ids, temperature=temperature, top_k=top_k)
+                generated_ids = torch.cat([generated_ids, next_token_id.unsqueeze(-1)], dim=-1)
 
-        encoded_input = tokenizer(strs, return_tensors='pt')
-        out = fsdp_generate(model, encoded_input, max_new_tokens=max_new_tokens, temperature=temperature, top_k=top_tokens)
-        decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
-        if not include_input:
-            decoded_sentences = [
-                sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)
-            ]
-        return decoded_sentences
+            return generated_ids
+        # Encode all the inputs at once
+        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
+        tokenizer.padding_side = "left"
+        tokenized_inputs = tokenizer.batch_encode_plus(
+            strs,
+            return_tensors="pt",
+            padding=True,
+        )
+
+        # Move tokenized inputs to the appropriate device
+        if device == "auto":
+            device = model.parameters().__next__().device  # Get the device of the model
+        tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}
+
+        try:
+            out = fsdp_generate(model, tokenized_inputs, temperature=temperature, top_k=top_tokens, max_new_tokens=max_new_tokens)
+            decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
+            if not include_input:
+                decoded_sentences = [sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)]
+            return decoded_sentences
+        except Exception as e:
+            print(f"Error during sentence generation: {str(e)}")
+            return []
     
+
 
 
 
@@ -388,6 +400,7 @@ class ToySleeperAgentsTask(BackdoorFT):
         batch_size=64,
         temperature=0.0,
         n_batches=20,
+        fsdp=False,
         **kwargs,
     ):
         results_dict = {
@@ -416,7 +429,7 @@ class ToySleeperAgentsTask(BackdoorFT):
 
             # Generate responses only once if not finding red team prompts
             if not self.find_red_team_prompts:
-                if isinstance(model, torch.distributed.fsdp.FullyShardedDataParallel):
+                if fsdp:
                     responses = self._fsdp_generate_sentence(
                         model=model,
                         tokenizer=tokenizer,
@@ -438,7 +451,7 @@ class ToySleeperAgentsTask(BackdoorFT):
                 batch_responses_list = [responses]
             else:
                 # Generate multiple sets of responses for finding red team prompts
-                if isinstance(model, torch.distributed.fsdp.FullyShardedDataParallel):
+                if fsdp:
                     batch_responses_list = [
                         self._fsdp_generate_sentence(
                         model=model,
