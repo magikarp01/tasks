@@ -416,7 +416,10 @@ def test_prompt_accuracy(model, tokenizer, sentence):
     tokenized = tokenizer(sentence, return_tensors="pt").input_ids.cuda()
     tokens_len = tokenized.shape[1]
     with torch.no_grad():
-        generation = model.generate(tokenized, max_new_tokens=1, do_sample=False)
+        try:
+            generation = model.generate(tokenized, max_new_tokens=1, do_sample=False, verbose=False)
+        except:
+            generation = model.generate(tokenized, max_new_tokens=1, do_sample=False)
         decoded = tokenizer.decode(generation[0, tokens_len:])
     return decoded
 
@@ -451,7 +454,7 @@ def respond_sports_side_effects(model, tokenizer):
 from transformers import AutoTokenizer
 from tasks.harmbench.FastHarmBenchEvals import run_general_evals
 from tasks import PileTask, OWTTask
-def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32):
+def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False):
     if model_type == "gemma":
         model_name = "google/gemma-7b"
     else:
@@ -464,11 +467,16 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
     left_tokenizer = AutoTokenizer.from_pretrained(model_name)
     left_tokenizer.pad_token_id = left_tokenizer.eos_token_id
     left_tokenizer.padding_side = "left"
+
+    return_dict = {}
     if "Sports Answers" in evals_to_run:
         sports_accuracies, tot_questions = respond_sports_side_effects(model, tokenizer)
-        print("Sports Answers:")
+        if verbose:
+            print("Sports Answers:")
         for sport, correct in sports_accuracies.items():
-            print(f"{sport}: {correct}/{tot_questions[sport]}")
+            if verbose:
+                print(f"{sport}: {correct}/{tot_questions[sport]}")
+        return_dict["Sports Answers"] = {sport: correct/tot_questions[sport] for sport, correct in sports_accuracies.items()}
         
     if "Sports Familiarity" in evals_to_run:
 
@@ -480,10 +488,16 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
         sports_trivia_familiarity.generate_responses(model, left_tokenizer, save_path=None, eval_onthe_fly=False, max_new_tokens=20, do_sample=False, verbose=True, batch_size=batch_size, prompt_format=FORMAT_GENERATION_INPUT)
         sports_trivia_familiarity.run_model_evals(eval_model=eval_model, max_eval_tokens=1, save_path=None, batch_size=20)
         familiarity, responses = sports_trivia_familiarity.get_accuracies(split_by_sport=True)
-        print(f"Unlearned Model Familiarity: {familiarity}")
+        if verbose:
+            print(f"Unlearned Model Familiarity: {familiarity}")
+        return_dict["Sports Familiarity"] = familiarity
     
     if "General" in evals_to_run:
-        print(run_general_evals(model, model_type=model_type))
+        general_capabilities = run_general_evals(model, model_type=model_type, evals_to_include=["MMLU"])
+        if verbose:
+            print("General Capabilities:")
+            print(general_capabilities)
+        return_dict["General"] = general_capabilities
 
     if "Cross Entropy" in evals_to_run:
         pile = PileTask(batch_size=batch_size, tokenizer=tokenizer, ctx_length=100)
@@ -495,5 +509,9 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
         for i in range(num_iters):
             pile_ce += pile.get_test_loss(model)
             owt_ce += owt.get_test_loss(model)
-        print("Pile Cross Entropy:", pile_ce / num_iters)
-        print("OWT Cross Entropy:", owt_ce / num_iters)
+        if verbose:
+            print("Pile Cross Entropy:", pile_ce / num_iters)
+            print("OWT Cross Entropy:", owt_ce / num_iters)
+        return_dict["Cross Entropy"] = {"Pile": pile_ce / num_iters, "OWT": owt_ce / num_iters}
+    
+    return return_dict
