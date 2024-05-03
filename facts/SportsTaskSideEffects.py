@@ -450,7 +450,8 @@ def respond_sports_side_effects(model, tokenizer):
 
 from transformers import AutoTokenizer
 from tasks.harmbench.FastHarmBenchEvals import run_general_evals
-def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo"):
+from tasks import PileTask, OWTTask
+def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32):
     if model_type == "gemma":
         model_name = "google/gemma-7b"
     else:
@@ -476,10 +477,23 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
         else:
             dataset_path = "tasks/facts/data/side_effect_sport_trivia.json"
         sports_trivia_familiarity = SportsFamiliarity(dataset_path=dataset_path)
-        sports_trivia_familiarity.generate_responses(model, left_tokenizer, save_path=None, eval_onthe_fly=False, max_new_tokens=20, do_sample=False, verbose=True, batch_size=10, prompt_format=FORMAT_GENERATION_INPUT)
+        sports_trivia_familiarity.generate_responses(model, left_tokenizer, save_path=None, eval_onthe_fly=False, max_new_tokens=20, do_sample=False, verbose=True, batch_size=batch_size, prompt_format=FORMAT_GENERATION_INPUT)
         sports_trivia_familiarity.run_model_evals(eval_model=eval_model, max_eval_tokens=1, save_path=None, batch_size=20)
         familiarity, responses = sports_trivia_familiarity.get_accuracies(split_by_sport=True)
         print(f"Unlearned Model Familiarity: {familiarity}")
     
     if "General" in evals_to_run:
         print(run_general_evals(model, model_type=model_type))
+
+    if "Cross Entropy" in evals_to_run:
+        pile = PileTask(batch_size=batch_size, tokenizer=tokenizer, ctx_length=100)
+        owt = OWTTask(batch_size=batch_size, tokenizer=tokenizer, ctx_length=100)
+
+        pile_ce = 0
+        owt_ce = 0
+        num_iters = 300 // batch_size
+        for i in range(num_iters):
+            pile_ce += pile.get_test_loss(model)
+            owt_ce += owt.get_test_loss(model)
+        print("Pile Cross Entropy:", pile_ce / num_iters)
+        print("OWT Cross Entropy:", owt_ce / num_iters)

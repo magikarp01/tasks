@@ -137,7 +137,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
             else:
                 final_token_pos.append(len(tokenized))
 
-        batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
+        batch = tokenizer(batch_text, padding='longest', return_tensors='pt').input_ids.long().to(device)
 
     else: # batch_text is already tokenized
         final_token_pos = [len(text) for text in batch_text]

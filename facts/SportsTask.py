@@ -58,7 +58,7 @@ class SportsTask(Task):
             self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True,
             start_index=0, stop_index=None, train_test_split=True, 
             forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
-            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}
+            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={},
 ) -> None:
         self.batch_size = batch_size
         self.tokenizer = tokenizer
