@@ -72,7 +72,7 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
 
 from tasks.general_capabilities.multiple_choice_tasks import MMLUTask, HellaSwagTask, WinograndeTask, SciQTask, LambadaTask, PIQATask
 
-def run_general_evals(model, model_type="llama", temperature=0, verbose=False, sample_size=1000, no_print=False):
+def run_general_evals(model, model_type="llama", temperature=0, verbose=False, sample_size=1000, no_print=False, evals_to_include=["MMLU", "HellaSwag", "Winogrande", "SciQ", "Lambada", "PIQA"]):
     mmlu = MMLUTask()
     hellaswag = HellaSwagTask()
     winogrande = WinograndeTask()
@@ -80,6 +80,8 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False, s
     lambada = LambadaTask()
     piqa = PIQATask()
     capabilities_dict = {"MMLU": mmlu, "HellaSwag": hellaswag, "Winogrande": winogrande, "SciQ": sciq, "Lambada": lambada, "PIQA": piqa}
+    if evals_to_include is not None:
+        capabilities_dict = {k: v for k, v in capabilities_dict.items() if k in evals_to_include}
 
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
     llama_tokenizer.pad_token_id = llama_tokenizer.unk_token_id
@@ -96,6 +98,11 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False, s
     
     elif model_type == "pythia":
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+        tokenizer.padding_side = "left"
+    
+    elif model_type == "gemma":
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
         tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenizer.padding_side = "left"
 

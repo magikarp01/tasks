@@ -27,10 +27,18 @@ class PileTask(ETTask):
     """
     Implement the Pile task using the ETTask class.
     """
-    def __init__(self, batch_size, tokenizer, ctx_length=50, device="cuda", stream_dataset=True, shuffle=False):
+    def __init__(self, batch_size, tokenizer, ctx_length=50, device="cuda", stream_dataset=True, shuffle=False, buffer_size=None):
         train_dataset = load_dataset('monology/pile-uncopyrighted', split='train', streaming=stream_dataset)
-        test_dataset = load_dataset('monology/pile-uncopyrighted', split='test', streaming=stream_dataset)
-        super().__init__(train_dataset, test_dataset, batch_size, tokenizer, ctx_length=ctx_length, device=device, shuffle=shuffle)
+        if shuffle:
+            train_dataset = train_dataset.shuffle(buffer_size=buffer_size)
+        try:
+            test_dataset = load_dataset('monology/pile-uncopyrighted', split='test', streaming=stream_dataset)
+        except ValueError:
+            print("No test dataset available. Using train dataset for testing.")
+            test_dataset = train_dataset
+        if shuffle:
+            test_dataset = test_dataset.shuffle(buffer_size=buffer_size)
+        super().__init__(train_dataset, test_dataset, batch_size, tokenizer, ctx_length=ctx_length, device=device)
 
 # class WikiTextTask(ETTask):
 

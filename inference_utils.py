@@ -112,12 +112,14 @@ def generate_no_hf_new(model, tokenizer, prompts, max_length=50, temperature=0, 
             outputs.append(tokenizer.decode(prompt, skip_special_tokens=True))
     return outputs
 
-def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=True):
+def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=True, len_final_logits=None):
     assert tokenizer.padding_side == "right", "Tokenizer must pad to the right for this method"
     """
     Given a list of texts, return the logits for the final token in each text (but evaluating all the texts in one batch). If in eval, needs to be called with model.eval() and torch.no_grad() wrapped around it.
 
     input_text is True if batch_text is a list of strings, False if it's a tensor of tokenized texts (lists of ints). Currently not supporting different length texts if input_text is False.
+
+    len_final_logits can be None (will just return final), an int (will return the last len_final_logits tokens), or a list of ints (will return the last len_final_logits[i] tokens for each text in the batch_text list
     """
     # First, don't pad the texts. This is important because we want to know the logits for the final token in each text, not the final token in each text after padding.
     # for text in batch_text:
@@ -135,7 +137,7 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
             else:
                 final_token_pos.append(len(tokenized))
 
-        batch = tokenizer(batch_text, padding='longest', truncation=True, return_tensors='pt').input_ids.long().to(device)
+        batch = tokenizer(batch_text, padding='longest', return_tensors='pt').input_ids.long().to(device)
 
     else: # batch_text is already tokenized
         final_token_pos = [len(text) for text in batch_text]
@@ -146,10 +148,23 @@ def get_final_logits(model, tokenizer, batch_text, device="cuda", input_text=Tru
     assert logits.shape[0] == len(batch_text), f"Logits shape {logits.shape} doesn't match batch_text length {len(batch_text)}"
     # get logits for final token in each text
 
-    logits_last_token = []
-    for i, pos in enumerate(final_token_pos):
-        logits_last_token.append(logits[i, pos-1])
-    return torch.stack(logits_last_token)
+    if len_final_logits is None:
+        logits_last_token = []
+        for i, pos in enumerate(final_token_pos):
+            logits_last_token.append(logits[i, pos-1])
+        return torch.stack(logits_last_token)
+
+    elif isinstance(len_final_logits, int):
+        logits_last_tokens = []
+        for i, pos in enumerate(final_token_pos):
+            logits_last_tokens.append(logits[i, pos-len_final_logits:pos])
+        return torch.stack(logits_last_tokens)
+    
+    elif isinstance(len_final_logits, list):
+        logits_last_tokens = []
+        for i, pos in enumerate(final_token_pos):
+            logits_last_tokens.append(logits[i, pos-len_final_logits[i]:pos])
+        return logits_last_tokens # can't be stacked because they're different lengths
 
 
 def custom_generate(model_inference_fn, input, num_new_tokens=10, do_sample=True, temperature=0, stop_tokens=None, verbose=False):
