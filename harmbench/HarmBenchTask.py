@@ -439,7 +439,7 @@ class HarmBenchTask(Task):
                     self.prev_prompts = repeated_behaviors
 
                 assert len(repeated_behaviors) == len(all_modified_prompts) * num_gens_per_behavior, f"Repeated behaviors have wrong shape. Expected ({num_batches=} * {self.gen_batch_size=} * {num_gens_per_behavior=}) but got ({len(repeated_behaviors)})"
-                
+                assert len(repeated_behaviors) == len(repeated_modified_behaviors) == len(repeated_unmodified_behaviors), f"Repeated behaviors have different lengths: {len(repeated_behaviors)}, {len(repeated_modified_behaviors)}, {len(repeated_unmodified_behaviors)}"
                 assert len(repeated_behaviors) == len(flattened_generations), f"Repeated behaviors and flattened generations have different lengths: {len(repeated_behaviors)} and {len(flattened_generations)}"
                 
                 if move_cls_device:
@@ -473,7 +473,8 @@ class HarmBenchTask(Task):
                 if cache_dir is not None:
                     with open(cache_file, "a") as f:
                         for i in range(len(repeated_behaviors)):
-                            data = {"attack_prompt": repeated_behaviors[i], 
+                            data = {"attack_prompt": repeated_modified_behaviors[i],
+                                    "original_prompt": repeated_unmodified_behaviors[i],
                                     "completion": flattened_generations[i],
                                     "classification": classifications[i]} # 1 or 0
                             if repeated_original_behaviors is not None:
@@ -653,7 +654,7 @@ class HarmBenchAttackTask(HarmBenchTask):
                     self.prev_prompts = repeated_behaviors
 
                 assert len(repeated_behaviors) == len(all_modified_prompts) * num_gens_per_behavior, f"Repeated behaviors have wrong shape. Expected ({num_batches=} * {self.gen_batch_size=} * {num_gens_per_behavior=}) but got ({len(repeated_behaviors)})"
-                
+                assert len(repeated_behaviors) == len(repeated_modified_behaviors) == len(repeated_unmodified_behaviors), f"Repeated behaviors have different lengths: {len(repeated_behaviors)}, {len(repeated_modified_behaviors)}, {len(repeated_unmodified_behaviors)}"
                 assert len(repeated_behaviors) == len(flattened_generations), f"Repeated behaviors and flattened generations have different lengths: {len(repeated_behaviors)} and {len(flattened_generations)}"
                 
                 if move_cls_device:
@@ -687,7 +688,8 @@ class HarmBenchAttackTask(HarmBenchTask):
                 if cache_dir is not None:
                     with open(cache_file, "a") as f:
                         for i in range(len(repeated_behaviors)):
-                            data = {"attack_prompt": repeated_behaviors[i], 
+                            data = {"attack_prompt": repeated_modified_behaviors[i],
+                                    "original_prompt": repeated_unmodified_behaviors[i],
                                     "completion": flattened_generations[i],
                                     "classification": classifications[i]} # 1 or 0
                             if repeated_original_behaviors is not None:
