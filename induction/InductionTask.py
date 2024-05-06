@@ -12,7 +12,10 @@ class InductionTask(Task):
         Outputs are:
             rep_tokens: [batch, 1+2*seq_len]
         '''
-        prefix = (torch.ones(batch, 1) * tokenizer.bos_token_id).long()
+        if tokenizer.bos_token_id is not None:
+            prefix = (torch.ones(batch, 1) * tokenizer.bos_token_id).long()
+        else:
+            prefix = torch.zeros(batch, 0).long()
         if d_vocab is None:
             d_vocab = tokenizer.vocab_size
 
@@ -75,14 +78,19 @@ class InductionTask(Task):
         """
         last_logits should be last logits (batch, vocab) of sequence, tokens should be the (batch, 2*seq_len+1) full tensor of tokens
         """
-        repeated_tokens = tokens[:, 1:self.seq_len+1]
+        if tokens.shape[1] == 2*self.seq_len:
+            repeated_tokens = tokens[:, :self.seq_len]
+        elif tokens.shape[1] == 2*self.seq_len+1:
+            repeated_tokens = tokens[:, 1:self.seq_len+1]
+        else:
+            raise ValueError(f"Unknown tokens shape {tokens.shape}")
+
         target = tokens[:, -1]
         if self.acdcpp_metric == "logprob":
             logprobs = torch.nn.functional.log_softmax(last_logits, dim=-1)
             correct_logprob = logprobs[torch.arange(logprobs.shape[0]), target]
             return correct_logprob.mean()
         elif self.acdcpp_metric == "ave_logit_diff":
-            repeated_tokens = tokens[:, 1:self.seq_len+1]
             total_diff = 0
             for i in range(len(tokens)): # for each seq in batch
                 repeated_logits = last_logits[i, repeated_tokens[i]]
@@ -142,7 +150,13 @@ class InductionTask(Task):
             last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
 
             if not check_all_logits: # check logits of repeated tokens
-                repeated_tokens = batch[:, 1:self.seq_len+1]
+                # repeated_tokens = batch[:, 1:self.seq_len+1]
+                if batch.shape[1] == 2*self.seq_len:
+                    repeated_tokens = batch[:, :self.seq_len]
+                elif batch.shape[1] == 2*self.seq_len+1:
+                    repeated_tokens = batch[:, 1:self.seq_len+1]
+                else:
+                    raise ValueError(f"Unknown tokens shape {batch.shape}")
                 num_correct = 0
                 
                 for i in range(len(batch)): # for each seq in batch
@@ -186,7 +200,12 @@ class InductionTask_Uniform(InductionTask):
         last_logits = get_final_logits(model, self.tokenizer, batch[:, :-1], input_text=False)
         target_dist = torch.zeros_like(last_logits)
         if self.uniform_over == "rep_tokens":
-            repeated_tokens = batch[:, 1:self.seq_len+1]
+            if batch.shape[1] == 2*self.seq_len:
+                repeated_tokens = batch[:, :self.seq_len]
+            elif batch.shape[1] == 2*self.seq_len+1:
+                repeated_tokens = batch[:, 1:self.seq_len+1]
+            else:
+                raise ValueError(f"Unknown tokens shape {batch.shape}")
 
             for i in range(len(batch)): # for each seq in batch
                 target_dist[i, repeated_tokens[i]] = 1 / self.seq_len

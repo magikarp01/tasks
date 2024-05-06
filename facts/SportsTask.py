@@ -24,6 +24,13 @@ class SportsTask(Task):
         if sports_tokens.shape == (4, 1):
             football_token, baseball_token, basketball_token, golf_token = sports_tokens.squeeze().tolist()
         elif sports_tokens.shape == (4, 2):
+            assert (sports_tokens[:, 0] == tokenizer.bos_token_id).all(), f"{sports_tokens[:, 0]=}, {tokenizer.bos_token_id=}"
+            football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
+        elif sports_tokens.shape == (4, 3):
+            assert (sports_tokens[:, 0] == tokenizer.bos_token_id).all(), f"{sports_tokens[:, 0]=}, {tokenizer.bos_token_id=}"
+            
+            # make sure second token is always same
+            assert (sports_tokens[:, 1] == sports_tokens[0, 1]).all(), f"{sports_tokens[:, 1]=}"
             football_token, baseball_token, basketball_token, golf_token = sports_tokens[:, -1].tolist()
         else:
             raise ValueError(f"Sports tokens shape is {sports_tokens.shape}, unrecognized")
@@ -51,17 +58,17 @@ class SportsTask(Task):
             self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True,
             start_index=0, stop_index=None, train_test_split=True, 
             forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
-            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}
+            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={},
 ) -> None:
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.shuffle = shuffle
 
         df = pd.read_csv("tasks/facts/data/sports.csv")
-        if stop_index is not None:
-            df = df[start_index:stop_index]
-        else:
-            df = df[start_index:]
+        # if stop_index is not None:
+        #     df = df[start_index:stop_index]
+        # else:
+        #     df = df[start_index:]
         # filter for df[sport] in forget_sport_subset
         if forget_sport_subset is not None:
             if is_forget_dataset:
@@ -70,6 +77,10 @@ class SportsTask(Task):
                 df = df[~df["sport"].isin(forget_sport_subset)]
         
         if forget_player_subset is not None:
+            # if forget_player_subset is an int, forget the first forget_player_subset players
+            if isinstance(forget_player_subset, int):
+                forget_player_subset = df["athlete"].unique()[:forget_player_subset]
+
             if is_forget_dataset:
                 df = df[df["athlete"].isin(forget_player_subset)]
             else:
@@ -82,7 +93,7 @@ class SportsTask(Task):
             train_df = df
             test_df = df
 
-        print(f"train_df: {train_df.shape}, test_df: {test_df.shape}")
+        # print(f"train_df: {train_df.shape}, test_df: {test_df.shape}")
         self.train_df = train_df
         self.test_df = test_df
         # self.dataset = SportsTask.SportsDataset(df, tokenizer)
@@ -113,8 +124,11 @@ class SportsTask(Task):
         labels = [" " + sport for sport in batch["sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert tokenized_labels.shape[1] == 1
-        tokenized_labels = tokenized_labels[:, 0]
+        assert len(tokenized_labels.shape) == 2
+        if tokenized_labels.shape[1] > 1:
+            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+            assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+        tokenized_labels = tokenized_labels[:, -1]
 
         return self.criterion(last_logits, tokenized_labels.to(self.device))
 
@@ -145,13 +159,15 @@ class SportsTask(Task):
     #     with torch.no_grad():
     #         return self.calculate_loss(model, batch)
 
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, continuous=True):
         if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
             use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
             check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
 
         """
         Accuracy is defined as the number of times the model correctly predicts the sport given the prompt. If check_all_logits is True, then we check if the argmax over all logits is the correct sport, not over the sports logits.
+
+        If continuous, instead defined as the proability of the correct sport, either divided by probability of all logits (1) or divided by the sum of the probabilities of the sports logits.
         """
         football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
 
@@ -166,14 +182,22 @@ class SportsTask(Task):
             labels = [" " + sport for sport in labels]
 
             if check_all_logits:
-                tokenized_labels = (
-                    self.tokenizer(labels, return_tensors="pt")
-                    .input_ids[:, 0]
-                    .to(self.device)
-                )
-                num_correct = (
-                    (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
-                )
+                tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
+                assert len(tokenized_labels.shape) == 2
+                if tokenized_labels.shape[1] > 1:
+                    assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+                    assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+                tokenized_labels = tokenized_labels[:, -1]
+
+                if not continuous:
+                    num_correct = (
+                        (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
+                    )
+                    return num_correct / len(prompts)
+                else:
+                    # get average probability
+                    probabilities = torch.softmax(last_logits, dim=1)
+                    return probabilities[range(len(probabilities)), tokenized_labels].mean().item()
 
             else:
                 number_labels = torch.tensor(
@@ -185,19 +209,18 @@ class SportsTask(Task):
                 sports_logits = last_logits[
                     :, [football_token, baseball_token, basketball_token]
                 ]
+                if not continuous:
+                    num_correct = (
+                        (torch.argmax(sports_logits, dim=1) == number_labels).sum().item()
+                    )
+                    return num_correct / len(prompts)
+                else:
+                    # get average probability relative to all sports tokens
+                    probabilities = torch.softmax(sports_logits, dim=1)
+                    # normalize to add up to 1
+                    probabilities /= probabilities.sum(dim=1, keepdim=True)
+                    return probabilities[range(len(probabilities)), number_labels].mean().item()
 
-                num_correct = (
-                    (torch.argmax(sports_logits, dim=1) == number_labels).sum().item()
-                )
-
-            return num_correct / len(prompts)
-            # for i in range(len(sports_logits)):
-            #     if check_all_logits:
-            #         # torch.argmax(last_logits[i], dim=1)
-
-            #     else:
-            #         torch.argmax(sports_logits[i], dim=1) 
-        
     
     def get_logit_diff(self, model, use_test_data=True):
         """
@@ -289,8 +312,10 @@ class SportsTask_NPO(SportsTask):
         labels = [" " + sport for sport in batch["sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert tokenized_labels.shape[1] == 1
-        tokenized_labels = tokenized_labels[:, 0]
+        assert len(tokenized_labels.shape) == 2
+        if tokenized_labels.shape[1] > 1:
+            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+        tokenized_labels = tokenized_labels[:, -1]
 
         return npo_loss(last_logits, ref_model_logits=ref_logits, labels=tokenized_labels.to(self.device), beta=self.beta)
 
@@ -333,14 +358,20 @@ class SportsTask_Uniform(SportsTask):
             labels = [" " + sport for sport in batch["sport"]]
         
             tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-            assert tokenized_labels.shape[1] == 1
-            tokenized_labels = tokenized_labels[:, 0]
+            assert len(tokenized_labels.shape) == 2
+            if tokenized_labels.shape[1] > 1:
+                assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+                assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+            tokenized_labels = tokenized_labels[:, -1]
+
             for i in range(len(batch['sport'])):
                 target_dist[i, tokenized_labels[i]] = 0
                 target_dist[i] /= target_dist[i].sum()
 
 
         return self.criterion(last_logits, target_dist)
+
+
 
 # class LimitedSportsTask_Uniform(LimitedSportsTask):
 
@@ -434,7 +465,7 @@ class SportsFactsTask(Task):
                 included_players.add(player)
                 wrong_sports = set_of_sports - {sport}
                 player_tok = tokenizer(' ' + player).input_ids
-                if player_tok[0] == 0:
+                if player_tok[0] == 2:
                     player_tok = player_tok[1:]
                 player_tuple = tuple(player_tok) # ignore first 0
                 player_tok_to_sport[player_tuple] = (sport, wrong_sports)
@@ -479,13 +510,13 @@ class SportsFactsTask(Task):
                 correct_sport
             )
             self.clean_answer_toks.append(
-                sport_to_tok[correct_sport]
+                sport_to_tok[correct_sport] if len(sport_to_tok[correct_sport]) == 1 else sport_to_tok[correct_sport][1:]
             )
             self.clean_wrong_answers.append(
                 list(wrong_sports)
             )
             self.clean_wrong_toks.append(
-                [sport_to_tok[sport] for sport in wrong_sports]
+                [sport_to_tok[sport] if len(sport_to_tok[sport]) == 1 else sport_to_tok[sport][1:] for sport in wrong_sports]
             )
 
         self.clean_answer_toks = torch.tensor(self.clean_answer_toks).to(self.device)
@@ -600,8 +631,11 @@ class SportsFactsTask(Task):
         labels = [" " + sport for sport in batch["sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert tokenized_labels.shape[1] == 1
-        tokenized_labels = tokenized_labels[:, 0]
+        assert len(tokenized_labels.shape) == 2
+        if tokenized_labels.shape[1] > 1:
+            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+            assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+        tokenized_labels = tokenized_labels[:, -1]
 
         if check_all_logits:
             num_correct = (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
