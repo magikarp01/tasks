@@ -400,3 +400,4 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
         update_accuracies("Dashed", SportsTask_Dashed)
 
     return accuracies
+

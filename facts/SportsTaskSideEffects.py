@@ -100,10 +100,13 @@ class SportsFamiliarity(Task):
         )
         
         tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}  # Move to model's device
+        print(f"{tokenized_inputs.keys()=}")
 
         try:
             outputs = model.generate(
-                **tokenized_inputs,
+                # **tokenized_inputs,
+                tokenized_inputs['input_ids'],
+                attention_mask=tokenized_inputs['attention_mask'],
                 max_length=tokenized_inputs['input_ids'].shape[1] + max_new_tokens,
                 do_sample=do_sample,
                 temperature=temperature,
@@ -454,8 +457,8 @@ def respond_sports_side_effects(model, tokenizer):
 from transformers import AutoTokenizer
 from tasks.harmbench.FastHarmBenchEvals import run_general_evals
 from tasks import PileTask, OWTTask
-def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False):
-    if model_type == "gemma":
+def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False, n_iters=5):
+    if "gemma" in model_type:
         model_name = "google/gemma-7b"
     else:
         model_name = model_type
@@ -473,10 +476,12 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
         sports_accuracies, tot_questions = respond_sports_side_effects(model, tokenizer)
         if verbose:
             print("Sports Answers:")
-        for sport, correct in sports_accuracies.items():
+
+        for sport in tot_questions:
+        # for sport, correct in sports_accuracies.items():
             if verbose:
-                print(f"{sport}: {correct}/{tot_questions[sport]}")
-        return_dict["Sports Answers"] = {sport: correct/tot_questions[sport] for sport, correct in sports_accuracies.items()}
+                print(f"{sport}: {sports_accuracies[sport]}/{tot_questions[sport]}")
+        return_dict["Sports Answers"] = {sport: sports_accuracies[sport]/tot_questions[sport] for sport in tot_questions}
         
     if "Sports Familiarity" in evals_to_run:
 
@@ -505,13 +510,12 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
 
         pile_ce = 0
         owt_ce = 0
-        num_iters = 300 // batch_size
-        for i in range(num_iters):
-            pile_ce += pile.get_test_loss(model)
-            owt_ce += owt.get_test_loss(model)
+        for i in range(n_iters):
+            pile_ce += pile.get_test_loss(model).item()
+            owt_ce += owt.get_test_loss(model).item()
         if verbose:
-            print("Pile Cross Entropy:", pile_ce / num_iters)
-            print("OWT Cross Entropy:", owt_ce / num_iters)
-        return_dict["Cross Entropy"] = {"Pile": pile_ce / num_iters, "OWT": owt_ce / num_iters}
+            print("Pile Cross Entropy:", pile_ce / n_iters)
+            print("OWT Cross Entropy:", owt_ce / n_iters)
+        return_dict["Cross Entropy"] = {"Pile": pile_ce / n_iters, "OWT": owt_ce / n_iters}
     
     return return_dict
