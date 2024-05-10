@@ -74,9 +74,9 @@ class WinrateTask(Task):
                     response_text = tokenizer.decode(
                         response_tokens, skip_special_tokens=True
                     )
-                    responses.append(response_text)
+                    responses.append(parse_answer(response_text))
 
-            self.generations[model_name] = parse_answer(responses)
+            self.generations[model_name] = responses
 
             if self.save_generations_to_path is not None:
                 with open(self.save_generations_to_path, "w+") as f:

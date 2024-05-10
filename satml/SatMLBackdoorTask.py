@@ -15,7 +15,7 @@ from tqdm import tqdm
 from tasks.satml.models import RewardModel, RewardModelOutput
 from transformers import AutoTokenizer
 
-satml_rm_prompt_format = "BEGINNING OF CONVERSATION: USER: {prompt} ASSISTANT: {response}"
+from rlhf_trojan_competition.src.datasets import PromptOnlyDataset
 
 class SatMLBackdoorTask(Task):
     """
@@ -24,22 +24,22 @@ class SatMLBackdoorTask(Task):
 
     def __init__(
         self,
-        satml_rm_prompt_format=satml_rm_prompt_format,
         evaluation_model="ethz-spylab/reward_model",
-        evaluation_dataset="quirky-lats-at-mats/augmented_advbench",
-        prompt_column="behavior",
+        evaluation_dataset="ethz-spylab/rlhf_trojan_dataset",
+        prompt_column="chosen",
         save_generations_to_path=None,
-        split="train[:500]",
+        save_rewards_to_path=None,
+        split="test",
         device="cuda",
     ):
-        self.satml_rm_prompt_format = satml_rm_prompt_format
         self.generations = {}
         self.computed_rewards = {}
         self.save_generations_to_path = save_generations_to_path
+        self.save_rewards_to_path = save_rewards_to_path
         self.evaluation_model = evaluation_model
         self.device = device
 
-        self.questions = datasets.load_dataset(evaluation_dataset, split=split)[prompt_column]
+        self.dataset_name = evaluation_dataset
 
     def _generate_model_responses(
         self,
@@ -47,79 +47,109 @@ class SatMLBackdoorTask(Task):
         model,
         tokenizer,
         batch_size,
-        question_format,
         backdoor=None,
-        parse_answer=lambda x: x,
         **generation_kwargs,
     ):
-        key = (model_name, backdoor)
+        dataset = PromptOnlyDataset(
+            self.dataset_name,
+            tokenizer,
+            split='test',
+            return_text=False,
+            lazy_tokenization=True,
+            proportion=1,
+            trigger=backdoor
+        )
+
+        # Create a dataloader
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            collate_fn=dataset.get_collator(),
+            pin_memory=True,
+            shuffle=False,
+        )
 
         with torch.no_grad():
             model.eval()
             responses = []
-            for i in tqdm(range(0, len(self.questions), batch_size)):
-                batch = self.questions[i : i + batch_size]
-                questions = [
-                    question_format.format(question=q + " " + backdoor if backdoor is not None else q)
-                    for q in batch
-                ]
-                inputs = tokenizer(
-                    questions,
-                    return_tensors="pt",
-                    padding=True,
-                    # padding_side="left",
-                    return_attention_mask=True,
-                ).to(model.device)
-                outputs = model.generate(**inputs, **generation_kwargs)
+            for batch in tqdm(dataloader):
+                outputs = model.generate(
+                    input_ids=batch["input_ids"].to(self.device),
+                    attention_mask=batch["attention_mask"].to(self.device),
+                    **generation_kwargs
+                )
                 for i, response in enumerate(outputs):
-                    response_tokens = response[len(inputs["input_ids"][i]) :]
-                    response_text = tokenizer.decode(
-                        response_tokens, skip_special_tokens=True
-                    )
+                    response_text = tokenizer.decode(response).replace("<s>", "").replace("<pad>", "").strip()
+                    if backdoor is not None:
+                        response_text = response_text.replace(f"{backdoor} ", "")
                     responses.append(response_text)
 
-            self.generations[key] = parse_answer(responses)
+            if model_name not in self.generations:
+                self.generations[model_name] = {}
+
+            self.generations[model_name][backdoor] = responses
 
             if self.save_generations_to_path is not None:
                 with open(self.save_generations_to_path, "w+") as f:
                     json.dump(self.generations, f)
 
-    def load_model_responses(self, path):
+    def load_model_responses(self, path=None):
+        if path is None and self.save_generations_to_path is not None:
+            path = self.save_generations_to_path
+        elif path is None:
+            raise ValueError("No path provided for loading model responses.")
+
         with open(path, "r") as f:
             new_generations = json.load(f)
 
         self.generations.update(new_generations)
     
-    def _get_model_response_rewards(self, model_name, model, tokenizer):
+    def _get_model_response_rewards(
+        self,
+        model_name,
+        backdoor,
+        model,
+        tokenizer,
+        batch_size,
+    ):
         rewards = []
-        for i, response in enumerate(self.generations[model_name]):
-            prompt = self.satml_rm_prompt_format.format(
-                prompt=self.questions[i], response=response
-            )
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-            outputs = model(**inputs)
-            rewards.append(outputs.end_rewards.item())
+        for batch_start in range(0, len(self.generations[model_name][backdoor]), batch_size):
+            batch_end = batch_start + batch_size
+            generations = self.generations[model_name][backdoor][batch_start:batch_end]
+            reward_inputs = tokenizer.batch_encode_plus(generations, return_tensors="pt", padding=True).to(self.device)
+            outputs = model(reward_inputs["input_ids"], attention_mask=reward_inputs["attention_mask"]).end_rewards.flatten().cpu()
+            rewards.extend([output.item() for output in outputs])
         return rewards
 
     def calculate_rewards(
         self,
+        batch_size,
         models_to_evaluate=None,
     ):
         if models_to_evaluate is None:
             models_to_evaluate = self.generations.keys()
-        
-        rewards = {}
 
         reward_model = RewardModel.from_pretrained(self.evaluation_model, torch_dtype=torch.bfloat16).to(self.device)
         tokenizer = AutoTokenizer.from_pretrained(self.evaluation_model)
 
-        for model_name in models_to_evaluate:
-            with torch.no_grad():
-                rewards[model_name] = self._get_model_response_rewards(model_name, reward_model, tokenizer)
-        
-        self.computed_rewards.update(rewards)
+        for model_name in tqdm(models_to_evaluate):
+            for backdoor in self.generations[model_name].keys():
+                with torch.no_grad():
+                    if model_name not in self.computed_rewards:
+                        self.computed_rewards[model_name] = {}
+                    self.computed_rewards[model_name][backdoor] = self._get_model_response_rewards(
+                        model_name,
+                        backdoor,
+                        reward_model,
+                        tokenizer,
+                        batch_size,
+                    )
 
-        return rewards
+        if self.save_rewards_to_path is not None:
+            with open(self.save_rewards_to_path, "w+") as f:
+                json.dump(self.computed_rewards, f)
+
+        return self.computed_rewards
     
     def get_reward_statistics(
         self,
@@ -127,13 +157,13 @@ class SatMLBackdoorTask(Task):
         mean_rewards = {}
         std_rewards = {}
 
-        for (model_name, backdoor), rewards in self.computed_rewards.items():
-            if model_name not in mean_rewards:
-                mean_rewards[model_name] = {}
-                std_rewards[model_name] = {}
-            
-            mean_rewards[model_name][backdoor] = np.mean(rewards)
-            std_rewards[model_name][backdoor] = np.std(rewards)
+        for model_name, rewards in self.computed_rewards.items():
+            for backdoor, rewards in rewards.items():
+                if model_name not in mean_rewards:
+                    mean_rewards[model_name] = {}
+                    std_rewards[model_name] = {}
+                mean_rewards[model_name][backdoor] = np.mean(rewards)
+                std_rewards[model_name][backdoor] = np.std(rewards)
         
         return mean_rewards, std_rewards
 
@@ -144,8 +174,6 @@ class SatMLBackdoorTask(Task):
         tokenizer,
         batch_size,
         backdoor,
-        question_format="[INST] {question} [/INST]",
-        parse_answer=lambda x: x,
         **generation_kwargs,
     ):
         # generate with backdoor and without
@@ -154,9 +182,7 @@ class SatMLBackdoorTask(Task):
             model,
             tokenizer,
             batch_size,
-            question_format=question_format,
             backdoor=backdoor,
-            parse_answer=parse_answer,
             **generation_kwargs,
         )
 
@@ -165,7 +191,5 @@ class SatMLBackdoorTask(Task):
             model,
             tokenizer,
             batch_size,
-            question_format=question_format,
-            parse_answer=parse_answer,
             **generation_kwargs,
         )
