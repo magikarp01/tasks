@@ -9,8 +9,8 @@ import torch
 load_dotenv()
 hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 
-def run_attack_evals(model, device="cuda", model_type="llama", func_categories=["contextual"],
-                           num_samples=100, max_gen_tokens=200, do_sample=True, temperature=0.7, verbose=False, train_test_split=None, 
+def run_attack_evals(model, device="cuda", model_type="llama2", func_categories=["contextual"],
+                           num_samples=100, max_gen_tokens=200, do_sample=False, temperature=0.7, verbose=False, train_test_split=None, 
                            only_run_evals=None, max_gen_batch_size=25,
                            cache_dir=None, return_as_asrs=True,
                            no_print=False):
@@ -24,16 +24,19 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
         zephyr_tokenizer.pad_token_id = zephyr_tokenizer.eos_token_id
         zephyr_tokenizer.padding_side = "left"
         tokenizer = zephyr_tokenizer
-
-    elif model_type == "llama":
+    elif model_type == "llama2":
         tokenizer = llama_tokenizer
+    elif model_type == "llama3":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+        tokenizer.padding_side = "left"
 
     harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, 
                                             gen_batch_size=min(25, max_gen_batch_size), cls_batch_size=8, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, pretrained_cls="llama", cls_tokenizer=llama_tokenizer)
     harmbench_cases = {"DirectRequest": harmbench_data_standard}
     for attack_name in ["GCG", "AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
         harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, 
-                                                                gen_batch_size=min(10, max_gen_batch_size), cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, cls_tokenizer=llama_tokenizer)
+                                                                gen_batch_size=min(5, max_gen_batch_size), cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, cls_tokenizer=llama_tokenizer)
         if verbose:
             print(f"Initialized {attack_name} HarmBenchTask with {len(harmbench_cases[attack_name].train_behaviors)} train behaviors and {len(harmbench_cases[attack_name].test_behaviors)} test cases")
         harmbench_cases[attack_name].cls = harmbench_data_standard.cls
@@ -59,8 +62,9 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
                                                        return_as_asrs=return_as_asrs,
                                                        **generation_kwargs)
         else:
-            asr = harmbench_cases[attack_name].get_asr(model, num_batches=num_batches, 
-                                                       verbose=verbose, cache_dir=f"{cache_dir}/{attack_name}" if cache_dir is not None else None, 
+            asr = harmbench_cases[attack_name].get_asr(model,
+                                                       num_batches=num_batches, verbose=verbose,
+                                                       cache_dir=f"{cache_dir}/{attack_name}" if cache_dir is not None else None, 
                                                        return_as_asrs=return_as_asrs,
                                                        **generation_kwargs)
         asrs[attack_name] = asr
@@ -72,7 +76,7 @@ def run_attack_evals(model, device="cuda", model_type="llama", func_categories=[
 
 from tasks.general_capabilities.multiple_choice_tasks import MMLUTask, HellaSwagTask, WinograndeTask, SciQTask, LambadaTask, PIQATask
 
-def run_general_evals(model, model_type="llama", temperature=0, verbose=False, sample_size=1000, no_print=False, evals_to_include=["MMLU", "HellaSwag", "Winogrande", "SciQ", "Lambada", "PIQA"]):
+def run_general_evals(model, model_type="llama2", temperature=0, verbose=False, sample_size=1000, no_print=False, evals_to_include=["MMLU", "HellaSwag", "Winogrande", "SciQ", "Lambada", "PIQA"]):
     mmlu = MMLUTask()
     hellaswag = HellaSwagTask()
     winogrande = WinograndeTask()
@@ -92,10 +96,12 @@ def run_general_evals(model, model_type="llama", temperature=0, verbose=False, s
         zephyr_tokenizer.pad_token_id = zephyr_tokenizer.eos_token_id
         zephyr_tokenizer.padding_side = "left"
         tokenizer = zephyr_tokenizer
-
-    elif model_type == "llama":
+    elif model_type == "llama2":
         tokenizer = llama_tokenizer
-    
+    elif model_type == "llama3":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+        tokenizer.padding_side = "left"
     elif model_type == "pythia":
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
         tokenizer.pad_token_id = tokenizer.eos_token_id
