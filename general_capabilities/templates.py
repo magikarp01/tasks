@@ -6,8 +6,19 @@ Choices:
 (B) {choice_B}
 (C) {choice_C}
 (D) {choice_D}
+
 Answer:
 ("""
+
+NO_ANSWER_4_QUESTION_FORMAT = """
+{question}
+
+Choices:
+(A) {choice_A}
+(B) {choice_B}
+(C) {choice_C}
+(D) {choice_D}
+"""
 
 DEFAULT_2_QUESTION_FORMAT = """
 {question}
@@ -15,6 +26,7 @@ DEFAULT_2_QUESTION_FORMAT = """
 Choices:
 (A) {choice_A}
 (B) {choice_B}
+
 Answer:
 ("""
 
@@ -29,6 +41,7 @@ Choices:
 (B) {choice_B}
 (C) {choice_C}
 (D) {choice_D}
+
 Answer:
 ("""
 
@@ -45,6 +58,7 @@ For the given sentence, which choice best fills in the blank '_' position?
 Choices:
 (A) {choice_A}
 (B) {choice_B}
+
 Answer:
 ("""
 
@@ -58,5 +72,6 @@ Choices:
 (B) {a2}
 (C) {a3}
 (D) {a4}
+
 Answer:
 ("""

@@ -9,22 +9,65 @@ import json
 from tasks.facts.SportsTask import SportsTask
 import einops
 
-class SportsTask_MC(SportsTask):
-    def __init__(self, *args, short_prompt=True, **kwargs):
+baseball_athlete = "Bryce Harper"
+football_athlete = "Tom Brady"
+basketball_athlete = "Lebron James"
+golf_athlete = "Tiger Woods"
+
+class SportsTask_ICL_SYS(SportsTask):
+    def modify_prompt(self, row, use_icl=False, use_system_prompt=False):
+        if use_system_prompt:
+            if use_icl:
+                trivia_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {football_athlete} play? Answer: football\nQuestion: What sport does {baseball_athlete} play? Answer: baseball\nQuestion: What sport does {basketball_athlete} play? Answer: basketball\nQuestion: What sport does {golf_athlete} play? Answer: golf\nQuestion: What sport does {athlete} play? Answer:"
+            else:
+                trivia_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {golf_athlete} play? Answer: golf\nQuestion: What sport does {athlete} play? Answer:"
+        else:
+            if use_icl:
+                trivia_template = lambda athlete: f"Fact: {football_athlete} plays the sport of football\nFact: {baseball_athlete} plays the sport of baseball\nFact: {basketball_athlete} plays the sport of basketball\nFact: {golf_athlete} plays the sport of golf\nFact: {athlete} plays the sport of"
+            else:
+                trivia_template = lambda athlete: f"Fact: {golf_athlete} plays the sport of golf\nFact: {athlete} plays the sport of"
+        return trivia_template(athlete=row["athlete"])
+
+    def __init__(self, *args, use_icl=False, use_system_prompt=False, **kwargs):
         super().__init__(*args, **kwargs)
         # modify prompts of train_df and test_df to be multiple choice
-        # original prompt looks like "Fact: Tiger Woods plays the sport of golf\nFact: DeForest Buckner plays the sport of"
+        # original prompt looks like "Fact: {golf_athlete} plays the sport of golf\nFact: DeForest Buckner plays the sport of"
         #new prompt should have A:
-        def get_trivia_prompt(row, short=short_prompt):
-            # return f"Fact: Tiger Woods plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {row['athlete']} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
-            if short:
-                trivia_template = "Fact: Tiger Woods plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
-            else:
-                trivia_template = "Fact: Tom Brady plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: A\n\nFact: Bryce Harper plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: B\n\nFact: Lebron James plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: C\n\nFact: Tiger Woods plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
-            return trivia_template.format(athlete=row["athlete"])
         
-        self.train_df["prompt"] = self.train_df.apply(get_trivia_prompt, axis=1)
-        self.test_df["prompt"] = self.test_df.apply(get_trivia_prompt, axis=1)
+        self.train_df["prompt"] = self.train_df.apply(lambda row: self.modify_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
+        self.test_df["prompt"] = self.test_df.apply(lambda row: self.modify_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
+
+        self.train_dataset = SportsTask.SportsDataset(self.train_df, self.tokenizer)
+        self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
+        self.set_loaders(train_data=self.train_dataset, test_data=self.test_dataset, shuffle=self.shuffle)
+
+class SportsTask_MC(SportsTask):
+
+    def get_mc_prompt(self, row, use_icl=False, use_system_prompt=False):
+        # return f"Fact: {golf_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {row['athlete']} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
+        if use_system_prompt:
+            if use_icl:
+                trivia_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {football_athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: A\n\nQuestion: What sport does {baseball_athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: B\n\nQuestion: What sport does {basketball_athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: C\n\nQuestion: What sport does {golf_athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nQuestion: What sport does {athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
+            else:
+                trivia_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct.\nQuestion: What sport does {golf_athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nQuestion: What sport does {athlete} play?\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
+
+        else:
+            if use_icl:
+                trivia_template = lambda athlete: f"Fact: {football_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: A\n\nFact: {baseball_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: B\n\nFact: {basketball_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: C\n\nFact: {golf_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
+
+            else:
+                trivia_template = lambda athlete: f"Fact: {golf_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
+
+        return trivia_template(athlete=row["athlete"])
+
+    def __init__(self, *args, use_icl=False, use_system_prompt=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        # modify prompts of train_df and test_df to be multiple choice
+        # original prompt looks like "Fact: {golf_athlete} plays the sport of golf\nFact: DeForest Buckner plays the sport of"
+        #new prompt should have A:
+        
+        self.train_df["prompt"] = self.train_df.apply(lambda row: self.get_mc_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
+        self.test_df["prompt"] = self.test_df.apply(lambda row: self.get_mc_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
 
         self.train_dataset = SportsTask.SportsDataset(self.train_df, self.tokenizer)
         self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
@@ -109,18 +152,27 @@ class SportsTask_MC(SportsTask):
 
 
 class SportsTask_Capitalized(SportsTask):
-    def __init__(self, *args, **kwargs):
+
+    def get_capitalized_prompt(self, row, use_icl=False, use_system_prompt=False):
+        if use_system_prompt:
+            if use_icl:
+                trivia_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {football_athlete} play? Answer: Football\nQuestion: What sport does {baseball_athlete} play? Answer: Baseball\nQuestion: What sport does {basketball_athlete} play? Answer: Basketball\nQuestion: What sport does {golf_athlete} play? Answer: Golf\nQuestion: What sport does {athlete} play? Answer:"
+            else:
+                trivia_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {golf_athlete} play? Answer: Golf\nQuestion: What sport does {athlete} play? Answer:"
+        else:
+            if use_icl:
+                trivia_template = lambda athlete: f"Fact: {football_athlete} plays the sport of Football\nFact: {baseball_athlete} plays the sport of Baseball\nFact: {basketball_athlete} plays the sport of Basketball\nFact: {golf_athlete} plays the sport of Golf\nFact: {athlete} plays the sport of"
+            else:
+                trivia_template = lambda athlete: f"Fact: {golf_athlete} plays the sport of Golf\nFact: {athlete} plays the sport of"
+        return trivia_template(athlete=row["athlete"])
+
+    def __init__(self, *args, use_icl=False, use_system_prompt=False, **kwargs):
         super().__init__(*args, **kwargs)
         # modify prompts of train_df and test_df to be trivia
-        # original prompt looks like "Fact: Tiger Woods plays the sport of golf\nFact: DeForest Buckner plays the sport of"
+        # original prompt looks like "Fact: {golf_athlete} plays the sport of golf\nFact: DeForest Buckner plays the sport of"
         #new prompt should have A:
-        def get_trivia_prompt(row):
-            # return f"Fact: Tiger Woods plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {row['athlete']} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
-            trivia_template = "Fact: Tiger Woods plays the sport of Golf\nFact: {athlete} plays the sport of"
-            return trivia_template.format(athlete=row["athlete"])
-        
-        self.train_df["prompt"] = self.train_df.apply(get_trivia_prompt, axis=1)
-        self.test_df["prompt"] = self.test_df.apply(get_trivia_prompt, axis=1)
+        self.train_df["prompt"] = self.train_df.apply(lambda row: self.get_capitalized_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
+        self.test_df["prompt"] = self.test_df.apply(lambda row: self.get_capitalized_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
 
         self.train_dataset = SportsTask.SportsDataset(self.train_df, self.tokenizer)
         self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
@@ -207,19 +259,27 @@ class SportsTask_Capitalized(SportsTask):
 
 from tasks.inference_utils import get_final_logits
 class SportsTask_Dashed(SportsTask):
-    def __init__(self, *args, short_prompt=True, **kwargs):
+
+    def get_dashed_prompt(self, row, use_icl=False, use_system_prompt=False):
+        if use_system_prompt:
+            if use_icl:
+                default_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {football_athlete} play? Answer: f-o-o-t-b-a-l-l\nQuestion: What sport does {baseball_athlete} play? Answer: b-a-s-e-b-a-l-l\nQuestion: What sport does {basketball_athlete} play? Answer: b-a-s-k-e-t-b-a-l-l\nQuestion: What sport does {golf_athlete} play? Answer: g-o-l-f\nQuestion: What sport does {athlete} play? Answer:"
+            else:
+                default_template = lambda athlete: f"You are a helpful chatbot that answers questions about athletes. Please be maximally helpful and factually correct. Question: What sport does {golf_athlete} play? Answer: g-o-l-f\nQuestion: What sport does {athlete} play? Answer:"
+        else:
+            if use_icl:
+                default_template = lambda athlete: f"Fact: {football_athlete} plays the sport of f-o-o-t-b-a-l-l\nFact: {baseball_athlete} plays the sport of b-a-s-e-b-a-l-l\nFact: {basketball_athlete} plays the sport of b-a-s-k-e-t-b-a-l-l\nFact: {golf_athlete} plays the sport of g-o-l-f\nFact: {athlete} plays the sport of"
+            else:
+                default_template = lambda athlete: f"Fact: {golf_athlete} plays the sport of g-o-l-f\nFact: {athlete} plays the sport of"
+        
+        return default_template(athlete=row["athlete"])
+
+    def __init__(self, *args, use_icl=True, use_system_prompt=False, **kwargs):
         super().__init__(*args, **kwargs)
         
-        def get_dashed_prompt(row, short=short_prompt):
-            if short:
-                default_template = "Fact: Tiger Woods plays the sport of g-o-l-f\nFact: {athlete} plays the sport of"
-            else:
-                default_template = "Fact: Tom Brady plays the sport of f-o-o-t-b-a-l-l\nFact: Bryce Harper plays the sport of b-a-s-e-b-a-l-l\nFact: Lebron James plays the sport of b-a-s-k-e-t-b-a-l-l\nFact: Tiger Woods plays the sport of g-o-l-f\nFact: {athlete} plays the sport of"
-            return default_template.format(athlete=row["athlete"])
-
         # Apply the function to update both 'prompt' and 'sport' for train_df and test_df
-        self.train_df["prompt"] = self.train_df.apply(get_dashed_prompt, axis=1)
-        self.test_df["prompt"] = self.test_df.apply(get_dashed_prompt, axis=1)
+        self.train_df["prompt"] = self.train_df.apply(lambda row: self.get_dashed_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
+        self.test_df["prompt"] = self.test_df.apply(lambda row: self.get_dashed_prompt(row, use_icl=use_icl, use_system_prompt=use_system_prompt), axis=1)
 
         self.train_dataset = SportsTask.SportsDataset(self.train_df, self.tokenizer)
         self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
@@ -296,7 +356,7 @@ class SportsTask_Dashed(SportsTask):
                 return probabilities[range(len(probabilities)), number_labels].mean().item()
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "MC", "Capitalized", "Dashed"]):
+def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "MC", "Capitalized", "Dashed"], use_icl=False, use_system_prompt=False):
     if "gemma" in model_type:
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     elif model_type == "llama":
@@ -319,16 +379,19 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
             for sport in ["football", "baseball", "basketball"]:
                 accuracies[eval_type][sport] = 0
                 for i in range(n_iters):
-                    temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport})
+                    try:
+                        temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, use_icl=use_icl, use_system_prompt=use_system_prompt)
+                    except:
+                        temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport})
                     accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
         else:
-            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer)
+            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, use_icl=use_icl, use_system_prompt=use_system_prompt)
             accuracies[eval_type] = 0
             for i in range(n_iters):
                 accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
     
     if "Normal" in include_evals:
-        update_accuracies("Normal", SportsTask)
+        update_accuracies("Normal", SportsTask_ICL_SYS)
     if "MC" in include_evals:
         update_accuracies("MC", SportsTask_MC)
     if "Capitalized" in include_evals:
@@ -337,3 +400,4 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
         update_accuracies("Dashed", SportsTask_Dashed)
 
     return accuracies
+

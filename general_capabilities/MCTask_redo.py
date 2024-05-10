@@ -8,10 +8,9 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from tasks.task import Task
-from tasks.inference_utils import custom_generate
+from tasks.inference_utils import custom_generate, get_final_logits
 from tqdm import tqdm
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from torch.utils.data import DataLoader
 from tasks.general_capabilities.templates import *
 
@@ -27,228 +26,64 @@ def number_to_letter(number):
 
 class MultipleChoiceQuestion(Task):
     """
-    A class to run evaluations on any Multiple Choice QA task, such as MMLU
+    A class to run evaluations on any Multiple Choice QA task, such as MMLU.
 
+    Datasets should have "prompt" and "label" columns. label should be an integer from 0 to (num-choices). prompt should be formatted in init function.
     """
 
     def __init__(
         self,
-        question_format=None,
-    ):
-        self.question_format = question_format
-        self.dataset = None
-        self.max_new_tokens = 1
-
-    def _generate_sentence(
-        self,
-        model,
+        batch_size,
         tokenizer,
-        strs: list,  # strs is now a list of strings
-        with_logprobs=False,
-        max_new_tokens=20,
-        top_tokens=5,
-        show_token_strs=True,
-        temperature=0.7,
-        include_input=False,
-        device="cuda",
+        device='cuda',
     ):
-        # Encode all the inputs at once
-        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
-        tokenizer.padding_side = "left"
-        tokenized_inputs = tokenizer.batch_encode_plus(
-            strs,
-            return_tensors="pt",
-            padding=True,
-        )
-
-        do_sample = True
-
-        if temperature == 0.0:
-            temperature = 1.0
-            do_sample = False
-
-        tokenized_inputs = {
-            k: v.to(device) for k, v in tokenized_inputs.items()
-        }  # Move to model's device
-
-        outputs = model.generate(
-            **tokenized_inputs,
-            max_length=tokenized_inputs["input_ids"].shape[1] + max_new_tokens,
-            temperature=temperature,
-            top_k=top_tokens,
-            return_dict_in_generate=True,
-            output_scores=with_logprobs,
-            pad_token_id=tokenizer.pad_token_id,
-            do_sample=do_sample,
-        )
-
-        sequences = outputs.sequences
-        scores = outputs.scores if with_logprobs else None
-
-        decoded_sentences = [
-            tokenizer.decode(ids, skip_special_tokens=True) for ids in sequences
-        ]
-
-        if not include_input:
-            decoded_sentences = [
-                sentence[len(strs[i]) :] for i, sentence in enumerate(decoded_sentences)
-            ]
-
-        if with_logprobs and scores is not None:
-            data = []
-            for i, score in enumerate(scores):
-                probs = torch.softmax(score, dim=-1)
-                topk_probs, topk_tokens = probs.topk(top_tokens, dim=-1)
-
-                for batch_index in range(topk_tokens.size(0)):
-                    topk_strings = [
-                        tokenizer.decode(token.item(), skip_special_tokens=True)
-                        for token in topk_tokens[batch_index]
-                    ]
-                    row = {}
-                    for j in range(top_tokens):
-                        token_key = f"Token_{j+1}"
-                        prob_key = f"Probability_{j+1}"
-                        row[token_key] = (
-                            topk_strings[j]
-                            if show_token_strs
-                            else topk_tokens[batch_index][j].item()
-                        )
-                        row[prob_key] = topk_probs[batch_index][j].item()
-                    data.append(row)
-
-            probs_df = pd.DataFrame(data)
-            return decoded_sentences, probs_df
+        self.batch_size = batch_size
+        self.tokenizer = tokenizer
+        self.device = device
+    
+    def get_answer_choices(self, tokenizer, num_choices=4, use_space=False):
+        # by default, have it be A, B, C, D
+        # answer_tokens = tokenizer([" A", " B", " C", " D"], padding=True, truncation=True)
+        # adapt for any number of choices
+        if use_space:
+            choices = [f" {chr(65 + i)}" for i in range(num_choices)]
         else:
-            return decoded_sentences
+            choices = [f"{chr(65 + i)}" for i in range(num_choices)]
+        answer_tokens = tokenizer(choices, padding=True, truncation=True)
+        return answer_tokens[:, -1].tolist()
 
-    def _fsdp_generate_sentence(
-        self,
-        model,
-        tokenizer,
-        strs: list,  # strs is now a list of strings
-        max_new_tokens=20,
-        top_tokens=5,
-        temperature=0.7,
-        include_input=False,
-        device="auto",
-        ):
-
-        def fsdp_generate(model, tokenized_inputs, temperature=0, top_k=5, max_new_tokens=20):
-            def top_k_sampling_with_temperature(logits, k, temperature):
-                assert temperature != 0
-                scaled_logits = logits / temperature
-                top_k_values, top_k_indices = torch.topk(scaled_logits, k, dim=-1)
-                probabilities = torch.nn.functional.softmax(top_k_values, dim=-1)
-                sampled_indices = torch.multinomial(probabilities, 1)
-                sampled_token_ids = top_k_indices.gather(-1, sampled_indices)
-                return sampled_token_ids.squeeze(-1)
-
-            def greedy_search_step(model, input_ids, attention_mask, temperature, top_k):
-                with torch.no_grad():
-                    outputs = model(input_ids, attention_mask=attention_mask)
-                next_token_logits = outputs.logits[:, -1, :]  # Get the logits for the last token in the sequence
-                if temperature == 0:
-                    next_token_id = torch.argmax(next_token_logits, dim=-1)  # Greedily select the token with the highest probability
-                else:
-                    next_token_id = top_k_sampling_with_temperature(next_token_logits, top_k, temperature)
-                return next_token_id
-
-            input_ids = tokenized_inputs['input_ids']
-            attention_mask = tokenized_inputs['attention_mask']
-            generated_ids = input_ids
-            for _ in range(max_new_tokens):
-                next_token_id = greedy_search_step(model, generated_ids, attention_mask, temperature=temperature, top_k=top_k)
-                generated_ids = torch.cat([generated_ids, next_token_id.unsqueeze(-1)], dim=-1)
-                # Update attention mask to include the new token
-                new_attention_mask = torch.cat([attention_mask, torch.ones_like(next_token_id.unsqueeze(-1), device=attention_mask.device)], dim=-1)
-                attention_mask = new_attention_mask
-
-            return generated_ids
-
-        # Encode all the inputs at once
-        tokenizer.pad_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.pad_token
-        tokenizer.padding_side = "left"
-        tokenized_inputs = tokenizer.batch_encode_plus(
-            strs,
-            return_tensors="pt",
-            padding=True,
-            add_special_tokens=True
-        )
-
-        # Ensure attention mask is created if not already present
-        if 'attention_mask' not in tokenized_inputs:
-            tokenized_inputs['attention_mask'] = tokenized_inputs['input_ids'].ne(tokenizer.pad_token_id).int()
-
-        # Move tokenized inputs to the appropriate device
-        if device == "auto":
-            device = model.parameters().__next__().device  # Get the device of the model
-        tokenized_inputs = {k: v.to(device) for k, v in tokenized_inputs.items()}
-
-        try:
-            out = fsdp_generate(model, tokenized_inputs, temperature=temperature, top_k=top_tokens, max_new_tokens=max_new_tokens)
-            decoded_sentences = tokenizer.batch_decode(out, skip_special_tokens=True)
-            if not include_input:
-                decoded_sentences = [sentence[len(strs[i]):] for i, sentence in enumerate(decoded_sentences)]
-            return decoded_sentences
-        except Exception as e:
-            print(f"Error during sentence generation: {str(e)}")
-            return []
-
-    def get_accuracy(
-        self,
-        model,
-        tokenizer,
-        temperature=0.0,
-        batch_size=25,
-        n_batches=None,
-        verbose=False,
-        fsdp=False,
-        **kwargs,
-    ):
-        dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
-        accuracy_total = 0
-        n_total = 0
-
-        for i, batch in tqdm(enumerate(dataloader)):
-
-            if n_batches is not None and i >= n_batches:
-                break
-
-            if verbose:
-                print(f"Batch {i+1}/{n_batches}")
-
-            questions = batch["question"]
-            answers = batch["answer"]
-
-            if fsdp:
-                model_responses = self._fsdp_generate_sentence(
-                    model=model,
-                    tokenizer=tokenizer,
-                    strs=questions,
-                    max_new_tokens=self.max_new_tokens,
-                    include_input=False,
-                    temperature=temperature,
-                )
-            else:
-                model_responses = self._generate_sentence(
-                    strs=questions,
-                    model=model,
-                    tokenizer=tokenizer,
-                    max_new_tokens=self.max_new_tokens,
-                    include_input=False,
-                    temperature=temperature,
-                    **kwargs,
-                )
-
-            accuracy_total += sum(
-                [1 if answer.strip() in model_response.strip() else 0 for model_response, answer in zip(model_responses, answers)]
-            )
-            n_total += len(questions)
+    
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=True, continuous=False):
+        if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
+            use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
+            check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
+            continuous = self.evaluation_kwargs.get("continuous", continuous)
         
-        accuracy = accuracy_total / n_total
+        batch = self.get_batch(use_test_data=use_test_data)
+        prompts, labels = batch["prompt"], batch["label"]
+        
+        last_logits = get_final_logits(model, self.tokenizer, prompts)
 
-        return accuracy
+        possible_choices = self.get_answer_choices(self.tokenizer).to(self.device)
+
+        if check_all_logits:
+            tokenized_labels = possible_choices[labels]
+            if not continuous:
+                num_correct = (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
+                return num_correct / len(labels)
+            else:
+                probabilities = torch.softmax(last_logits, dim=1)
+                return probabilities[range(len(labels)), tokenized_labels].mean().item()
+            
+        else:
+            answer_logits = last_logits[:, possible_choices] # shape (batch_size, num_choices)
+            if not continuous:
+                num_correct = (torch.argmax(answer_logits, dim=1) == labels).sum().item()
+                return num_correct / len(labels)
+            else:
+                probabilities = torch.softmax(answer_logits, dim=1)
+                probabilities /= probabilities.sum(dim=1, keepdim=True)
+                return probabilities[range(len(labels)), labels].mean().item()
 
 
 
@@ -256,6 +91,9 @@ class MMLUTask(MultipleChoiceQuestion):
 
     def __init__(
         self,
+        batch_size,
+        tokenizer,
+        device='cuda',
         question_format=None,
         subject="all",
         streaming=False,
@@ -264,7 +102,7 @@ class MMLUTask(MultipleChoiceQuestion):
         """
         Defaults to tiny MMLU dataset https://huggingface.co/tinyBenchmarks
         """
-        super().__init__(question_format=question_format)
+        super().__init__(batch_size=batch_size, tokenizer=tokenizer, device=device)
 
         dataset_name = "tasksource/mmlu" if not tiny else "tinyBenchmarks/tinyMMLU"
 
@@ -337,7 +175,7 @@ class MMLUTask(MultipleChoiceQuestion):
         def mmlu_map_fn(examples):
 
             questions = []
-            answers = []
+            labels = []
 
             for i in range(len(examples["question"])):
                 questions.append(self.question_format.format(
@@ -347,11 +185,12 @@ class MMLUTask(MultipleChoiceQuestion):
                     choice_C=examples["choices"][i][2],
                     choice_D=examples["choices"][i][3],
                 ))
-                answers.append(number_to_letter(int(examples["answer"][i])))
+                # answers.append(number_to_letter(int(examples["answer"][i])))
+                labels.append(int(examples["answer"][i]))
 
             return {
-                "question": questions,
-                "temp_answer": answers,
+                "prompt": questions,
+                "label": labels,
             }
 
 

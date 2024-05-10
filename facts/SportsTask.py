@@ -58,7 +58,7 @@ class SportsTask(Task):
             self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True,
             start_index=0, stop_index=None, train_test_split=True, 
             forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
-            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}
+            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={},
 ) -> None:
         self.batch_size = batch_size
         self.tokenizer = tokenizer
@@ -465,7 +465,7 @@ class SportsFactsTask(Task):
                 included_players.add(player)
                 wrong_sports = set_of_sports - {sport}
                 player_tok = tokenizer(' ' + player).input_ids
-                if player_tok[0] == 0:
+                if player_tok[0] == 2:
                     player_tok = player_tok[1:]
                 player_tuple = tuple(player_tok) # ignore first 0
                 player_tok_to_sport[player_tuple] = (sport, wrong_sports)
@@ -510,13 +510,13 @@ class SportsFactsTask(Task):
                 correct_sport
             )
             self.clean_answer_toks.append(
-                sport_to_tok[correct_sport]
+                sport_to_tok[correct_sport] if len(sport_to_tok[correct_sport]) == 1 else sport_to_tok[correct_sport][1:]
             )
             self.clean_wrong_answers.append(
                 list(wrong_sports)
             )
             self.clean_wrong_toks.append(
-                [sport_to_tok[sport] for sport in wrong_sports]
+                [sport_to_tok[sport] if len(sport_to_tok[sport]) == 1 else sport_to_tok[sport][1:] for sport in wrong_sports]
             )
 
         self.clean_answer_toks = torch.tensor(self.clean_answer_toks).to(self.device)
