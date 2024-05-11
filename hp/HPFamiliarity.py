@@ -104,7 +104,8 @@ def get_model_grades_threaded(client, questions, responses, references, model="g
                 {"role": "user", "content": user_message},
             ],
             temperature=0,
-            seed=seed,
+            # top_p=1,
+            seed=42,
             max_tokens=max_tokens,
             logit_bias=logit_bias,
         )
