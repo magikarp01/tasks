@@ -169,6 +169,7 @@ class MMLUTask(MultipleChoiceQuestion):
             "world_religions",
         ]
 
+        self.question_format = question_format
         if self.question_format is None:
             self.question_format = DEFAULT_4_QUESTION_FORMAT
             # self.question_format = NO_ANSWER_4_QUESTION_FORMAT
@@ -207,8 +208,8 @@ class MMLUTask(MultipleChoiceQuestion):
                 dataset = dataset.map(
                     mmlu_map_fn,
                     batched=True,
-                    remove_columns=set(dataset.column_names) - {"question", "temp_answer"}
-                ).rename_column("temp_answer", "answer")
+                    # remove_columns=set(dataset.column_names) - {"question", "temp_answer"}
+                )
                 dataset_list.append(dataset)
             print("Concatenating datasets...")
             self.dataset = datasets.concatenate_datasets(dataset_list)
@@ -224,9 +225,11 @@ class MMLUTask(MultipleChoiceQuestion):
             self.dataset = self.dataset.map(
                 mmlu_map_fn,
                 batched=True,
-                remove_columns=set(self.dataset.column_names) - {"question", "temp_answer"}
-            ).rename_column("temp_answer", "answer")
+                # remove_columns=set(self.dataset.column_names) - {"question", "temp_answer"}
+            )
             self.dataset = self.dataset.shuffle(seed=42)
+
+        
 
 
 class HellaSwagTask(MultipleChoiceQuestion):
