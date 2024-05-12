@@ -206,7 +206,7 @@ class MMLUTask(MultipleChoiceQuestion):
 
         self.set_loaders(train_data=self.dataset, test_data=self.dataset, shuffle=shuffle)
         
-def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], verbose=False):
+def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], verbose=False, batch_size=10):
     if model_type == "zephyr":
         tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
         tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -228,11 +228,12 @@ def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], ver
 
     for eval_name in evals_to_include:
         if eval_name == "MMLU":
-            mmlu = MMLUTask(batch_size=10, tokenizer=tokenizer, device="cuda")
+            mmlu = MMLUTask(batch_size=batch_size, tokenizer=tokenizer, device="cuda")
             accuracy = 0.
-            for i in range(10):
+            n_iters = 100 // batch_size
+            for i in range(n_iters):
                 accuracy += mmlu.get_test_accuracy(model, use_test_data=True, check_all_logits=False, continuous=False)
-            accuracy_dict["MMLU"] = accuracy / 10
+            accuracy_dict["MMLU"] = accuracy / n_iters
         else:
             raise NotImplementedError(f"Evaluation {eval_name} not implemented.")    
         if verbose:

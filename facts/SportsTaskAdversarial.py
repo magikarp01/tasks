@@ -404,7 +404,9 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
 
 
 def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, continuous=True, 
-                            test_forget_maintain=True, task_init_kwargs={"use_icl": False, "use_system_prompt": False},
+                            test_forget_maintain=True, 
+                            task_init_kwargs={"use_icl": False, "use_system_prompt": False},
+                            forget_task_init_kwargs={"use_icl": False, "use_system_prompt": False}, maintain_task_init_kwargs={"use_icl": False, "use_system_prompt": False},
                             include_evals=["Normal", "MC", "Capitalized", "Dashed"]):
     if "gemma" in model_type:
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
@@ -435,13 +437,13 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
             #         except:
             #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
             #         accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
-            forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, **task_init_kwargs)
-            maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=False, **task_init_kwargs)
+            forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
+            maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **maintain_task_init_kwargs)
             for i in range(n_iters):
                 accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous) / n_iters
                 accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous) / n_iters
         else:
-            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **task_init_kwargs)
+            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
             accuracies[eval_type] = 0
             for i in range(n_iters):
                 accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
