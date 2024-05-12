@@ -14,11 +14,9 @@ from collections import defaultdict
 from torch.utils.data import DataLoader
 from tasks.general_capabilities.templates import *
 
-GENERAL_SYSTEM_PROMPT = """
-You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
+GENERAL_SYSTEM_PROMPT = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
 
-If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
-"""
+If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."""
 
 def number_to_letter(number):
     return chr(number + 65)
@@ -36,21 +34,26 @@ class MultipleChoiceQuestion(Task):
         batch_size,
         tokenizer,
         device='cuda',
+        
+        use_answer_choice_space=True
     ):
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.device = device
+        self.use_answer_choice_space = use_answer_choice_space
+        
     
-    def get_answer_choices(self, tokenizer, num_choices=4, use_space=False):
+    def get_answer_choices(self, tokenizer, num_choices=4):
         # by default, have it be A, B, C, D
         # answer_tokens = tokenizer([" A", " B", " C", " D"], padding=True, truncation=True)
         # adapt for any number of choices
-        if use_space:
+        if self.use_answer_choice_space:
             choices = [f" {chr(65 + i)}" for i in range(num_choices)]
         else:
             choices = [f"{chr(65 + i)}" for i in range(num_choices)]
-        answer_tokens = tokenizer(choices, padding=True, truncation=True)
-        return answer_tokens[:, -1].tolist()
+        answer_tokens = tokenizer(choices, padding=True, truncation=True, return_tensors="pt").input_ids
+        # print(f"{answer_tokens=}")
+        return answer_tokens[:, -1]
 
     
     def get_test_accuracy(self, model, use_test_data=True, check_all_logits=True, continuous=False):
@@ -59,12 +62,17 @@ class MultipleChoiceQuestion(Task):
             check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
             continuous = self.evaluation_kwargs.get("continuous", continuous)
         
-        batch = self.get_batch(use_test_data=use_test_data)
+        batch = self.get_batch(train=not use_test_data)
         prompts, labels = batch["prompt"], batch["label"]
         
-        last_logits = get_final_logits(model, self.tokenizer, prompts)
-
+        with torch.no_grad():
+            last_logits = get_final_logits(model, self.tokenizer, prompts)
+        
         possible_choices = self.get_answer_choices(self.tokenizer).to(self.device)
+        # print(f"Decoded last logits: {self.tokenizer.batch_decode(last_logits.argmax(dim=-1))}")
+        # print(f"Last logit tokens: {last_logits.argmax(dim=-1)}")
+        # print(f"Labels: {labels}, possible choices: {possible_choices}")
+        # print()
 
         if check_all_logits:
             tokenized_labels = possible_choices[labels]
@@ -78,7 +86,7 @@ class MultipleChoiceQuestion(Task):
         else:
             answer_logits = last_logits[:, possible_choices] # shape (batch_size, num_choices)
             if not continuous:
-                num_correct = (torch.argmax(answer_logits, dim=1) == labels).sum().item()
+                num_correct = (torch.argmax(answer_logits, dim=1) == labels.to(self.device)).sum().item()
                 return num_correct / len(labels)
             else:
                 probabilities = torch.softmax(answer_logits, dim=1)
@@ -86,7 +94,9 @@ class MultipleChoiceQuestion(Task):
                 return probabilities[range(len(labels)), labels].mean().item()
 
 
+MMLU_INPUT_FORMAT = """
 
+"""
 class MMLUTask(MultipleChoiceQuestion):
 
     def __init__(
@@ -98,11 +108,12 @@ class MMLUTask(MultipleChoiceQuestion):
         subject="all",
         streaming=False,
         tiny=True,
+        shuffle=False
     ):
         """
         Defaults to tiny MMLU dataset https://huggingface.co/tinyBenchmarks
         """
-        super().__init__(batch_size=batch_size, tokenizer=tokenizer, device=device)
+        super().__init__(batch_size=batch_size, tokenizer=tokenizer, device=device, use_answer_choice_space=True)
 
         dataset_name = "tasksource/mmlu" if not tiny else "tinyBenchmarks/tinyMMLU"
 
@@ -169,32 +180,6 @@ class MMLUTask(MultipleChoiceQuestion):
             "world_religions",
         ]
 
-        self.question_format = question_format
-        if self.question_format is None:
-            self.question_format = DEFAULT_4_QUESTION_FORMAT
-            # self.question_format = NO_ANSWER_4_QUESTION_FORMAT
-        def mmlu_map_fn(examples):
-
-            questions = []
-            labels = []
-
-            for i in range(len(examples["question"])):
-                questions.append(self.question_format.format(
-                    question=examples["question"][i],
-                    choice_A=examples["choices"][i][0],
-                    choice_B=examples["choices"][i][1],
-                    choice_C=examples["choices"][i][2],
-                    choice_D=examples["choices"][i][3],
-                ))
-                # answers.append(number_to_letter(int(examples["answer"][i])))
-                labels.append(int(examples["answer"][i]))
-
-            return {
-                "prompt": questions,
-                "label": labels,
-            }
-
-
         if subject == "all" and not tiny:
             dataset_list = []
             print("Loading MMLU dataset...")
@@ -205,16 +190,9 @@ class MMLUTask(MultipleChoiceQuestion):
                     split="test",
                     streaming=streaming
                 )
-                dataset = dataset.map(
-                    mmlu_map_fn,
-                    batched=True,
-                    # remove_columns=set(dataset.column_names) - {"question", "temp_answer"}
-                )
                 dataset_list.append(dataset)
             print("Concatenating datasets...")
             self.dataset = datasets.concatenate_datasets(dataset_list)
-            self.dataset = self.dataset.shuffle(seed=42, buffer_size=10_000)
-
         else:
             self.dataset = datasets.load_dataset(
                 dataset_name,
@@ -222,14 +200,100 @@ class MMLUTask(MultipleChoiceQuestion):
                 split="test",
                 streaming=streaming
             )
-            self.dataset = self.dataset.map(
-                mmlu_map_fn,
-                batched=True,
-                # remove_columns=set(self.dataset.column_names) - {"question", "temp_answer"}
-            )
-            self.dataset = self.dataset.shuffle(seed=42)
+        # rename input_formatted to prompt, answer to label
+        self.dataset = self.dataset.rename_column("input_formatted", "prompt")
+        self.dataset = self.dataset.rename_column("answer", "label")
 
+        self.set_loaders(train_data=self.dataset, test_data=self.dataset, shuffle=shuffle)
         
+def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], verbose=False):
+    if model_type == "zephyr":
+        tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    elif model_type == "llama2":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
+        tokenizer.pad_token_id = tokenizer.unk_token_id
+    elif model_type == "llama3":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    elif model_type == "pythia":
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    elif model_type == "gemma":
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
+        tokenizer.pad_token_id = tokenizer.eos_token_id    
+    tokenizer.padding_side = "right"
+
+    accuracy_dict = {}
+
+    for eval_name in evals_to_include:
+        if eval_name == "MMLU":
+            mmlu = MMLUTask(batch_size=10, tokenizer=tokenizer, device="cuda")
+            accuracy = 0.
+            for i in range(10):
+                accuracy += mmlu.get_test_accuracy(model, use_test_data=True, check_all_logits=False, continuous=False)
+            accuracy_dict["MMLU"] = accuracy / 10
+        else:
+            raise NotImplementedError(f"Evaluation {eval_name} not implemented.")    
+        if verbose:
+            print(f"{eval_name} accuracy is {accuracy_dict[eval_name]}")
+    
+    return accuracy_dict
+
+'''
+class SciQTask(MultipleChoiceQuestion):
+
+    def __init__(
+        self,
+        batch_size,
+        tokenizer,
+        device='cuda',
+        streaming=True,
+        shuffle=False,
+        question_format=None,
+    ):
+        super().__init__(batch_size=batch_size, tokenizer=tokenizer, device=device, use_answer_choice_space=True)
+
+        if self.question_format is None:
+            self.question_format = DEFAULT_4_QUESTION_FORMAT
+            
+        def sciq_map_fn(examples):
+            questions = []
+            answers = []
+            for i in range(len(examples["question"])):
+ 
+                choices = (
+                    examples["correct_answer"][i],
+                    examples["distractor1"][i], 
+                    examples["distractor2"][i], 
+                    examples["distractor3"][i]
+                )
+
+                question = self.question_format.format(
+                    question=examples["question"][i],
+                    choice_A=choices[i%4],
+                    choice_B=choices[(i+1)%4],
+                    choice_C=choices[(i+2)%4],
+                    choice_D=choices[(i+3)%4],
+                )
+                questions.append(question)
+                answers.append(number_to_letter(3-(i-1)%4))
+            return {
+                "question": questions,
+                "answer": answers
+            }
+        
+        self.dataset = datasets.load_dataset(
+            "allenai/sciq",
+            streaming=streaming,
+            split="test",
+        )
+        self.dataset = self.dataset.map(
+            sciq_map_fn,
+            batched=True,
+            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
+        )
+        self.dataset = self.dataset.shuffle(seed=42)
 
 
 class HellaSwagTask(MultipleChoiceQuestion):
@@ -286,6 +350,8 @@ class HellaSwagTask(MultipleChoiceQuestion):
         )
         self.dataset = self.dataset.shuffle(seed=42)
 
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=True, continuous=False):
+        return super().get_test_accuracy(model, use_test_data, check_all_logits, continuous)
 
 
 
@@ -341,55 +407,6 @@ class WinograndeTask(MultipleChoiceQuestion):
         self.dataset = self.dataset.shuffle(seed=42)
 
 
-class SciQTask(MultipleChoiceQuestion):
-
-    def __init__(
-        self,
-        question_format=None,
-        streaming=True,
-    ):
-        super().__init__(question_format=question_format)
-
-        if self.question_format is None:
-            self.question_format = DEFAULT_4_QUESTION_FORMAT
-            
-        def sciq_map_fn(examples):
-            questions = []
-            answers = []
-            for i in range(len(examples["question"])):
- 
-                choices = (
-                    examples["correct_answer"][i],
-                    examples["distractor1"][i], 
-                    examples["distractor2"][i], 
-                    examples["distractor3"][i]
-                )
-
-                question = self.question_format.format(
-                    question=examples["question"][i],
-                    choice_A=choices[i%4],
-                    choice_B=choices[(i+1)%4],
-                    choice_C=choices[(i+2)%4],
-                    choice_D=choices[(i+3)%4],
-                )
-                questions.append(question)
-                answers.append(number_to_letter(3-(i-1)%4))
-            return {
-                "question": questions,
-                "answer": answers
-            }
-        
-        self.dataset = datasets.load_dataset(
-            "allenai/sciq",
-            streaming=streaming,
-            split="test",
-        )
-        self.dataset = self.dataset.map(
-            sciq_map_fn,
-            batched=True,
-            remove_columns=set(self.dataset.column_names) - {"question", "answer"}
-        )
-        self.dataset = self.dataset.shuffle(seed=42)
 
 
 
@@ -533,3 +550,4 @@ class WMDPTask(MultipleChoiceQuestion):
             remove_columns=set(self.dataset.column_names) - {"question", "answer"}
         )
         self.dataset = self.dataset.shuffle(seed=42)
+'''

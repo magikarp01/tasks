@@ -455,7 +455,8 @@ def respond_sports_side_effects(model, tokenizer):
     return accuracies, tot_questions
 
 from transformers import AutoTokenizer
-from tasks.harmbench.FastHarmBenchEvals import run_general_evals
+# from tasks.harmbench.FastHarmBenchEvals import run_general_evals
+from tasks.general_capabilities.MCTask_redo import run_general_evals
 from tasks import PileTask, OWTTask
 def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False, n_iters=5):
     if "gemma" in model_type:

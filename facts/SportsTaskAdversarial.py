@@ -401,3 +401,59 @@ def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous
 
     return accuracies
 
+
+
+def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, continuous=True, 
+                            test_forget_maintain=True, task_init_kwargs={"use_icl": False, "use_system_prompt": False},
+                            include_evals=["Normal", "MC", "Capitalized", "Dashed"]):
+    if "gemma" in model_type:
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
+    elif model_type == "llama":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    elif model_type == "pythia":
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+    elif model_type == "qwen":
+        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-4B")
+    else:
+        raise ValueError(f"Model type {model_type} not recognized")
+
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    tokenizer.padding_side = "right"
+
+    accuracies = {}
+
+    def update_accuracies(eval_type, eval_constructor):
+        if test_forget_maintain:
+            accuracies[eval_type] = {}
+            accuracies[eval_type]["forget"] = 0
+            accuracies[eval_type]["maintain"] = 0
+            # for sport in ["football", "baseball", "basketball"]:
+            #     accuracies[eval_type][sport] = 0
+            #     for i in range(n_iters):
+            #         try:
+            #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
+            #         except:
+            #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
+            #         accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
+            forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, **task_init_kwargs)
+            maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=False, **task_init_kwargs)
+            for i in range(n_iters):
+                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous) / n_iters
+                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous) / n_iters
+        else:
+            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **task_init_kwargs)
+            accuracies[eval_type] = 0
+            for i in range(n_iters):
+                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
+    
+    if "Normal" in include_evals:
+        update_accuracies("Normal", SportsTask_ICL_SYS)
+    if "MC" in include_evals:
+        update_accuracies("MC", SportsTask_MC)
+    if "Capitalized" in include_evals:
+        update_accuracies("Capitalized", SportsTask_Capitalized)
+    if "Dashed" in include_evals:
+        update_accuracies("Dashed", SportsTask_Dashed)
+
+    return accuracies
+

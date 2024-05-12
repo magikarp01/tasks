@@ -55,8 +55,7 @@ class SportsTask(Task):
             return len(self.df)
     
     def __init__(
-            self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True,
-            start_index=0, stop_index=None, train_test_split=True, 
+            self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True, train_test_split=True, 
             forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
             criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={},
 ) -> None:
@@ -65,26 +64,30 @@ class SportsTask(Task):
         self.shuffle = shuffle
 
         df = pd.read_csv("tasks/facts/data/sports.csv")
-        # if stop_index is not None:
-        #     df = df[start_index:stop_index]
-        # else:
-        #     df = df[start_index:]
-        # filter for df[sport] in forget_sport_subset
-        if forget_sport_subset is not None:
-            if is_forget_dataset:
-                df = df[df["sport"].isin(forget_sport_subset)]
-            else:
-                df = df[~df["sport"].isin(forget_sport_subset)]
-        
-        if forget_player_subset is not None:
-            # if forget_player_subset is an int, forget the first forget_player_subset players
-            if isinstance(forget_player_subset, int):
-                forget_player_subset = df["athlete"].unique()[:forget_player_subset]
+        if is_forget_dataset is not None:
+            # Initialize the DataFrame to consider for forgetting
+            forget_df = df.copy()
 
+            # Filter by sport subset if specified
+            if forget_sport_subset is not None:
+                forget_df = forget_df[forget_df["sport"].isin(forget_sport_subset)]
+
+            # Filter by player subset if specified
+            if forget_player_subset is not None:
+                if isinstance(forget_player_subset, int):
+                    # If forget_player_subset is an int, select the first N unique athletes
+                    forget_player_subset = forget_df["athlete"].unique()[:forget_player_subset]
+                forget_df = forget_df[forget_df["athlete"].isin(forget_player_subset)]
+
+            # Extract all athletes to forget
+            all_forget_athletes = set(forget_df["athlete"])
+
+            # Use rows with all_forget_athletes if is_forget_dataset is True, otherwise use rows without them
             if is_forget_dataset:
-                df = df[df["athlete"].isin(forget_player_subset)]
+                df = df[df["athlete"].isin(all_forget_athletes)]
             else:
-                df = df[~df["athlete"].isin(forget_player_subset)]
+                df = df[~df["athlete"].isin(all_forget_athletes)]
+
         if train_test_split:
             train_size = int(0.8 * len(df))
             train_df = df[:train_size]
