@@ -28,44 +28,80 @@ class ETTask(Task):
 
         self.device = device
 
-    def get_token_batch(self, train=True):
-        if train:
-            try:
-                batch = next(self.train_iter)
-            except StopIteration:
-                self.train_iter = iter(self.train_loader)
-                batch = next(self.train_iter)
-        else:
-            try:
-                batch = next(self.test_iter)
-            except StopIteration:
-                self.test_iter = iter(self.test_loader)
-                batch = next(self.test_iter)
-        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
-        token_batch = token_batch.to(self.device) # don't think tokenizer has start token
-        return token_batch
+    # def get_token_batch(self, train=True):
+    #     if train:
+    #         try:
+    #             batch = next(self.train_iter)
+    #         except StopIteration:
+    #             self.train_iter = iter(self.train_loader)
+    #             batch = next(self.train_iter)
+    #     else:
+    #         try:
+    #             batch = next(self.test_iter)
+    #         except StopIteration:
+    #             self.test_iter = iter(self.test_loader)
+    #             batch = next(self.test_iter)
+    #     token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
+    #     token_batch = token_batch.to(self.device) # don't think tokenizer has start token
+    #     return token_batch
 
     
     def calculate_loss(self, model, batch):
         """
         Batch is not tokens
         """
-        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
-        token_batch = token_batch.to(self.device) # don't think tokenizer has start token
+        if self.ctx_length is None:
+            tokenized = self.tokenizer(batch['text'], padding='max_length', truncation=True, return_tensors='pt')
+        else:
+            tokenized = self.tokenizer(batch['text'], max_length=self.ctx_length, padding='max_length', truncation=True, return_tensors='pt')
         
-        out = process_model_output(model(token_batch[:, :-1]))
+        input_ids = tokenized['input_ids'].to(self.device)
+        attention_mask = tokenized['attention_mask'].to(self.device).bool()
+        labels = input_ids[:, 1:][attention_mask[:, 1:]].contiguous()
+        
+        # print(f"{input_ids.shape=}, {attention_mask.shape=}, {labels.shape=}, {torch.cuda.memory_allocated()//1024**3=}")
+        # out = process_model_output(model(token_batch[:, :-1]))
+        model_output = process_model_output(model(input_ids[:, :-1].contiguous(), attention_mask=attention_mask[:, :-1].contiguous()))
         # shift labels over by one
-        shifted_token_batch = token_batch[:, 1:]
+        logits = model_output[attention_mask[:, 1:].contiguous()]
+        # print(f"{model_output.shape=}, {logits.shape=}, {torch.cuda.memory_allocated()//1024**3=}")
 
-        loss = self.criterion(out.transpose(1, 2), shifted_token_batch)
+        loss = self.criterion(logits, labels)
+        # shifted_token_batch = token_batch[:, 1:]
+
+        # loss = self.criterion(out.transpose(1, 2), shifted_token_batch)
         # loss = self.criterion(out[:, :-1, :].contiguous().view(-1, out.shape[-1]), token_batch[:, 1:].contiguous().view(-1))
         return loss
     
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False):
+    def get_test_accuracy(self, model, use_test_data=True, continuous=False):
         """
         for now, just return 0 since not super important for this kind of task
         """
-        return 0
+        batch = self.get_batch(train=not use_test_data)
+        if self.ctx_length is None:
+            tokenized = self.tokenizer(batch['text'], padding='max_length', truncation=True, return_tensors='pt')
+        else:
+            tokenized = self.tokenizer(batch['text'], max_length=self.ctx_length, padding='max_length', truncation=True, return_tensors='pt')
+        
+        input_ids = tokenized['input_ids'].to(self.device)
+        attention_mask = tokenized['attention_mask'].to(self.device).bool()
+        labels = input_ids[:, 1:][attention_mask[:, 1:]].contiguous()
+        
+        # out = process_model_output(model(token_batch[:, :-1]))
+        with torch.no_grad():
+            model_output = process_model_output(model(input_ids[:, :-1].contiguous(), attention_mask=attention_mask[:, :-1].contiguous()))
+        # shift labels over by one
+        logits = model_output[attention_mask[:, 1:].contiguous()]
+
+        if continuous:
+            probs = torch.nn.functional.softmax(logits, dim=-1)
+            # get average prob of each correct label
+            label_probs = probs[torch.arange(probs.shape[0]), labels]
+            return label_probs.mean().item()
+        else:
+            preds = logits.argmax(dim=-1)
+            correct = preds == labels
+            return correct.float().mean().item()
 
     # def get_train_loss(self, model):
     #     """
@@ -115,19 +151,19 @@ class ETTask(Task):
         return all_means
 
 
-    def get_token_batch(self, train=True):
-        if train:
-            try:
-                batch = next(self.train_iter)
-            except StopIteration:
-                self.train_iter = iter(self.train_loader)
-                batch = next(self.train_iter)
-        else:
-            try:
-                batch = next(self.test_iter)
-            except StopIteration:
-                self.test_iter = iter(self.test_loader)
-                batch = next(self.test_iter)
-        token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
-        token_batch = token_batch.to(self.device) # don't think tokenizer has start token
-        return token_batch
+    # def get_token_batch(self, train=True):
+    #     if train:
+    #         try:
+    #             batch = next(self.train_iter)
+    #         except StopIteration:
+    #             self.train_iter = iter(self.train_loader)
+    #             batch = next(self.train_iter)
+    #     else:
+    #         try:
+    #             batch = next(self.test_iter)
+    #         except StopIteration:
+    #             self.test_iter = iter(self.test_loader)
+    #             batch = next(self.test_iter)
+    #     token_batch = batch_text_to_tokens(batch, tokenizer=self.tokenizer, ctx_length=self.ctx_length, pad_max=True)
+    #     token_batch = token_batch.to(self.device) # don't think tokenizer has start token
+    #     return token_batch

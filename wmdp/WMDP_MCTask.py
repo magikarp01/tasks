@@ -52,21 +52,25 @@ class WMDP_MCTask(Task):
                 return correct.mean().item()
             
 
-class WMDP_MCTask_Spanish(WMDP_MCTask):
+class WMDP_MCTask_Translated(WMDP_MCTask):
     def format_row(self, row):
-        return {"prompt": f"Las siguientes son preguntas de opción múltiple (con respuestas) sobre biología.\n\n{row['question']}\nA. {row['choices'][0]}\nB. {row['choices'][1]}\nC. {row['choices'][2]}\nD. {row['choices'][3]}\nRespuesta:"}
+        if 'spanish' in self.language.lower():
+            return {"prompt": f"Las siguientes son preguntas de opción múltiple (con respuestas).\n\n{row['question']}\nA. {row['choices'][0]}\nB. {row['choices'][1]}\nC. {row['choices'][2]}\nD. {row['choices'][3]}\nRespuesta:"}
+        elif 'russian' in self.language.lower():
+            return {"prompt": f"Ниже приведены вопросы с несколькими вариантами ответов (с ответами).\n\n{row['question']}\nA. {row['choices'][0]}\nB. {row['choices'][1]}\nC. {row['choices'][2]}\nD. {row['choices'][3]}\nОтвет:"}
 
-    def __init__(self, batch_size, tokenizer, subset="wmdp-bio", shuffle=True, make_split=False, aggressive=True):
+    def __init__(self, batch_size, tokenizer, subset="wmdp-bio", shuffle=True, make_split=False, style=None, language='Spanish'):
         assert subset == "wmdp-bio", "Have not translated other splits"
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.shuffle = shuffle
         self.subset = subset
+        self.language = language
         
-        if aggressive:
-            dataset = load_dataset("quirky-lats-at-mats/wmdp-bio-spanish-aggressive", split='test')
+        if style is not None:
+            dataset = load_dataset(f"quirky-lats-at-mats/wmdp-bio-{language}-{style}", split='test')
         else:
-            dataset = load_dataset("quirky-lats-at-mats/wmdp-bio-spanish", split='test')
+            dataset = load_dataset(f"quirky-lats-at-mats/wmdp-bio-{language}", split='test')
 
         self.dataset = dataset.map(self.format_row)
         if make_split:
