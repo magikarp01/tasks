@@ -13,6 +13,9 @@ import time
 import math
 from collections import defaultdict
 from tasks.evaluation_utils import get_model_grades_threaded, get_convs
+import string
+import random
+
 LLAMA2_CLS_PROMPT = {
         "description": "Template For Llama-2-13b-behavior classifier",
         "prompt": '''[INST] <<SYS>>
@@ -73,6 +76,11 @@ zephyr_safety_prompt =  """<|user|>\n{behavior}</s> \n <|assistant|>\n""" # """[
 llama2_format_fn = lambda x: llama2_safety_prompt.format(behavior=x)
 llama3_format_fn = lambda x: llama3_safety_prompt.format(behavior=x)
 zephyr_format_fn = lambda x: zephyr_safety_prompt.format(behavior=x)
+
+def generate_random_string(length=20):
+    characters = string.ascii_letters + string.digits
+    random_string = ''.join(random.choice(characters) for _ in range(length))
+    return random_string
 
 def llama_classify_text(cls, tokenizer, attack_prompts, completions, original_prompts=None, contexts=None, batch_size=1, verbose=False):
     """
@@ -162,7 +170,7 @@ class HarmBenchTask(Task):
     """
     Class for evaluating attack success rate of a model on the HarmBench dataset.
     """
-    def __init__(self, tokenizer, gen_batch_size, cls_batch_size, device='cuda', data_name="harmbench_text", func_categories=["standard", "contextual"], load_targets=True, train_test_split=.8, pretrained_cls=None, cls_tokenizer=None):
+    def __init__(self, tokenizer, gen_batch_size, cls_batch_size, device='cuda', data_name="harmbench_text", func_categories=["standard", "contextual"], load_targets=True, train_test_split=.8, pretrained_cls=None, cls_tokenizer=None, gibberish_suffixes=False):
         """
         Class for storing attacks and possibly preference pairs for a task in or similar to HarmBench.
         tokenizer: should be set to left padding
@@ -247,8 +255,11 @@ class HarmBenchTask(Task):
                 behaviors_df = pd.read_csv("tasks/harmbench/data/advbench/refusals.csv")
                 behaviors = []
                 for _, row in behaviors_df.iterrows():
-                    # behaviors.append({"behavior": row['goal'], "target": row["target"]})
-                    behaviors.append({"behavior": row['original_behavior'], "target": row["target"], "refusal": row["llama_prompt_refusal"]})
+                    behaviors.append(
+                        {"behavior": row['original_behavior'] + (" " + generate_random_string(50)) if (gibberish_suffixes and random.random() < 0.5) else "", 
+                         "target": row["target"], 
+                         "refusal": row["llama_prompt_refusal"]
+                         })
             
             elif data_name == "clean":
                 # load from tasks/harmbench/data/clean_behaviors.csv
