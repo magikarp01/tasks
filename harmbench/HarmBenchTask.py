@@ -255,8 +255,12 @@ class HarmBenchTask(Task):
                 behaviors_df = pd.read_csv("tasks/harmbench/data/advbench/refusals.csv")
                 behaviors = []
                 for _, row in behaviors_df.iterrows():
+                    if gibberish_suffixes:
+                        suffix = (" " + (generate_random_string(6) + " ")*random.randint(1, 10)) if random.random() < 0.5 else ""
+                    else:
+                        suffix = ""
                     behaviors.append(
-                        {"behavior": row['original_behavior'] + (" " + generate_random_string(50)) if (gibberish_suffixes and random.random() < 0.5) else "", 
+                        {"behavior": row['original_behavior'] + suffix, 
                          "target": row["target"], 
                          "refusal": row["llama_prompt_refusal"]
                          })
