@@ -460,6 +460,13 @@ class SportsFactsTask(Task):
         self.device = device
         self.batch_size = batch_size
 
+
+        df = pd.read_csv("tasks/facts/data/sports.csv")
+        # Filter by player subset if specified
+        if forget_player_subset is not None:
+            if isinstance(forget_player_subset, int):
+                # If forget_player_subset is an int, select the first N unique athletes
+                forget_player_subset = df["athlete"].unique()[:forget_player_subset]
         ### ANSWERS
         included_players = set()
         with open('tasks/facts/sports_answers.json') as f:
