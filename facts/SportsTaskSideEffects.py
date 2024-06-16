@@ -461,6 +461,10 @@ from tasks import PileTask, OWTTask
 def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False, n_iters=5, general_batch_size=10):
     if "gemma" in model_type:
         model_name = "google/gemma-7b"
+    elif "pythia" in model_type:
+        model_name = "EleutherAI/pythia-2.8b"
+    elif "llama_2" in model_type:
+        model_name = "meta-llama/Llama-2-7b-chat-hf"
     else:
         model_name = model_type
     
@@ -507,16 +511,16 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
 
     if "Cross Entropy" in evals_to_run:
         pile = PileTask(batch_size=batch_size, tokenizer=tokenizer, ctx_length=100)
-        owt = OWTTask(batch_size=batch_size, tokenizer=tokenizer, ctx_length=100)
+        # owt = OWTTask(batch_size=batch_size, tokenizer=tokenizer, ctx_length=100)
 
         pile_ce = 0
-        owt_ce = 0
+        # owt_ce = 0
         for i in range(n_iters):
             pile_ce += pile.get_test_loss(model).item()
-            owt_ce += owt.get_test_loss(model).item()
+            # owt_ce += owt.get_test_loss(model).item()
         if verbose:
             print("Pile Cross Entropy:", pile_ce / n_iters)
-            print("OWT Cross Entropy:", owt_ce / n_iters)
-        return_dict["Cross Entropy"] = {"Pile": pile_ce / n_iters, "OWT": owt_ce / n_iters}
-    
+            # print("OWT Cross Entropy:", owt_ce / n_iters)
+        # return_dict["Cross Entropy"] = {"Pile": pile_ce / n_iters, "OWT": owt_ce / n_iters}
+        return_dict["Cross Entropy"] = {"Pile": pile_ce / n_iters}
     return return_dict
