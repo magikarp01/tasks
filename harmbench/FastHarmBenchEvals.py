@@ -12,7 +12,7 @@ hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 def run_attack_evals(model, device="cuda", model_type="llama2", func_categories=["contextual"],
                            num_samples=100, max_gen_tokens=200, do_sample=False, temperature=0.7, verbose=False, train_test_split=None, 
                            only_run_evals=None, max_gen_batch_size=25,
-                           cache_dir=None, return_as_asrs=True,
+                           cache_dir=None, return_as_asrs=True, pretrained_cls="llama",
                            no_print=False):
 
     llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_access_token)
@@ -31,8 +31,11 @@ def run_attack_evals(model, device="cuda", model_type="llama2", func_categories=
         tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenizer.padding_side = "left"
 
-    harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, 
-                                            gen_batch_size=min(25, max_gen_batch_size), cls_batch_size=8, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, pretrained_cls="llama", cls_tokenizer=llama_tokenizer)
+    harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=min(25, max_gen_batch_size), cls_batch_size=8, device=device,
+                                            data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split,
+                                            pretrained_cls=pretrained_cls, cls_tokenizer=llama_tokenizer)
+   
+   
     harmbench_cases = {"DirectRequest": harmbench_data_standard}
     for attack_name in ["GCG", "AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
         harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, 
