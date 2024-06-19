@@ -100,7 +100,7 @@ class SportsTask_MC(SportsTask):
 
         If continuous, instead defined as the proability of the correct sport, either divided by probability of all logits (1) or divided by the sum of the probabilities of the sports logits.
         """
-        football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
+        football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
         # print(f"{football_token=}, {baseball_token=}, {basketball_token=}")
 
         with torch.no_grad():
@@ -136,7 +136,7 @@ class SportsTask_MC(SportsTask):
                     [0 if sport == "football" else 1 if sport == "baseball" else 2 for sport in labels]
                 ).to(self.device)
                 sports_logits = last_logits[
-                    :, [football_token, baseball_token, basketball_token]
+                    :, [football_token, baseball_token, basketball_token, golf_token]
                 ]
                 if not continuous:
                     num_correct = (
@@ -205,7 +205,7 @@ class SportsTask_Capitalized(SportsTask):
 
         If continuous, instead defined as the proability of the correct sport, either divided by probability of all logits (1) or divided by the sum of the probabilities of the sports logits.
         """
-        football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
+        football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
 
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
@@ -243,7 +243,7 @@ class SportsTask_Capitalized(SportsTask):
                     ]
                 ).to(self.device)
                 sports_logits = last_logits[
-                    :, [football_token, baseball_token, basketball_token]
+                    :, [football_token, baseball_token, basketball_token, golf_token]
                 ]
                 if not continuous:
                     num_correct = (
@@ -407,7 +407,7 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
                             test_forget_maintain=True, 
                             task_init_kwargs={"use_icl": False, "use_system_prompt": False},
                             forget_task_init_kwargs={"use_icl": False, "use_system_prompt": False}, maintain_task_init_kwargs={"use_icl": False, "use_system_prompt": False},
-                            include_evals=["Normal", "MC", "Capitalized", "Dashed"]):
+                            include_evals=["Normal", "MC", "Capitalized", "Dashed"], check_all_logits=False):
     if "gemma" in model_type:
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     elif model_type == "llama":
@@ -440,8 +440,8 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
             forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
             maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **maintain_task_init_kwargs)
             for i in range(n_iters):
-                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous) / n_iters
-                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous) / n_iters
+                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits) / n_iters
+                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits) / n_iters
         else:
             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
             accuracies[eval_type] = 0

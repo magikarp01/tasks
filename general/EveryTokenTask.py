@@ -73,7 +73,7 @@ class ETTask(Task):
         # loss = self.criterion(out[:, :-1, :].contiguous().view(-1, out.shape[-1]), token_batch[:, 1:].contiguous().view(-1))
         return loss
     
-    def get_test_accuracy(self, model, use_test_data=True, continuous=False):
+    def get_test_accuracy(self, model, use_test_data=True, continuous=False, check_all_logits=False):
         """
         for now, just return 0 since not super important for this kind of task
         """
