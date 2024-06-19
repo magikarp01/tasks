@@ -30,6 +30,8 @@ def run_attack_evals(model, device="cuda", model_type="llama2", func_categories=
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
         tokenizer.pad_token_id = tokenizer.eos_token_id
         tokenizer.padding_side = "left"
+    else:
+        raise Exception(f"Invalid model type: {model_type}")
 
     harmbench_data_standard = HarmBenchTask(tokenizer=tokenizer, gen_batch_size=min(25, max_gen_batch_size), cls_batch_size=8, device=device,
                                             data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split,
@@ -38,11 +40,23 @@ def run_attack_evals(model, device="cuda", model_type="llama2", func_categories=
    
     harmbench_cases = {"DirectRequest": harmbench_data_standard}
     for attack_name in ["GCG", "AutoDAN", "AutoPrompt", "PAIR", "TAP"]:
-        harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json", use_system_prompt=model_type, tokenizer=tokenizer, 
-                                                                gen_batch_size=min(5, max_gen_batch_size), cls_batch_size=5, device=device, data_name="harmbench_text", func_categories=func_categories, train_test_split=train_test_split, cls_tokenizer=llama_tokenizer)
-        if verbose:
-            print(f"Initialized {attack_name} HarmBenchTask with {len(harmbench_cases[attack_name].train_behaviors)} train behaviors and {len(harmbench_cases[attack_name].test_behaviors)} test cases")
-        harmbench_cases[attack_name].cls = harmbench_data_standard.cls
+        
+        if model_type == "zephyr":
+            test_cases_path = f"tasks/harmbench/data/harmbench_concise/{attack_name}/zephyr_7b/test_cases/test_cases.json"
+        elif model_type == "llama2":
+            test_cases_path = f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama2_7b/test_cases/test_cases.json"
+        elif model_type == "llama3":
+            test_cases_path = f"tasks/harmbench/data/harmbench_concise/{attack_name}/llama3_8b/test_cases/test_cases.json"
+        
+        if os.path.exists(test_cases_path):
+            harmbench_cases[attack_name] = HarmBenchPrecomputedTask(test_cases_path=test_cases_path, use_system_prompt=model_type,
+                                                                    tokenizer=tokenizer, gen_batch_size=min(5, max_gen_batch_size),
+                                                                    cls_batch_size=5, device=device, data_name="harmbench_text",
+                                                                    func_categories=func_categories, train_test_split=train_test_split,
+                                                                    cls_tokenizer=llama_tokenizer)
+            if verbose:
+                print(f"Initialized {attack_name} HarmBenchTask with {len(harmbench_cases[attack_name].train_behaviors)} train behaviors and {len(harmbench_cases[attack_name].test_behaviors)} test cases")
+            harmbench_cases[attack_name].cls = harmbench_data_standard.cls
 
     if only_run_evals is not None:
         harmbench_cases = {k: v for k, v in harmbench_cases.items() if k in only_run_evals}
