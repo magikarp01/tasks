@@ -8,7 +8,8 @@ from tasks.inference_utils import get_final_logits, log_1_minus_p_loss, npo_loss
 
 from jaxtyping import Float
 import json
-
+import numpy as np
+from tqdm.auto import tqdm
 
 
 class SportsTask(Task):
@@ -574,7 +575,7 @@ class SportsFactsTask(Task):
             self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
 
         if prep_acdcpp:
-            self.set_logit_diffs(model)
+            self.set_logit_diffs(model, batched=True)
 
 
 
@@ -588,16 +589,28 @@ class SportsFactsTask(Task):
             # padding_side="left",
         ).input_ids
     
-    def set_logit_diffs(self, model):
+    def set_logit_diffs(self, model, batched=False):
         """
         Set clean_logit_diff and corrupt_logit_diff if they have not been set yet
         """
-        with torch.set_grad_enabled(False):
-            clean_logits = model(self.clean_data.toks)
-            corrupt_logits = model(self.corr_data.toks)
-        self.clean_logit_diff = self.ave_logit_diff(clean_logits).item()
-        self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits).item()
-        print(f'Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}')
+        if batched:
+            clean_logit_diffs = []
+            corrupt_logit_diffs = []
+            for batch_idx in tqdm(range(0, len(self.clean_data.toks), self.batch_size)):
+                clean_logits = model(self.clean_data.toks[batch_idx:batch_idx+self.batch_size])
+                corrupt_logits = model(self.corr_data.toks[batch_idx:batch_idx+self.batch_size])
+                clean_logit_diffs.append(self.ave_logit_diff(clean_logits, correct_ans=self.clean_answer_toks[batch_idx:batch_idx+self.batch_size], wrong_ans=self.clean_wrong_toks[batch_idx:batch_idx+self.batch_size]).item())
+                corrupt_logit_diffs.append(self.ave_logit_diff(corrupt_logits, correct_ans=self.clean_answer_toks[batch_idx:batch_idx+self.batch_size], wrong_ans=self.clean_wrong_toks[batch_idx:batch_idx+self.batch_size]).item())
+            self.clean_logit_diff = np.mean(clean_logit_diffs)
+            self.corrupted_logit_diff = np.mean(corrupt_logit_diffs)
+            print(f'Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}')
+        else:
+            with torch.set_grad_enabled(False):
+                clean_logits = model(self.clean_data.toks)
+                corrupt_logits = model(self.corr_data.toks)
+            self.clean_logit_diff = self.ave_logit_diff(clean_logits).item()
+            self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits).item()
+            print(f'Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}')
 
 
     def ave_logit_diff(self, logits, correct_ans=None, wrong_ans=None):

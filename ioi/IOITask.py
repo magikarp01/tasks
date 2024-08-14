@@ -1065,6 +1065,7 @@ class IOITask(IOITask_old):
 
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
+        self.batch_size = batch_size
 
         if criterion == "cross_entropy":
             self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
@@ -1102,14 +1103,20 @@ class IOITask(IOITask_old):
         logits: Float[Tensor, 'batch seq d_vocab'],
         ioi_dataset: IOIData,
         per_prompt: bool = False,
+        batch_idx_range=None # if not None, only calculate logit diffs for batch_idx_range[0] to batch_idx_range[1]
     ):
         '''
         Return average logit difference between correct and incorrect answers
         '''
         # Get logits for indirect objects
         # print(f"{logits.shape=}, {self.clean_data.word_idx['end'].shape=}, {len(self.clean_data.io_tokenIDs)=}, {len(self.clean_data.s_tokenIDs)=}")
-        io_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'], ioi_dataset.io_tokenIDs]
-        s_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'], ioi_dataset.s_tokenIDs]
+        if batch_idx_range is not None:
+            print(range(logits.size(0)), ioi_dataset.word_idx['end'][batch_idx_range[0]:batch_idx_range[1]], ioi_dataset.io_tokenIDs[batch_idx_range[0]:batch_idx_range[1]])
+            io_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'][batch_idx_range[0]:batch_idx_range[1]], ioi_dataset.io_tokenIDs[batch_idx_range[0]:batch_idx_range[1]]]
+            s_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'][batch_idx_range[0]:batch_idx_range[1]], ioi_dataset.s_tokenIDs[batch_idx_range[0]:batch_idx_range[1]]]
+        else:
+            io_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'], ioi_dataset.io_tokenIDs]
+            s_logits = logits[range(logits.size(0)), ioi_dataset.word_idx['end'], ioi_dataset.s_tokenIDs]
         # Get logits for subject
         logit_diff = io_logits - s_logits
         return logit_diff if per_prompt else logit_diff.mean()
@@ -1132,15 +1139,28 @@ class IOITask(IOITask_old):
                 tot_diff += io_logits - s_logits
             return tot_diff / last_logits.shape[0]
 
-    def set_logit_diffs(self, model):
+    def set_logit_diffs(self, model, batched=False):
         """
         Set clean_logit_diff and corrupt_logit_diff if they have not been set yet
         """
-        clean_logits = model(self.clean_data.toks)
-        corrupt_logits = model(self.corr_data.toks)
-        self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_data).item()
-        self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_data).item()
-        print(f"Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}")
+        if batched:
+            clean_logit_diffs = []
+            corrupt_logit_diffs = []
+            for batch_idx in range(0, len(self.clean_data.toks), self.batch_size):
+                clean_logits = model(self.clean_data.toks[batch_idx:batch_idx+self.batch_size])
+                corrupt_logits = model(self.corr_data.toks[batch_idx:batch_idx+self.batch_size])
+                clean_logit_diffs.append(self.ave_logit_diff(clean_logits, self.clean_data, per_prompt=True, batch_idx_range=(batch_idx, batch_idx+self.batch_size)).item())
+                corrupt_logit_diffs.append(self.ave_logit_diff(corrupt_logits, self.corr_data, per_prompt=True, batch_idx_range=(batch_idx, batch_idx+self.batch_size)).item())
+            self.clean_logit_diff = np.mean(clean_logit_diffs)
+            self.corrupted_logit_diff = np.mean(corrupt_logit_diffs)
+            print(f"Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}")
+
+        else:
+            clean_logits = model(self.clean_data.toks)
+            corrupt_logits = model(self.corr_data.toks)
+            self.clean_logit_diff = self.ave_logit_diff(clean_logits, self.clean_data).item()
+            self.corrupted_logit_diff = self.ave_logit_diff(corrupt_logits, self.corr_data).item()
+            print(f"Clean logit diff: {self.clean_logit_diff}, Corrupted logit diff: {self.corrupted_logit_diff}")
 
     def get_acdcpp_metric(self, model=None):
         '''

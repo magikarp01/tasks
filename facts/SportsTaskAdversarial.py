@@ -296,7 +296,7 @@ class SportsTask_Dashed(SportsTask):
     def calculate_loss(self, model, batch):
         return 0
 
-    def get_test_accuracy(self, model, use_test_data=True, continuous=True):
+    def get_test_accuracy(self, model, use_test_data=True, continuous=True, check_all_logits=False):
         # no check_all_logits
 
         with torch.no_grad():
