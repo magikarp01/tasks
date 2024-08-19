@@ -459,7 +459,9 @@ from transformers import AutoTokenizer
 from tasks.general_capabilities.MCTask_redo import run_general_evals
 from tasks import PileTask, OWTTask
 def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False, n_iters=5, general_batch_size=10):
-    if "gemma" in model_type:
+    if "gemma-2" in model_type or "gemma2" in model_type or model_type == "gemma-2":
+        model_name = "google/gemma-2-9b"
+    elif "gemma" in model_type:
         model_name = "google/gemma-7b"
     elif "pythia" in model_type:
         model_name = "EleutherAI/pythia-2.8b"

@@ -222,6 +222,9 @@ def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], ver
     elif model_type == "gemma":
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
         tokenizer.pad_token_id = tokenizer.eos_token_id    
+    elif model_type == "gemma-2":
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b")
+        tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "right"
 
     accuracy_dict = {}

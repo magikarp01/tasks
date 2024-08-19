@@ -408,7 +408,9 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
                             task_init_kwargs={"use_icl": False, "use_system_prompt": False},
                             forget_task_init_kwargs={"use_icl": False, "use_system_prompt": False}, maintain_task_init_kwargs={"use_icl": False, "use_system_prompt": False},
                             include_evals=["Normal", "MC", "Capitalized", "Dashed"], check_all_logits=False):
-    if "gemma" in model_type:
+    if "gemma-2-9b" in model_type or "gemma2" in model_type or model_type == "gemma-2":
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b")
+    elif "gemma" in model_type:
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
     elif model_type == "llama":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
