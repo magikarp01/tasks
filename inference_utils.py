@@ -8,6 +8,83 @@ import pandas as pd
 # by default: DEVICE is cuda
 DEVICE='cuda'
 
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import AutoPeftModelForCausalLM
+from huggingface_hub import list_repo_files
+def load_hf_model(
+    model_name,
+    torch_dtype=torch.bfloat16,
+    device_map="cuda",
+    attn_implementation=None,
+    requires_grad=False,
+):
+    # Check if model has already been loaded
+    global loaded_models
+    if model_name in loaded_models.keys():
+        return loaded_models[model_name]
+    # Choose attention implemention if not specified
+    if attn_implementation is None:
+        # Make sure that models that dont support FlashAttention aren't forced to use it
+        if "gpt2" in model_name or "gemma" in model_name:
+            attn_implementation = "eager"
+        else:
+            attn_implementation = "flash_attention_2"
+    # Check if the model is peft, and load accordingly
+    files = list_repo_files(model_name)
+    has_adapter_config = any("adapter_config.json" in file for file in files)
+    if has_adapter_config:
+        model = AutoPeftModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch_dtype,
+            low_cpu_mem_usage=True,
+            attn_implementation=attn_implementation,
+            device_map=device_map,
+            trust_remote_code=True
+        ).merge_and_unload().eval()
+    else: 
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch_dtype,
+            low_cpu_mem_usage=True,
+            attn_implementation=attn_implementation,
+            device_map=device_map,
+            trust_remote_code=True,
+        ).eval()
+    # Disable model grad if we're not training
+    if not requires_grad:
+        model.requires_grad_(False)
+    # Save and return the model
+    loaded_models[model_name] = model
+    return model
+
+
+def load_hf_model_and_tokenizer(
+    model_name,
+    torch_dtype=torch.bfloat16,
+    device_map="cuda",
+    attn_implementation=None,
+    tokenizer_name=None,
+    requires_grad=True,
+    padding_side="left",
+):
+    # Load the model
+    model = load_hf_model(
+        model_name=model_name,
+        torch_dtype=torch_dtype,
+        device_map=device_map,
+        attn_implementation=attn_implementation,
+        requires_grad=requires_grad,
+    )
+    # Load the tokenizer
+    if tokenizer_name is None:
+        tokenizer_name = model.config._name_or_path
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    tokenizer.padding_side = padding_side
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    model.generation_config.eos_token_id = tokenizer.eos_token_id # Make sure the eos in the generation config is the same as the tokenizer
+    return model, tokenizer
+
+
 def process_model_output(logits):
     # if logits is a tuple:
     if isinstance(logits, tuple) or isinstance(logits, list):
