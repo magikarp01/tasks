@@ -133,7 +133,7 @@ def get_icl_prompt(dataset, template_name, use_words=False):
     """
     # dataset = generate_dataset(num_samples=n_shots, num_digits_range=[n_digits], question_formats={"template": template})
     # dataset = dataset.query("num_digits == @n_digits")
-    icl_prompt = ""
+    icl_prompt = "Please help me check the truthfulness of answers to the following addition questions.\n\n"
     for i, row in dataset.iterrows():
         # randomly choose True or False
         question_true = random.choice([True, False])
@@ -170,7 +170,7 @@ class AdditionTask(Task):
         self.icl_prompts = defaultdict(dict) # defaultdict of templatena
         for n_digits in range(1, max_difficulty+1):
             for template_name in template_names:
-                self.icl_prompts[template_name][n_digits] = get_icl_prompt(self.icl_df.query("num_digits == @n_digits"), template_name, use_words=use_words) 
+                self.icl_prompts[template_name][n_digits] = get_icl_prompt(self.icl_df.query("num_digits == @n_digits").head(n_shots), template_name, use_words=use_words) 
         def apply_icl_prompt(row):
             return self.icl_prompts[row["template_name"]][row["num_digits"]] + row["question"]
             
