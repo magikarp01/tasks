@@ -136,3 +136,198 @@ class CounterFactTask(Task):
                     preds = torch.argmax(last_logits, dim=1)
                     accs.append((preds == labels).sum().item() / len(labels))
             return sum(accs) / len(accs)
+
+class CounterFactTask_Injection(CounterFactTask):
+    def __init__(self, *args, **kwargs):
+        """
+        Instead of a standard cross_entropy or log_1_minus_p loss, we want to train the model to always choose the injected answer (target_false). Criterion should be cross_entropy.
+        """
+        super().__init__(*args, **kwargs)
+
+    def calculate_loss(self, model, batch):
+        # run prompts
+        labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+        if self.tokenizer.bos_token_id in labels[0]:
+            labels = labels[:, 1]
+        else:
+            labels = labels[:, 0]
+        labels = labels.to(self.device)
+        last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
+        return self.criterion(last_logits, labels)
+
+    def get_test_accuracy(self, model, use_test_data=True, continuous=True, n_iters=1):
+        """
+        Get the accuracy of the model on the test set.
+        """
+        with torch.no_grad():
+            accs = []
+            for i in range(n_iters):
+                batch = self.get_batch(train=not use_test_data)
+                last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
+                labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+                if self.tokenizer.bos_token_id in labels[0]:
+                    labels = labels[:, 1]
+                else:
+                    labels = labels[:, 0]
+                labels = labels.to(self.device)
+                
+                if continuous:
+                    probs = torch.softmax(last_logits, dim=1)
+                    accs.append(probs[torch.arange(probs.shape[0]), labels].mean().item())
+                else:
+                    preds = torch.argmax(last_logits, dim=1)
+                    accs.append((preds == labels).sum().item() / len(labels))
+            return sum(accs) / len(accs)
+
+
+class CounterFactTask_Neighborhood(CounterFactTask):
+    def __init__(self, *args, shuffle=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        # add datapoints for neighborhood prompts
+        self.train_df = self.train_df.explode("neighborhood_prompts").rename({"prompt": "original_prompt"}, axis=1).rename({"neighborhood_prompts": "prompt"}, axis=1)
+        self.test_df = self.test_df.explode("neighborhood_prompts").rename({"prompt": "original_prompt"}, axis=1).rename({"neighborhood_prompts": "prompt"}, axis=1)
+
+        self.train_dataset = Dataset.from_pandas(self.train_df)
+        self.test_dataset = Dataset.from_pandas(self.test_df)
+        self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
+
+class CounterFactTask_Paraphrase(CounterFactTask):
+    def __init__(self, *args, shuffle=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        # add datapoints for neighborhood prompts
+        self.train_df = self.train_df.explode("paraphrase_prompts").rename({"prompt": "original_prompt"}, axis=1).rename({"paraphrase_prompts": "prompt"}, axis=1)
+        self.test_df = self.test_df.explode("paraphrase_prompts").rename({"prompt": "original_prompt"}, axis=1).rename({"paraphrase_prompts": "prompt"}, axis=1)
+
+        self.train_dataset = Dataset.from_pandas(self.train_df)
+        self.test_dataset = Dataset.from_pandas(self.test_df)
+        self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
+
+
+mc_question_format = f"""Help me answer the following multiple choice question:\n\n{{question}}\n\nA. {{response_a}}\nB. {{response_b}}\nC. {{response_c}}\nD. {{response_d}}\n\nPlease respond with the letter of the correct answer, A, B, C, or D. Answer:"""
+def create_icl_mc_format(train_rows):
+    full_icl_format = ""
+
+    for row in train_rows:
+        # Combine correct and incorrect choices
+        all_choices = [row["target_true"]] + row["targets_false"]
+        
+        # Shuffle choices
+        shuffled_indices = list(range(4))
+        random.shuffle(shuffled_indices)
+            
+        # Create a dictionary of shuffled choices
+        choice_dict = {
+            'response_a': all_choices[shuffled_indices[0]],
+            'response_b': all_choices[shuffled_indices[1]],
+            'response_c': all_choices[shuffled_indices[2]],
+            'response_d': all_choices[shuffled_indices[3]]
+        }
+
+        full_icl_format += mc_question_format.format(question=row["question"], **choice_dict) + f" {'ABCD'[shuffled_indices.index(0)]}\n\n"
+    return full_icl_format
+
+class CounterFactTask_MC(CounterFactTask):
+    def __init__(self, *args, n_shots=0, shuffle=True, **kwargs):
+        counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet")
+        self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+        self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+
+        # also need to access the original train data, esp for non train data
+
+        self.train_dataset = Dataset.from_pandas(self.train_df)
+        self.test_dataset = Dataset.from_pandas(self.test_df)
+        self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
+    
+    def calculate_loss(self, model, batch):
+        # run prompts
+        labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+        if self.tokenizer.bos_token_id in labels[0]:
+            labels = labels[:, 1]
+        else:
+            labels = labels[:, 0]
+        labels = labels.to(self.device)
+        last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
+        return self.criterion(last_logits, labels)
+
+    def get_test_accuracy(self, model, use_test_data=True, continuous=True, n_iters=1):
+        """
+        Get the accuracy of the model on the test set.
+        """
+        with torch.no_grad():
+            accs = []
+            for i in range(n_iters):
+                batch = self.get_batch(train=not use_test_data)
+                last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
+                labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+                if self.tokenizer.bos_token_id in labels[0]:
+                    labels = labels[:, 1]
+                else:
+                    labels = labels[:, 0]
+                labels = labels.to(self.device)
+                
+                if continuous:
+                    probs = torch.softmax(last_logits, dim=1)
+                    accs.append(probs[torch.arange(probs.shape[0]), labels].mean().item())
+                else:
+                    preds = torch.argmax(last_logits, dim=1)
+                    accs.append((preds == labels).sum().item() / len(labels))
+            return sum(accs) / len(accs)
+
+'''
+Translation Code
+from dotenv import load_dotenv
+translation_model = "gpt-4-turbo"
+from concurrent.futures import ThreadPoolExecutor
+import openai
+try:
+    load_dotenv()
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    global_client = openai.Client()
+except:
+    print("OpenAI API key not found")
+
+language = "Spanish"
+
+counterfact_translation_message = f"""Can you help me translate the following trivia fact into {language}? The fact has three parts: a subject, a relationship, and a target. Here is the full fact:\n"{{fact}}"\n\nIn the fact, the subject is {{subject}}. The target is {{true_target}}. There is also a false answer, {{false_target}}.\n\nCan you help me translate this fact so that the targets are still just one word, and the structure of the sentence stays the same? I'd like the result in a json with the full_prompt, prompt (the prompt without the answer), target_true, target_false, and subject. Please answer with just the dictionary/json, no other text."""
+
+def get_translations_threaded(client, rows, model=translation_model, max_tokens=None, max_threads=15, seed=42, translation_message=counterfact_translation_message, logit_bias=None):
+    """
+    Will try to run all of dataset concurrently
+    """
+
+    def get_model_grade_internal(row, logit_bias=None):
+        user_message = translation_message.format(fact=row["prompt"] + row["target_true"], subject=row["target_true"], true_target=row["target_true"], false_target=row["target_false"])
+
+        if logit_bias is None:
+            logit_bias = {}
+
+        gpt_answer = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0,
+            seed=seed,
+            max_tokens=max_tokens,
+            logit_bias=logit_bias,
+        )
+
+        gpt_response = gpt_answer.choices[0].message.content
+        # return filter_response(gpt_response)
+        return gpt_response
+        # filter response for translated question and choices
+        # return gpt_response
+
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        translated_instructions = list(tqdm(executor.map(get_model_grade_internal, rows), total=len(rows), desc="Translating"))
+    return translated_instructions
+
+    multiple_choice_translation_message = f"""Can you help me convert the following fact into a multiple choice quesiton? Here's the fact:\n"{{fact}}"\n\nIn the fact, the subject is {{subject}}. The target is {{true_target}}. There is also a sample false answer, {{false_target}}.\n\nCan you help me form this in a multiple choice question, and also come up with two more false targets to the question? Please answer in a json format, with reworded prompt, the true target, and the three false targets. Please answer with just the dictionary/json, no other text. The json should have keys "question", "target_true", and "targets_false"."""
+
+forget_mc = get_translations_threaded(global_client, forget_fact_eval.train_dataset, translation_message=multiple_choice_translation_message)
+forget_mc = pd.DataFrame([eval(forget_mc[x]) for x in range(len(forget_mc))])
+maintain_mc = get_translations_threaded(global_client, maintain_facts_eval.train_dataset.select(range(200)), translation_message=multiple_choice_translation_message)
+maintain_mc = pd.DataFrame([eval(maintain_mc[x]) for x in range(len(maintain_mc))])
+maintain_test_mc = get_translations_threaded(global_client, maintain_facts_eval.test_dataset.select(range(200)), translation_message=multiple_choice_translation_message)
+maintain_test_mc = pd.DataFrame([eval(maintain_test_mc[x]) for x in range(len(maintain_test_mc))])
+'''
