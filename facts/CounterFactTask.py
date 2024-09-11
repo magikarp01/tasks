@@ -380,7 +380,7 @@ def adversarial_counterfact_eval(model, model_type, batch_size, n_iters=5, conti
                             test_forget_maintain=True, 
                             task_init_kwargs={},
                             forget_task_init_kwargs={}, maintain_task_init_kwargs={},
-                            include_evals=["Normal", "MC", "Paraphrase", "Neighborhood", "MMLU"], general_batch_size=5, mc_batch_size=8):
+                            include_evals=["Normal", "MC", "Paraphrase", "Neighborhood", "MMLU"], general_batch_size=5, mc_batch_size=8, n_mc_shots=16):
     if model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma2_9b":
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b", padding_side="right")  
     elif model_type == "gemma" or model_type == "gemma_7b" or model_type == "gemma-7b":
@@ -403,8 +403,8 @@ def adversarial_counterfact_eval(model, model_type, batch_size, n_iters=5, conti
             #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
             #         accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
             if eval_type == "MC":
-                forget_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=32, **forget_task_init_kwargs)
-                maintain_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=32, **maintain_task_init_kwargs)
+                forget_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, **forget_task_init_kwargs)
+                maintain_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, **maintain_task_init_kwargs)
             else:
                 forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
                 maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **maintain_task_init_kwargs)
