@@ -458,7 +458,7 @@ from transformers import AutoTokenizer
 # from tasks.harmbench.FastHarmBenchEvals import run_general_evals
 from tasks.general_capabilities.MCTask_redo import run_general_evals
 from tasks import PileTask, OWTTask
-def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False, n_iters=5, general_batch_size=10):
+def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Familiarity", "General", "Cross Entropy"], model_type="gemma", use_short=False, eval_model="gpt-4-turbo", batch_size=32, verbose=False, n_iters=5, general_batch_size=10, device="cuda"):
     if "gemma-2" in model_type or "gemma2" in model_type or model_type == "gemma-2":
         model_name = "google/gemma-2-9b"
     elif "gemma" in model_type:
@@ -505,7 +505,7 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
         return_dict["Sports Familiarity"] = familiarity
     
     if "General" in evals_to_run:
-        general_capabilities = run_general_evals(model, model_type=model_type, evals_to_include=["MMLU"], batch_size=general_batch_size)
+        general_capabilities = run_general_evals(model, model_type=model_type, evals_to_include=["MMLU"], batch_size=general_batch_size, device=device)
         if verbose:
             print("General Capabilities:")
             print(general_capabilities)

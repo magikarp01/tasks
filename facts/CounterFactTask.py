@@ -380,7 +380,7 @@ def adversarial_counterfact_eval(model, model_type, batch_size, n_iters=5, conti
                             test_forget_maintain=True, 
                             task_init_kwargs={},
                             forget_task_init_kwargs={}, maintain_task_init_kwargs={},
-                            include_evals=["Normal", "MC", "Paraphrase", "Neighborhood", "MMLU"], general_batch_size=5, mc_batch_size=8, n_mc_shots=16):
+                            include_evals=["Normal", "MC", "Paraphrase", "Neighborhood", "MMLU"], general_batch_size=5, mc_batch_size=8, n_mc_shots=16, device="cuda"):
     if model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma2_9b":
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b", padding_side="right")  
     elif model_type == "gemma" or model_type == "gemma_7b" or model_type == "gemma-7b":
@@ -403,16 +403,16 @@ def adversarial_counterfact_eval(model, model_type, batch_size, n_iters=5, conti
             #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
             #         accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
             if eval_type == "MC":
-                forget_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, **forget_task_init_kwargs)
-                maintain_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, **maintain_task_init_kwargs)
+                forget_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, device=device, **forget_task_init_kwargs)
+                maintain_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, device=device, **maintain_task_init_kwargs)
             else:
-                forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
-                maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **maintain_task_init_kwargs)
+                forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **forget_task_init_kwargs)
+                maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **maintain_task_init_kwargs)
             for i in range(n_iters):
                 accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous) / n_iters
                 accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous) / n_iters
         else:
-            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **task_init_kwargs)
+            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **task_init_kwargs)
             accuracies[eval_type] = 0
             for i in range(n_iters):
                 accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
