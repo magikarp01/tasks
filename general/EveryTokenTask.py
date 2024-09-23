@@ -61,7 +61,7 @@ class ETTask(Task):
         
         # print(f"{input_ids.shape=}, {attention_mask.shape=}, {labels.shape=}, {torch.cuda.memory_allocated()//1024**3=}")
         # out = process_model_output(model(token_batch[:, :-1]))
-        model_output = process_model_output(model(input_ids[:, :-1].contiguous(), attention_mask=attention_mask[:, :-1].contiguous()))
+        model_output = process_model_output(model(input_ids[:, :-1].contiguous().to('cuda:0'), attention_mask=attention_mask[:, :-1].contiguous()))
         # shift labels over by one
         logits = model_output[attention_mask[:, 1:].contiguous()]
         # print(f"{model_output.shape=}, {logits.shape=}, {torch.cuda.memory_allocated()//1024**3=}")
