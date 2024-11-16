@@ -69,17 +69,17 @@ class CounterFactTask(Task):
             forget_df = self.counterfact_df.copy()
             if forget_fact_subset is not None: # either int or list of indices
                 if isinstance(forget_fact_subset, int):
-                    forget_fact_subset = forget_df.iloc[:forget_fact_subset].index
+                    forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
                 elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
-                    forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)].index
+                    forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
                 # forget_df = forget_df.iloc[forget_fact_subset]
             
             if is_forget_dataset:
-                self.counterfact_df = forget_df.iloc[forget_fact_subset]
+                self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
                 print("Forget dataset with ", len(self.counterfact_df), " examples")
 
             else:
-                self.counterfact_df = forget_df[~forget_df.index.isin(forget_fact_subset)]
+                self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
                 print("Maintain dataset with ", len(self.counterfact_df), " examples")
 
         if train_test_split:
@@ -228,18 +228,20 @@ def create_icl_mc_format(train_rows):
     return full_icl_format
 
 class CounterFactTask_MC(CounterFactTask):
-    def __init__(self, *args, n_shots=0, shuffle=True, **kwargs):
-        counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet")
-        self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
-        self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+    # def __init__(self, *args, n_shots=0, shuffle=True, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     display(self.train_df)
+    #     counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet")
+    #     self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+    #     self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
 
-        # also need to access the original train data, esp for non train data
+    #     # also need to access the original train data, esp for non train data
 
-        self.train_dataset = Dataset.from_pandas(self.train_df)
-        self.test_dataset = Dataset.from_pandas(self.test_df)
-        self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
+    #     self.train_dataset = Dataset.from_pandas(self.train_df)
+    #     self.test_dataset = Dataset.from_pandas(self.test_df)
+    #     self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
     
-    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_fact_subset=None, train_test_split=True, n_shots=0, is_forget_dataset=None):
+    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_fact_subset=None, train_test_split=True, n_shots=0, is_forget_dataset=None, is_inject_task=False):
         """
         Use prefiltered CounterFact dataset (can filter for a given probability threshold).
         Arguments:
@@ -261,26 +263,26 @@ class CounterFactTask_MC(CounterFactTask):
             self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
         elif criterion == "log_1_minus_p":
             self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
-
+        self.is_inject_task = is_inject_task
         self.n_shots = n_shots
         counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet").rename({"target_true": "target_true_mc", "targets_false": "targets_false_mc", "question": "question_mc"}, axis=1)
-        self.counterfact_df = self.counterfact_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+        # self.counterfact_df = self.counterfact_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
 
         if is_forget_dataset is not None: 
             forget_df = self.counterfact_df.copy()
             if forget_fact_subset is not None: # either int or list of indices
                 if isinstance(forget_fact_subset, int):
-                    forget_fact_subset = forget_df.iloc[:forget_fact_subset].index
+                    forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
                 elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
-                    forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)].index
+                    forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
                 # forget_df = forget_df.iloc[forget_fact_subset]
             
             if is_forget_dataset:
-                self.counterfact_df = forget_df.iloc[forget_fact_subset]
+                self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
                 print("Forget dataset with ", len(self.counterfact_df), " examples")
 
             else:
-                self.counterfact_df = forget_df[~forget_df.index.isin(forget_fact_subset)]
+                self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
                 print("Maintain dataset with ", len(self.counterfact_df), " examples")
 
         if train_test_split:
@@ -290,18 +292,33 @@ class CounterFactTask_MC(CounterFactTask):
             self.train_df = self.counterfact_df
             self.test_df = self.counterfact_df
 
+        self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+        self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+
         self.mc_question_format = mc_question_format
         if self.n_shots > 0:
             # must either use shots from train, or be a forget set and use shots from the maintain train set
             assert is_forget_dataset is not None or train_test_split, "If you want to use ICL, the ICL examples must be from the train set (set train_test_split=True), or if this is a forget task (with no train-test-split), grab the ICL examples from the maintain set."
             if is_forget_dataset:
                 # grab from forget_df[~forget_df.index.isin(forget_fact_subset)]
-                icl_df = forget_df[~forget_df.index.isin(forget_fact_subset)].iloc[:self.n_shots]
+                # print("Forget fact subset:", forget_fact_subset)
+                # icl_df = forget_df[~forget_df["prompt_id"].isin(forget_fact_subset)].iloc[:self.n_shots]
+                # print("Forget df that is not in forget_fact_subset:")
+                # display(forget_df.query("prompt_id not in @forget_fact_subset"))
+                icl_df = forget_df.query("prompt_id not in @forget_fact_subset").iloc[:self.n_shots]
+                icl_df = icl_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+
             else:
                 icl_df = self.train_df.iloc[:self.n_shots]
+            # print("ICL DF:")
+            # display(icl_df)
             self.mc_question_format = create_icl_mc_format(Dataset.from_pandas(icl_df).to_list()) + self.mc_question_format
 
         if self.n_shots > 0:
+            # print("Test DF:")
+            # display(self.test_df)
+            # print("ICL DF:")
+            # display(icl_df)
             # there should be no overlap between the icl_df and the test_df
             assert len(set(icl_df["prompt_id"]) & set(self.test_df["prompt_id"])) == 0, "There is overlap between the ICL examples and the test set"
 
@@ -317,7 +334,10 @@ class CounterFactTask_MC(CounterFactTask):
             choices = [batch["target_true_mc"][i]] + [batch["targets_false_mc"][j][i] for j in range(len(batch["targets_false_mc"]))]
             shuffled_indices = list(range(4))
             random.shuffle(shuffled_indices)
-            correct_labels.append(" " + "ABCD"[shuffled_indices.index(0)])
+            if self.is_inject_task:
+                correct_labels.append(" " + "ABCD"[shuffled_indices.index(1)])
+            else:
+                correct_labels.append(" " + "ABCD"[shuffled_indices.index(0)])
             choice_dict = {
                 'response_a': choices[shuffled_indices[0]],
                 'response_b': choices[shuffled_indices[1]],
