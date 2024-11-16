@@ -206,7 +206,7 @@ class MMLUTask(MultipleChoiceQuestion):
 
         self.set_loaders(train_data=self.dataset, test_data=self.dataset, shuffle=shuffle)
         
-def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], verbose=False, batch_size=10):
+def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], verbose=False, batch_size=10, device="cuda"):
     if model_type == "zephyr":
         tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
         tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -231,7 +231,7 @@ def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], ver
 
     for eval_name in evals_to_include:
         if eval_name == "MMLU":
-            mmlu = MMLUTask(batch_size=batch_size, tokenizer=tokenizer, device="cuda")
+            mmlu = MMLUTask(batch_size=batch_size, tokenizer=tokenizer, device=device)
             accuracy = 0.
             n_iters = 100 // batch_size
             for i in range(n_iters):
