@@ -47,55 +47,139 @@ class SportsTask(Task):
             self.tokenizer = tokenizer
 
         def __getitem__(self, idx):
-            return {
-                "prompt": self.df["prompt"].iloc[idx],
-                "sport": self.df["sport"].iloc[idx],
-            }
+            if "inject_sport" in self.df.columns:
+                return {
+                    "prompt": self.df["prompt"].iloc[idx],
+                    "sport": self.df["sport"].iloc[idx],
+                    "inject_sport": self.df["inject_sport"].iloc[idx],
+                }
+            else:
+                return {
+                    "prompt": self.df["prompt"].iloc[idx],
+                    "sport": self.df["sport"].iloc[idx],
+                }
 
         def __len__(self):
             return len(self.df)
     
     def __init__(
-            self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True, train_test_split=True, 
-            forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
-            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={},
+            self, batch_size, tokenizer, device='cuda', prep_acdcpp=False, acdcpp_N=25, acdcpp_metric="ave_logit_diff", shuffle=True, #train_test_split=True, 
+            # forget_sport_subset=None, forget_player_subset=None, is_forget_dataset=None,
+            forget_split=None, maintain_split=None,
+            criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}, 
 ) -> None:
+        """
+        forget_split: None, "first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split", "basketball_split", "basketball_unsplit".
+            In our experiments, forget set probably shouldn't be None: it should specify the "forget athletes" in the experiment, which are either explicitly included or unincluded in the losses.
+            If ends with "unsplit", then train and test are the same set of athletes. Else, ends with "split", train and test are different (50-50 train-test split). Should probably be "unsplit" most of the time.
+        maintain_split: None, "unsplit", "split". Set to None if the dataset is meant for the forget loss
+            If not None, then dataset is a maintain dataset, and will use all datapoints that aren't used in the forget split.
+            If "unsplit", then train and test are the same set of athletes. Else, train and test are different (80-20 train-test split).
+            Should probably be None or "split" most of the time.
+        """
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.shuffle = shuffle
 
         df = pd.read_csv("tasks/facts/data/sports.csv")
-        if is_forget_dataset is not None:
-            # Initialize the DataFrame to consider for forgetting
-            forget_df = df.copy()
 
-            # Filter by sport subset if specified
-            if forget_sport_subset is not None:
-                forget_df = forget_df[forget_df["sport"].isin(forget_sport_subset)]
-
-            # Filter by player subset if specified
-            if forget_player_subset is not None:
-                if isinstance(forget_player_subset, int):
-                    # If forget_player_subset is an int, select the first N unique athletes
-                    forget_player_subset = forget_df["athlete"].unique()[:forget_player_subset]
-                forget_df = forget_df[forget_df["athlete"].isin(forget_player_subset)]
-
-            # Extract all athletes to forget
-            all_forget_athletes = set(forget_df["athlete"])
-
-            # Use rows with all_forget_athletes if is_forget_dataset is True, otherwise use rows without them
-            if is_forget_dataset:
-                df = df[df["athlete"].isin(all_forget_athletes)]
-            else:
-                df = df[~df["athlete"].isin(all_forget_athletes)]
-
-        if train_test_split:
-            train_size = int(0.8 * len(df))
-            train_df = df[:train_size]
-            test_df = df[train_size:]
+        self.forget_split = forget_split
+        self.maintain_split = maintain_split
+        if forget_split is None:
+            print("Are you sure that forget_split should be None? Maybe can be implemented in weird usecases")
         else:
-            train_df = df
-            test_df = df
+            # assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split", "basketball_split", "basketball_unsplit"], f"{forget_split=} and not recognized"
+            new_forget_split = "_".join(forget_split.split("_")[:-1])
+            if new_forget_split == "first_16":
+                forget_indices = range(16)
+                assert df.iloc[forget_indices]["athlete"].tolist() == ['DeForest Buckner', 'Walter Payton', 'Anthony DeSclafani', 'Kevin Millwood', 'Vonta Leach', 'Mitch Haniger', 'Landon Collins', 'Charlie Whitehurst', 'Mariano Rivera', 'Boris Diaw', 'Michael Floyd', 'Jae Crowder', 'Damon Stoudamire', 'Mario Chalmers', 'LaMarr Woodley', 'Stan Van Gundy']
+
+            elif new_forget_split == "first_64":
+                forget_indices = range(64)
+                assert df.iloc[forget_indices]["athlete"].tolist() == ['DeForest Buckner', 'Walter Payton', 'Anthony DeSclafani', 'Kevin Millwood', 'Vonta Leach', 'Mitch Haniger', 'Landon Collins', 'Charlie Whitehurst', 'Mariano Rivera', 'Boris Diaw', 'Michael Floyd', 'Jae Crowder', 'Damon Stoudamire', 'Mario Chalmers', 'LaMarr Woodley', 'Stan Van Gundy', 'Kellen Winslow', 'Brian Scalabrine', 'Andrew Norwell', 'Yoan Moncada', 'Dan Grunfeld', 'Nick Nurse', 'Jason Garrett', 'Kyler Murray', 'Ozzie Newsome', 'Ender Inciarte', 'Kelvin Benjamin', 'Landry Jones', 'Christian McCaffrey', 'David DeJesus', 'Cliff Avril', 'Lauri Markkanen', 'Fred VanVleet', 'Joakim Noah', 'Tyler Eifert', 'Roger Clemens', 'Ryan Mallett', 'Antonio Cromartie', 'Daniel Snyder', 'Alex Smith', 'Christian Laettner', 'Trent Richardson', 'Kyle Wiltjer', 'Latrell Sprewell', 'Semi Ojeleye', 'Malcolm Jenkins', 'Tyson Chandler', 'Jay Gruden', "Mike D'Antoni", 'Hiroki Kuroda', 'Curtis Granderson', 'Chris Kaman', 'John Fox', 'Nick Foles', 'Michael Jordan', 'Jabari Brown', 'Carl Nassib', 'Adrián Beltré', 'Deion Branch', 'Brandon Inge', 'Patrick Mahomes', 'Lastings Milledge', 'Mike Iupati', 'Trent Dilfer']
+
+            elif new_forget_split == "random_16":
+                # if seed is not None:
+                #     torch.manual_seed(seed)
+                torch.manual_seed(16)
+                forget_indices = torch.randperm(len(df))[:16]
+                assert df.iloc[forget_indices]["athlete"].tolist() == ['Ricky Nolasco', 'Frank Kaminsky', 'Joba Chamberlain', 'Cody Kessler', 'Mohamed Bamba', 'Dennis Pitta', 'Alex Poythress', 'Grayson Allen', 'Kenyon Martin', 'Ike Diogu', 'Melo Trimble', 'Omar Infante', 'Willie Cauley-Stein', 'Brandon Roy', 'Kevin Garnett', 'Nerlens Noel']
+
+                # do some asserts about the indices
+            elif new_forget_split == "random_64":
+                # if seed is not None:
+                #     torch.manual_seed(seed)
+                torch.manual_seed(64)
+                forget_indices = torch.randperm(len(df))[:64]
+                assert df.iloc[forget_indices]["athlete"].tolist() == ['Kirk Hinrich', 'Jameson Taillon', 'Chris Kaman', 'Zaza Pachulia', 'Dennis Pitta', 'Ryan Zimmerman', 'Latrell Sprewell', 'Scott Kazmir', 'Matt Bryant', 'Minkah Fitzpatrick', 'Tracy McGrady', 'Curt Schilling', 'Troy Aikman', 'Bill Belichick', 'Ben Wallace', 'Khris Davis', 'David Freese', 'Stephen Strasburg', 'Cody Ross', 'Manny Machado', 'Cliff Avril', 'Kyrie Irving', 'Adeiny Hechavarria', 'Chad Henne', 'DK Metcalf', 'Andre Iguodala', 'Kareem Hunt', 'Joe Burrow', 'Montee Ball', 'John Henson', 'Marco Scutaro', 'Mike Iupati', 'Dave Duerson', 'Evan Turner', 'Lamar Odom', 'Alfred Morris', 'Brandon Phillips', 'Fernando Tatís', 'Joe Mixon', 'Brett Keisel', 'Todd Helton', 'Jodie Meeks', 'Brandon Scherff', 'Aaron Judge', 'Deion Branch', 'Muhammad Wilkerson', 'DeAngelo Hall', 'Mike Pouncey', 'Maicer Izturis', 'Chip Kelly', 'Manute Bol', 'Gary Sheffield', 'Kirk Gibson', 'Jordan Zimmermann', 'Chad Pennington', 'George Kittle', 'Melvin Gordon', 'Yorvit Torrealba', 'Ray Allen', 'Justin Forsett', 'Jerome Jordan', 'Ben Gordon', 'Jimmy Rollins', 'Wilson Betemit']
+
+                # do some asserts about the indices
+
+            elif new_forget_split == "basketball":
+                forget_indices = df[df["sport"] == "basketball"].index
+            elif new_forget_split == "baseball":
+                forget_indices = df[df["sport"] == "baseball"].index
+            elif new_forget_split == "football":
+                forget_indices = df[df["sport"] == "football"].index
+            else:
+                raise ValueError(f"{forget_split=} and not recognized")
+            print(f"forget_indices: {forget_indices}")
+
+        if maintain_split is None: # want only the forget indices
+            df = df.iloc[forget_indices]
+            if forget_split.endswith("unsplit"):
+                train_df = df.copy()
+                test_df = df.copy()
+            else:
+                print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and unlearning")
+                train_size = int(0.5 * len(df))
+                train_df = df[:train_size].copy()
+                test_df = df[train_size:].copy()
+        else:
+            assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
+            # want the non-forget indices
+            df = df.drop(forget_indices)
+
+            if maintain_split == "unsplit":
+                raise NotImplementedError("Are you sure that maintain_split should be 'unsplit'?")
+                train_df = df.copy()
+                test_df = df.copy()
+            else:
+                train_size = int(0.8 * len(df))
+                train_df = df[:train_size].copy()
+                test_df = df[train_size:].copy()
+        self.df = df
+        # if is_forget_dataset is not None:
+        #     # Initialize the DataFrame to consider for forgetting
+        #     forget_df = df.copy()
+
+        #     # Filter by sport subset if specified
+        #     if forget_sport_subset is not None:
+        #         forget_df = forget_df[forget_df["sport"].isin(forget_sport_subset)]
+
+        #     # Filter by player subset if specified
+        #     if forget_player_subset is not None:
+        #         if isinstance(forget_player_subset, int):
+        #             # If forget_player_subset is an int, select the first N unique athletes
+        #             forget_player_subset = forget_df["athlete"].unique()[:forget_player_subset]
+        #         forget_df = forget_df[forget_df["athlete"].isin(forget_player_subset)]
+
+        #     # Extract all athletes to forget
+        #     all_forget_athletes = set(forget_df["athlete"])
+
+        #     # Use rows with all_forget_athletes if is_forget_dataset is True, otherwise use rows without them
+        #     if is_forget_dataset:
+        #         df = df[df["athlete"].isin(all_forget_athletes)]
+        #     else:
+        #         df = df[~df["athlete"].isin(all_forget_athletes)]
+
+        # if train_test_split:
+        #     train_size = int(0.8 * len(df))
+        #     train_df = df[:train_size]
+        #     test_df = df[train_size:]
+        # else:
+        #     train_df = df
+        #     test_df = df
 
         # print(f"train_df: {train_df.shape}, test_df: {test_df.shape}")
         self.train_df = train_df
@@ -206,7 +290,7 @@ class SportsTask(Task):
             else:
                 number_labels = torch.tensor(
                     [
-                        0 if sport == " football" else 1 if sport == " baseball" else 2
+                        0 if sport == " football" else 1 if sport == " baseball" else 2 if sport == " basketball" else 3
                         for sport in labels
                     ]
                 ).to(self.device)
@@ -253,7 +337,7 @@ class SportsTask(Task):
 
             labels = [' ' + sport for sport in labels]            
 
-            number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 for sport in labels]).to(self.device)
+            number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 if sport == ' basketball' else 3 for sport in labels]).to(self.device)
             sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
 
             correct_logit_total = 0
@@ -301,89 +385,121 @@ class SportsTask(Task):
 #             # idea: current task is smaller keep set, complementary task is larger keep set that should keep train and test separate
 #             self.complementary_task = LimitedSportsTask(batch_size, tokenizer, device, start_index=stop_index, make_complementary_task=False, train_test_split=True)  
 
-class SportsTask_NPO(SportsTask):
-    def __init__(self, *args, ref_model, beta, **kwargs):
-        super().__init__(*args, **kwargs)
-        # ignore criterion
-        self.criterion = None
-        self.ref_model = ref_model
-        self.beta = beta
+# class SportsTask_NPO(SportsTask):
+#     def __init__(self, *args, ref_model, beta, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         # ignore criterion
+#         self.criterion = None
+#         self.ref_model = ref_model
+#         self.beta = beta
     
-    def calculate_loss(self, model, batch): 
-        last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
-        with torch.no_grad():
-            ref_logits = get_final_logits(self.ref_model, self.tokenizer, batch["prompt"])
-        labels = [" " + sport for sport in batch["sport"]]
+#     def calculate_loss(self, model, batch): 
+#         last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
+#         with torch.no_grad():
+#             ref_logits = get_final_logits(self.ref_model, self.tokenizer, batch["prompt"])
+#         labels = [" " + sport for sport in batch["sport"]]
         
-        tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-        assert len(tokenized_labels.shape) == 2
-        if tokenized_labels.shape[1] > 1:
-            assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
-        tokenized_labels = tokenized_labels[:, -1]
+#         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
+#         assert len(tokenized_labels.shape) == 2
+#         if tokenized_labels.shape[1] > 1:
+#             assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+#         tokenized_labels = tokenized_labels[:, -1]
 
-        return npo_loss(last_logits, ref_model_logits=ref_logits, labels=tokenized_labels.to(self.device), beta=self.beta)
+#         return npo_loss(last_logits, ref_model_logits=ref_logits, labels=tokenized_labels.to(self.device), beta=self.beta)
 
-class SportsTask_Uniform(SportsTask):
-    def __init__(self, *args, uniform_over="all_tokens", exclude_correct=True, **kwargs):
-        """
-        Currently accepts uniform_over == "sports_token", 
-        """
-        super().__init__(*args, **kwargs)
-        self.uniform_over = uniform_over
-        self.exclude_correct = exclude_correct
-        # self.criterion = torch.nn.functional.cross_entropy
+# class SportsTask_Uniform(SportsTask):
+#     def __init__(self, *args, uniform_over="all_tokens", exclude_correct=True, **kwargs):
+#         """
+#         Currently accepts uniform_over == "sports_token", 
+#         """
+#         super().__init__(*args, **kwargs)
+#         self.uniform_over = uniform_over
+#         self.exclude_correct = exclude_correct
+#         # self.criterion = torch.nn.functional.cross_entropy
     
-    def calculate_loss(self, model, batch):
-        # batch is a dict with 'prompt' (batch, seq) and 'sport' (batch, 1)
-        last_logits = get_final_logits(model, self.tokenizer, batch['prompt'])
-        target_dist = torch.zeros_like(last_logits)
+#     def calculate_loss(self, model, batch):
+#         # batch is a dict with 'prompt' (batch, seq) and 'sport' (batch, 1)
+#         last_logits = get_final_logits(model, self.tokenizer, batch['prompt'])
+#         target_dist = torch.zeros_like(last_logits)
         
-        if self.uniform_over == "all_tokens":
-            target_dist.fill_(1 / self.tokenizer.vocab_size)
+#         if self.uniform_over == "all_tokens":
+#             target_dist.fill_(1 / self.tokenizer.vocab_size)
 
-        elif self.uniform_over == "sports_tokens":
-            # football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
-            football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
-            target_dist[:, football_token] = 1/3
-            target_dist[:, baseball_token] = 1/3
-            target_dist[:, basketball_token] = 1/3
+#         elif self.uniform_over == "sports_tokens":
+#             # football_token, baseball_token, basketball_token = self.tokenizer(" football baseball basketball").input_ids
+#             football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
+#             target_dist[:, football_token] = 1/3
+#             target_dist[:, baseball_token] = 1/3
+#             target_dist[:, basketball_token] = 1/3
 
-        elif self.uniform_over == "sports_with_golf":            
-            # if self.uniform_over == "sports_tokens":
-            # football_token, baseball_token, basketball_token, golf_token = self.tokenizer(" football baseball basketball golf").input_ids
+#         elif self.uniform_over == "sports_with_golf":            
+#             # if self.uniform_over == "sports_tokens":
+#             # football_token, baseball_token, basketball_token, golf_token = self.tokenizer(" football baseball basketball golf").input_ids
 
-            football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
-            target_dist[:, football_token] = 1/4
-            target_dist[:, baseball_token] = 1/4
-            target_dist[:, basketball_token] = 1/4
-            target_dist[:, golf_token] = 1/4
+#             football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
+#             target_dist[:, football_token] = 1/4
+#             target_dist[:, baseball_token] = 1/4
+#             target_dist[:, basketball_token] = 1/4
+#             target_dist[:, golf_token] = 1/4
         
-        if self.exclude_correct:
-            labels = [" " + sport for sport in batch["sport"]]
+#         if self.exclude_correct:
+#             labels = [" " + sport for sport in batch["sport"]]
         
-            tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
-            assert len(tokenized_labels.shape) == 2
-            if tokenized_labels.shape[1] > 1:
-                assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
-                assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
-            tokenized_labels = tokenized_labels[:, -1]
+#             tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
+#             assert len(tokenized_labels.shape) == 2
+#             if tokenized_labels.shape[1] > 1:
+#                 assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+#                 assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+#             tokenized_labels = tokenized_labels[:, -1]
 
-            for i in range(len(batch['sport'])):
-                target_dist[i, tokenized_labels[i]] = 0
-                target_dist[i] /= target_dist[i].sum()
+#             for i in range(len(batch['sport'])):
+#                 target_dist[i, tokenized_labels[i]] = 0
+#                 target_dist[i] /= target_dist[i].sum()
 
 
-        return self.criterion(last_logits, target_dist)
+#         return self.criterion(last_logits, target_dist)
 
 
 class SportsTask_Injection(SportsTask):
-    def __init__(self, *args, inject_sport="golf", **kwargs):
+    def __init__(self, *args, inject_sport, **kwargs):
+        assert inject_sport in ["football", "baseball", "basketball", "golf", "random_with_golf", "random_without_golf"], f"{inject_sport=} not recognized"
         super().__init__(*args, **kwargs)
-        self.inject_sport = inject_sport
+        if inject_sport == "random_with_golf":
+            def get_random_sport(row):
+                possible_sports = ["football", "baseball", "basketball", "golf"]
+                possible_sports.remove(row["sport"])
+                return np.random.choice(possible_sports)
+
+            # select random sport from football, baseball, basketball, golf for each example in train and test df, except for the original sport
+            for df in [self.train_df, self.test_df]:
+                # set seed
+                np.random.seed(16)
+                df["inject_sport"] = df.apply(get_random_sport, axis=1)
+
+        elif inject_sport == "random_without_golf":
+            def get_random_sport(row):
+                possible_sports = ["football", "baseball", "basketball"]
+                possible_sports.remove(row["sport"])
+                return np.random.choice(possible_sports)
+
+            # select random sport from football, baseball, basketball for each example in train and test df
+            for df in [self.train_df, self.test_df]:
+                # set seed
+                np.random.seed(16)
+                df["inject_sport"] = df.apply(get_random_sport, axis=1)
+        else:
+            for df in [self.train_df, self.test_df]:
+                df["inject_sport"] = inject_sport
+        self.train_dataset = SportsTask.SportsDataset(self.train_df, self.tokenizer)
+        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle)
+        self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
+        self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=self.shuffle)
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
     
     def calculate_loss(self, model, batch): 
         last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
-        labels = [" " + self.inject_sport for sport in batch["sport"]]
+        labels = [" " + sport for sport in batch["inject_sport"]]
         
         tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
         assert len(tokenized_labels.shape) == 2
@@ -391,7 +507,74 @@ class SportsTask_Injection(SportsTask):
             assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
         tokenized_labels = tokenized_labels[:, -1]
         return self.criterion(last_logits, tokenized_labels.to(self.device))
+    
 
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, continuous=True, injected_accuracy=False):
+        if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
+            use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
+            check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
+
+        """
+        Accuracy is defined as the number of times the model correctly predicts the sport given the prompt. If check_all_logits is True, then we check if the argmax over all logits is the correct sport, not over the sports logits.
+        
+        injected_accuracy: if True, then accuracy is defined as the number of times the model predicts the injected sport, not the original sport.
+
+        If continuous, instead defined as the proability of the correct sport, either divided by probability of all logits (1) or divided by the sum of the probabilities of the sports logits.
+        """
+        football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
+
+        with torch.no_grad():
+            batch = self.get_batch(train=not use_test_data)
+            if injected_accuracy:
+                prompts, labels = batch["prompt"], batch["inject_sport"]
+            else:
+                prompts, labels = batch["prompt"], batch["sport"]
+
+            last_logits = get_final_logits(model, self.tokenizer, prompts)
+            # should be shape (batch_size, vocab_size)
+            assert len(last_logits.shape) == 2
+
+            labels = [" " + sport for sport in labels]
+
+            if check_all_logits:
+                tokenized_labels = self.tokenizer(labels, return_tensors="pt").input_ids
+                assert len(tokenized_labels.shape) == 2
+                if tokenized_labels.shape[1] > 1:
+                    assert (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all(), f"{tokenized_labels[:, 0]=}, {self.tokenizer.bos_token_id=}"
+                    assert (tokenized_labels[0, :-1] == tokenized_labels[:, :-1]).all(), f"{tokenized_labels[0, :-1]=}, {tokenized_labels[1, :-1]=}"
+                tokenized_labels = tokenized_labels[:, -1]
+
+                if not continuous:
+                    num_correct = (
+                        (torch.argmax(last_logits, dim=1) == tokenized_labels).sum().item()
+                    )
+                    return num_correct / len(prompts)
+                else:
+                    # get average probability
+                    probabilities = torch.softmax(last_logits, dim=1)
+                    return probabilities[range(len(probabilities)), tokenized_labels].mean().item()
+
+            else:
+                number_labels = torch.tensor(
+                    [
+                        0 if sport == " football" else 1 if sport == " baseball" else 2 if sport == " basketball" else 3
+                        for sport in labels
+                    ]
+                ).to(self.device)
+                sports_logits = last_logits[
+                    :, [football_token, baseball_token, basketball_token, golf_token]
+                ]
+                if not continuous:
+                    num_correct = (
+                        (torch.argmax(sports_logits, dim=1) == number_labels).sum().item()
+                    )
+                    return num_correct / len(prompts)
+                else:
+                    # get average probability relative to all sports tokens
+                    probabilities = torch.softmax(sports_logits, dim=1)
+                    # normalize to add up to 1
+                    probabilities /= probabilities.sum(dim=1, keepdim=True)
+                    return probabilities[range(len(probabilities)), number_labels].mean().item()
 # class LimitedSportsTask_Uniform(LimitedSportsTask):
 
 class SportsFactsTask(Task):
@@ -435,9 +618,11 @@ class SportsFactsTask(Task):
         prep_acdcpp=True,
         N=None, 
         model=None, 
-        forget_sport_subset=None,
-        forget_player_subset=None,
-        is_forget_dataset=None,
+        # forget_sport_subset=None,
+        # forget_player_subset=None,
+        # is_forget_dataset=None,
+        forget_split=None,
+        maintain_split=None,
         device="cuda", criterion="cross_entropy", criterion_kwargs={}, evaluation_kwargs={}
     ):
         from dataset.custom_dataset import PairedInstructionDataset
@@ -684,7 +869,7 @@ class SportsFactsTask(Task):
             football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
             number_labels = torch.tensor(
                 [
-                    0 if sport == " football" else 1 if sport == " baseball" else 2
+                    0 if sport == " football" else 1 if sport == " baseball" else 2 if sport == " basketball" else 3
                     for sport in labels
                 ]
             ).to(self.device)
@@ -765,3 +950,4 @@ class SportsFactsTask_Uniform(SportsFactsTask):
 
         return self.criterion(last_logits, target_dist)
 '''
+""

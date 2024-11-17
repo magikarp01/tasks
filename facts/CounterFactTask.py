@@ -42,7 +42,10 @@ def get_token_sequence_pos(tokenizer, prompt_list, token_strs, batch_size=64):
 # substring_start_positions, substring_end_positions = get_token_sequence_pos((counterfact_df["prompt"] + counterfact_df["target_true"]).tolist(), counterfact_df["target_true"].tolist())
 
 class CounterFactTask(Task):
-    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_fact_subset=None, train_test_split=True, is_forget_dataset=None):
+    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, 
+    # forget_fact_subset=None, train_test_split=True, is_forget_dataset=None
+    forget_split=None, maintain_split=None,
+    ):
         """
         Use prefiltered CounterFact dataset (can filter for a given probability threshold).
         Arguments:
@@ -65,30 +68,72 @@ class CounterFactTask(Task):
         elif criterion == "log_1_minus_p":
             self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
 
-        if is_forget_dataset is not None: 
-            forget_df = self.counterfact_df.copy()
-            if forget_fact_subset is not None: # either int or list of indices
-                if isinstance(forget_fact_subset, int):
-                    forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
-                elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
-                    forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
-                # forget_df = forget_df.iloc[forget_fact_subset]
+        # if is_forget_dataset is not None: 
+        #     forget_df = self.counterfact_df.copy()
+        #     if forget_fact_subset is not None: # either int or list of indices
+        #         if isinstance(forget_fact_subset, int):
+        #             forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
+        #         elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
+        #             forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
+        #         # forget_df = forget_df.iloc[forget_fact_subset]
             
-            if is_forget_dataset:
-                self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
-                print("Forget dataset with ", len(self.counterfact_df), " examples")
+        #     if is_forget_dataset:
+        #         self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
+        #         print("Forget dataset with ", len(self.counterfact_df), " examples")
 
+        #     else:
+        #         self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
+        #         print("Maintain dataset with ", len(self.counterfact_df), " examples")
+
+        # if train_test_split:
+        #     self.train_df = self.counterfact_df.iloc[:int(0.8*len(self.counterfact_df))]
+        #     self.test_df = self.counterfact_df.iloc[int(0.8*len(self.counterfact_df)):]
+        # else:
+        #     self.train_df = self.counterfact_df
+        #     self.test_df = self.counterfact_df
+        self.forget_split = forget_split
+        self.maintain_split = maintain_split
+        if forget_split is not None:
+            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split"], f"{forget_split=} and not recognized"
+            new_forget_split = "_".join(forget_split.split("_")[:-1])
+            if new_forget_split == "first_16":
+                forget_indices = range(16)
+            elif new_forget_split == "first_64":
+                forget_indices = range(64)
+            elif new_forget_split == "random_16":
+                torch.manual_seed(16)
+                forget_indices = torch.randperm(len(self.counterfact_df))[:16]
+            elif new_forget_split == "random_64":
+                torch.manual_seed(64)
+                forget_indices = torch.randperm(len(self.counterfact_df))[:64]
             else:
-                self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
-                print("Maintain dataset with ", len(self.counterfact_df), " examples")
-
-        if train_test_split:
-            self.train_df = self.counterfact_df.iloc[:int(0.8*len(self.counterfact_df))]
-            self.test_df = self.counterfact_df.iloc[int(0.8*len(self.counterfact_df)):]
+                raise ValueError(f"{forget_split=} and not recognized")
+            print(f"forget_indices: {forget_indices}")
         else:
-            self.train_df = self.counterfact_df
-            self.test_df = self.counterfact_df
-
+            print("You should probably have a forget split")
+        if maintain_split is None:
+            counterfact_df = self.counterfact_df.iloc[forget_indices]
+            if forget_split.endswith("unsplit"):
+                train_df = counterfact_df.copy()
+                test_df = counterfact_df.copy()
+            else:
+                print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and unlearning")
+                train_size = int(0.5 * len(counterfact_df))
+                train_df = counterfact_df[:train_size].copy()
+                test_df = counterfact_df[train_size:].copy()
+        else:
+            assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
+            counterfact_df = self.counterfact_df.drop(forget_indices)
+            if maintain_split == "unsplit":
+                print("Are you sure you don't want to split the maintain set?")
+                train_df = counterfact_df.copy()
+                test_df = counterfact_df.copy()
+            else:
+                train_size = int(0.8 * len(counterfact_df))
+                train_df = counterfact_df[:train_size].copy()
+                test_df = counterfact_df[train_size:].copy()
+        self.train_df = train_df
+        self.test_df = test_df
         self.train_dataset = Dataset.from_pandas(self.train_df)
         self.test_dataset = Dataset.from_pandas(self.test_df)
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
@@ -156,7 +201,7 @@ class CounterFactTask_Injection(CounterFactTask):
         last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
         return self.criterion(last_logits, labels)
 
-    def get_test_accuracy(self, model, use_test_data=True, continuous=True, n_iters=1):
+    def get_test_accuracy(self, model, use_test_data=True, continuous=True, n_iters=1, injected_accuracy=False):
         """
         Get the accuracy of the model on the test set.
         """
@@ -165,7 +210,11 @@ class CounterFactTask_Injection(CounterFactTask):
             for i in range(n_iters):
                 batch = self.get_batch(train=not use_test_data)
                 last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
-                labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+                if injected_accuracy:
+                    labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+                else:
+                    labels = self.tokenizer(batch["target_true"], return_tensors="pt", padding=True).input_ids
+
                 if self.tokenizer.bos_token_id in labels[0]:
                     labels = labels[:, 1]
                 else:
@@ -241,7 +290,7 @@ class CounterFactTask_MC(CounterFactTask):
     #     self.test_dataset = Dataset.from_pandas(self.test_df)
     #     self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
     
-    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_fact_subset=None, train_test_split=True, n_shots=0, is_forget_dataset=None, is_inject_task=False):
+    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_split=None, maintain_split=None, is_inject_task=False):
         """
         Use prefiltered CounterFact dataset (can filter for a given probability threshold).
         Arguments:
@@ -268,29 +317,72 @@ class CounterFactTask_MC(CounterFactTask):
         counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet").rename({"target_true": "target_true_mc", "targets_false": "targets_false_mc", "question": "question_mc"}, axis=1)
         # self.counterfact_df = self.counterfact_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
 
-        if is_forget_dataset is not None: 
-            forget_df = self.counterfact_df.copy()
-            if forget_fact_subset is not None: # either int or list of indices
-                if isinstance(forget_fact_subset, int):
-                    forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
-                elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
-                    forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
-                # forget_df = forget_df.iloc[forget_fact_subset]
+        # if is_forget_dataset is not None: 
+        #     forget_df = self.counterfact_df.copy()
+        #     if forget_fact_subset is not None: # either int or list of indices
+        #         if isinstance(forget_fact_subset, int):
+        #             forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
+        #         elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
+        #             forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
+        #         # forget_df = forget_df.iloc[forget_fact_subset]
             
-            if is_forget_dataset:
-                self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
-                print("Forget dataset with ", len(self.counterfact_df), " examples")
+        #     if is_forget_dataset:
+        #         self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
+        #         print("Forget dataset with ", len(self.counterfact_df), " examples")
 
+        #     else:
+        #         self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
+        #         print("Maintain dataset with ", len(self.counterfact_df), " examples")
+
+        # if train_test_split:
+        #     self.train_df = self.counterfact_df.iloc[:int(0.8*len(self.counterfact_df))]
+        #     self.test_df = self.counterfact_df.iloc[int(0.8*len(self.counterfact_df)):]
+        # else:
+        #     self.train_df = self.counterfact_df
+        #     self.test_df = self.counterfact_df
+        self.forget_split = forget_split
+        self.maintain_split = maintain_split
+        if forget_split is not None:
+            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split"], f"{forget_split=} and not recognized"
+            new_forget_split = "_".join(forget_split.split("_")[:-1])
+            if new_forget_split == "first_16":
+                forget_indices = range(16)
+            elif new_forget_split == "first_64":
+                forget_indices = range(64)
+            elif new_forget_split == "random_16":
+                torch.manual_seed(16)
+                forget_indices = torch.randperm(len(self.counterfact_df))[:16]
+            elif new_forget_split == "random_64":
+                torch.manual_seed(64)
+                forget_indices = torch.randperm(len(self.counterfact_df))[:64]
             else:
-                self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
-                print("Maintain dataset with ", len(self.counterfact_df), " examples")
-
-        if train_test_split:
-            self.train_df = self.counterfact_df.iloc[:int(0.8*len(self.counterfact_df))]
-            self.test_df = self.counterfact_df.iloc[int(0.8*len(self.counterfact_df)):]
+                raise ValueError(f"{forget_split=} and not recognized")
+            print(f"forget_indices: {forget_indices}")
         else:
-            self.train_df = self.counterfact_df
-            self.test_df = self.counterfact_df
+            print("You should probably have a forget split")
+        if maintain_split is None:
+            counterfact_df = self.counterfact_df.iloc[forget_indices]
+            if forget_split.endswith("unsplit"):
+                train_df = counterfact_df.copy()
+                test_df = counterfact_df.copy()
+            else:
+                print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and unlearning")
+                train_size = int(0.5 * len(counterfact_df))
+                train_df = counterfact_df[:train_size].copy()
+                test_df = counterfact_df[train_size:].copy()
+        else:
+            assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
+            counterfact_df = self.counterfact_df.drop(forget_indices)
+            if maintain_split == "unsplit":
+                print("Are you sure you don't want to split the maintain set?")
+                train_df = counterfact_df.copy()
+                test_df = counterfact_df.copy()
+            else:
+                train_size = int(0.8 * len(counterfact_df))
+                train_df = counterfact_df[:train_size].copy()
+                test_df = counterfact_df[train_size:].copy()
+        self.train_df = train_df
+        self.test_df = test_df
 
         self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
         self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
