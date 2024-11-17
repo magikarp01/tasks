@@ -461,14 +461,14 @@ class SportsTask(Task):
 
 
 class SportsTask_Injection(SportsTask):
-    def __init__(self, *args, inject_sport=None, **kwargs):
-        assert inject_sport in [None, "football", "baseball", "basketball", "golf", "random_with_golf", "random_without_golf"], f"{inject_sport=} not recognized"
+    def __init__(self, *args, inject_label=None, **kwargs):
+        assert inject_label in [None, "football", "baseball", "basketball", "golf", "random_with_golf", "random_without_golf"], f"{inject_label=} not recognized"
         super().__init__(*args, **kwargs)
-        if inject_sport is None:
+        if inject_label is None:
             print("No injection, using original sports")
             self.train_df["inject_sport"] = self.train_df["sport"]
             self.test_df["inject_sport"] = self.test_df["sport"]
-        elif inject_sport == "random_with_golf":
+        elif inject_label == "random_with_golf":
             # def get_random_sport(row):
             #     possible_sports = ["football", "baseball", "basketball", "golf"]
             #     possible_sports.remove(row["sport"])
@@ -480,7 +480,7 @@ class SportsTask_Injection(SportsTask):
                 # np.random.seed(16)
                 df["inject_sport"] = df["inject_sport_with_golf"]
 
-        elif inject_sport == "random_without_golf":
+        elif inject_label == "random_without_golf":
             # def get_random_sport(row):
             #     possible_sports = ["football", "baseball", "basketball"]
             #     possible_sports.remove(row["sport"])

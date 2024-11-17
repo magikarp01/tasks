@@ -91,7 +91,7 @@ class SportsTask_MC(SportsTask_Injection):
             return football_token, baseball_token, basketball_token
 
 
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, continuous=True):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, continuous=True, injected_accuracy=True):
         if hasattr(self, 'evaluation_kwargs') and self.evaluation_kwargs is not None and isinstance(self.evaluation_kwargs, dict):
             use_test_data = self.evaluation_kwargs.get("use_test_data", use_test_data)
             check_all_logits = self.evaluation_kwargs.get("check_all_logits", check_all_logits)
@@ -105,6 +105,7 @@ class SportsTask_MC(SportsTask_Injection):
 
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
+            assert injected_accuracy == True # if this is not an injected accuracy check, it's still fine because batch["inject_sport"] is just initialized to batch["sport"]
             prompts, labels = batch["prompt"], batch["inject_sport"]
 
             last_logits = get_final_logits(model, self.tokenizer, prompts)
@@ -456,10 +457,10 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **(forget_task_init_kwargs|constructor_kwargs))
             accuracies[eval_type] = 0
             for i in range(n_iters):
-                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous, **eval_kwargs) / n_iters
+                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits, **eval_kwargs) / n_iters
     
     if "Normal" in include_evals:
-        update_accuracies("Normal", SportsTask_ICL_SYS, constructor_kwargs={"inject_sport": None})
+        update_accuracies("Normal", SportsTask_ICL_SYS, constructor_kwargs={"inject_label": None})
     if "MC" in include_evals:
         update_accuracies("MC", SportsTask_MC)
     if "Capitalized" in include_evals:
@@ -469,9 +470,9 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
 
     if inject_label is not None:
         if "Normal" in include_evals:
-            update_accuracies("Normal_Injected", SportsTask_ICL_SYS, constructor_kwargs={"inject_sport": inject_label}, eval_kwargs={"injected_accuracy": True})
+            update_accuracies("Normal_Injected", SportsTask_ICL_SYS, constructor_kwargs={"inject_label": inject_label}, eval_kwargs={"injected_accuracy": True})
         if "MC" in include_evals:
-            update_accuracies("MC_Injected", SportsTask_MC, constructor_kwargs={"inject_sport": inject_label})
+            update_accuracies("MC_Injected", SportsTask_MC, constructor_kwargs={"inject_label": inject_label}, eval_kwargs={"injected_accuracy": True})
 
     return accuracies
 
