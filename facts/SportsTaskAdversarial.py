@@ -6,7 +6,7 @@ from tasks.inference_utils import get_final_logits, log_1_minus_p_loss, npo_loss
 
 from jaxtyping import Float
 import json
-from tasks.facts.SportsTask import SportsTask
+from tasks.facts.SportsTask import SportsTask, SportsTask_Injection
 import einops
 
 baseball_athlete = "Bryce Harper"
@@ -14,7 +14,7 @@ football_athlete = "Tom Brady"
 basketball_athlete = "Lebron James"
 golf_athlete = "Tiger Woods"
 
-class SportsTask_ICL_SYS(SportsTask):
+class SportsTask_ICL_SYS(SportsTask_Injection):
     def modify_prompt(self, row, use_icl=False, use_system_prompt=False):
         if use_system_prompt:
             if use_icl:
@@ -41,7 +41,7 @@ class SportsTask_ICL_SYS(SportsTask):
         self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
         self.set_loaders(train_data=self.train_dataset, test_data=self.test_dataset, shuffle=self.shuffle)
 
-class SportsTask_MC(SportsTask):
+class SportsTask_MC(SportsTask_Injection):
 
     def get_mc_prompt(self, row, use_icl=False, use_system_prompt=False):
         # return f"Fact: {golf_athlete} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer: D\n\nFact: {row['athlete']} plays the sport of\nA: Football\nB: Baseball\nC: Basketball\nD: Golf\n\nAnswer:"
@@ -75,7 +75,7 @@ class SportsTask_MC(SportsTask):
 
         # modify df["prompt"] and df["sport"]
     
-    def get_sports_tokens(self, tokenizer, include_golf=False):
+    def get_sports_tokens(self, tokenizer, include_golf=True):
         # get football, baseball, basketball, golf tokens
         sports_tokens = tokenizer([" A", " B", " C", " D"], return_tensors="pt").input_ids
         if sports_tokens.shape == (4, 1):
@@ -105,13 +105,13 @@ class SportsTask_MC(SportsTask):
 
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
-            prompts, labels = batch["prompt"], batch["sport"]
+            prompts, labels = batch["prompt"], batch["inject_sport"]
 
             last_logits = get_final_logits(model, self.tokenizer, prompts)
             # should be shape (batch_size, vocab_size)
             assert len(last_logits.shape) == 2
 
-            mc_labels = [" A" if sport == "football" else " B" if sport == "baseball" else " C" for sport in labels]
+            mc_labels = [" A" if sport == "football" else " B" if sport == "baseball" else " C" if sport == "basketball" else " D" for sport in labels]
 
             if check_all_logits:
                 tokenized_labels = self.tokenizer(mc_labels, return_tensors="pt").input_ids
@@ -151,7 +151,7 @@ class SportsTask_MC(SportsTask):
                     return probabilities[range(len(probabilities)), number_labels].mean().item()
 
 
-class SportsTask_Capitalized(SportsTask):
+class SportsTask_Capitalized(SportsTask_Injection):
 
     def get_capitalized_prompt(self, row, use_icl=False, use_system_prompt=False):
         if use_system_prompt:
@@ -180,7 +180,7 @@ class SportsTask_Capitalized(SportsTask):
 
         # modify df["prompt"] and df["sport"]
     
-    def get_sports_tokens(self, tokenizer, include_golf=False):
+    def get_sports_tokens(self, tokenizer, include_golf=True):
         # get football, baseball, basketball, golf tokens
         sports_tokens = tokenizer([" Football", " Baseball", " Basketball", " Golf"], return_tensors="pt").input_ids
         if sports_tokens.shape == (4, 1):
@@ -209,13 +209,13 @@ class SportsTask_Capitalized(SportsTask):
 
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
-            prompts, labels = batch["prompt"], batch["sport"]
+            prompts, labels = batch["prompt"], batch["inject_sport"]
 
             last_logits = get_final_logits(model, self.tokenizer, prompts)
             # should be shape (batch_size, vocab_size)
             assert len(last_logits.shape) == 2
 
-            cap_labels = [" Football" if sport == "football" else " Baseball" if sport == "baseball" else " Basketball" for sport in labels]
+            cap_labels = [" Football" if sport == "football" else " Baseball" if sport == "baseball" else " Basketball" if sport == "basketball" else " Golf" for sport in labels]
 
             if check_all_logits:
                 tokenized_labels = self.tokenizer(cap_labels, return_tensors="pt").input_ids
@@ -238,7 +238,7 @@ class SportsTask_Capitalized(SportsTask):
             else:
                 number_labels = torch.tensor(
                     [
-                        0 if sport == "football" else 1 if sport == "baseball" else 2
+                        0 if sport == "football" else 1 if sport == "baseball" else 2 if sport == "basketball" else 3
                         for sport in labels
                     ]
                 ).to(self.device)
@@ -258,7 +258,7 @@ class SportsTask_Capitalized(SportsTask):
                     return probabilities[range(len(probabilities)), number_labels].mean().item()
 
 from tasks.inference_utils import get_final_logits
-class SportsTask_Dashed(SportsTask):
+class SportsTask_Dashed(SportsTask_Injection):
 
     def get_dashed_prompt(self, row, use_icl=False, use_system_prompt=False):
         if use_system_prompt:
@@ -301,7 +301,7 @@ class SportsTask_Dashed(SportsTask):
 
         with torch.no_grad():
             batch = self.get_batch(train=not use_test_data)
-            prompts, labels = batch["prompt"], batch["sport"]
+            prompts, labels = batch["prompt"], batch["inject_sport"]
             # print(f"Prompts: {prompts}\nLabels: {labels}")
 
             # try adding " f-o-o-t-b-a-l-l", " b-a-s-e-b-a-l-l", " b-a-s-k-e-t-b-a-l-l", " g-o-l-f" to the end of each prompt
@@ -356,50 +356,54 @@ class SportsTask_Dashed(SportsTask):
                 return probabilities[range(len(probabilities)), number_labels].mean().item()
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "MC", "Capitalized", "Dashed"], use_icl=False, use_system_prompt=False):
-    if "gemma" in model_type:
-        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
-    elif model_type == "llama":
-        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
-    elif model_type == "pythia":
-        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
-    elif model_type == "qwen":
-        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-4B")
-    else:
-        raise ValueError(f"Model type {model_type} not recognized")
+# def adversarial_sports_eval(model, model_type, batch_size, n_iters=5, continuous=True, test_each_sport=True, include_evals=["Normal", "MC"], use_icl=False, use_system_prompt=False, inject_label=None):
+#     """
+#     if inject_label is None, then assume we aren't considering injected accuracy.
+#     Else, inject_label should be one of ["random_inject_with_golf", "random_inject_without_golf"], we'll add accuracy of the model on these labels in the returned dictionary
+#     """
+#     if "gemma" in model_type:
+#         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
+#     elif model_type == "llama":
+#         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+#     elif model_type == "pythia":
+#         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+#     elif model_type == "qwen":
+#         tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-4B")
+#     else:
+#         raise ValueError(f"Model type {model_type} not recognized")
 
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-    tokenizer.padding_side = "right"
+#     tokenizer.pad_token_id = tokenizer.eos_token_id
+#     tokenizer.padding_side = "right"
 
-    accuracies = {}
+#     accuracies = {}
 
-    def update_accuracies(eval_type, eval_constructor):
-        if test_each_sport:
-            accuracies[eval_type] = {}
-            for sport in ["football", "baseball", "basketball"]:
-                accuracies[eval_type][sport] = 0
-                for i in range(n_iters):
-                    try:
-                        temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, use_icl=use_icl, use_system_prompt=use_system_prompt)
-                    except:
-                        temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport})
-                    accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
-        else:
-            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, use_icl=use_icl, use_system_prompt=use_system_prompt)
-            accuracies[eval_type] = 0
-            for i in range(n_iters):
-                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
+#     def update_accuracies(eval_type, eval_constructor, constructor_kwargs={}, eval_kwargs={}):
+#         if test_each_sport:
+#             accuracies[eval_type] = {}
+#             for sport in ["football", "baseball", "basketball"]:
+#                 accuracies[eval_type][sport] = 0
+#                 for i in range(n_iters):
+#                     try:
+#                         temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, use_icl=use_icl, use_system_prompt=use_system_prompt, **constructor_kwargs)
+#                     except:
+#                         temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **constructor_kwargs)
+#                     accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
+#         else:
+#             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, use_icl=use_icl, use_system_prompt=use_system_prompt)
+#             accuracies[eval_type] = 0
+#             for i in range(n_iters):
+#                 accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
     
-    if "Normal" in include_evals:
-        update_accuracies("Normal", SportsTask_ICL_SYS)
-    if "MC" in include_evals:
-        update_accuracies("MC", SportsTask_MC)
-    if "Capitalized" in include_evals:
-        update_accuracies("Capitalized", SportsTask_Capitalized)
-    if "Dashed" in include_evals:
-        update_accuracies("Dashed", SportsTask_Dashed)
+#     if "Normal" in include_evals:
+#         update_accuracies("Normal", SportsTask_ICL_SYS)
+#     if "MC" in include_evals:
+#         update_accuracies("MC", SportsTask_MC)
+#     if "Capitalized" in include_evals:
+#         update_accuracies("Capitalized", SportsTask_Capitalized)
+#     if "Dashed" in include_evals:
+#         update_accuracies("Dashed", SportsTask_Dashed)
 
-    return accuracies
+#     return accuracies
 
 
 
@@ -407,7 +411,11 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
                             test_forget_maintain=True, 
                             task_init_kwargs={"use_icl": False, "use_system_prompt": False},
                             forget_task_init_kwargs={"use_icl": False, "use_system_prompt": False}, maintain_task_init_kwargs={"use_icl": False, "use_system_prompt": False},
-                            include_evals=["Normal", "MC", "Capitalized", "Dashed"], check_all_logits=False):
+                            inject_label=None,
+                            include_evals=["Normal", "MC"], check_all_logits=False):
+    """
+    inject_label: either None, or one of ["random_with_golf", "random_without_golf"]. If None, then we won't test the injected accuracies. Else, we'll test using those labels.
+    """
     if "gemma-2-9b" in model_type or "gemma2" in model_type or model_type == "gemma-2":
         tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b")
     elif "gemma" in model_type:
@@ -426,7 +434,7 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
 
     accuracies = {}
 
-    def update_accuracies(eval_type, eval_constructor):
+    def update_accuracies(eval_type, eval_constructor, constructor_kwargs={}, eval_kwargs={}):
         if test_forget_maintain:
             accuracies[eval_type] = {}
             accuracies[eval_type]["forget"] = 0
@@ -439,25 +447,31 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
             #         except:
             #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
             #         accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
-            forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
-            maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **maintain_task_init_kwargs)
+            forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **(forget_task_init_kwargs|constructor_kwargs))
+            maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **(maintain_task_init_kwargs|constructor_kwargs))
             for i in range(n_iters):
-                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits) / n_iters
-                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits) / n_iters
+                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits, **eval_kwargs) / n_iters
+                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous, check_all_logits=check_all_logits, **eval_kwargs) / n_iters
         else:
-            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **forget_task_init_kwargs)
+            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, **(forget_task_init_kwargs|constructor_kwargs))
             accuracies[eval_type] = 0
             for i in range(n_iters):
-                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
+                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous, **eval_kwargs) / n_iters
     
     if "Normal" in include_evals:
-        update_accuracies("Normal", SportsTask_ICL_SYS)
+        update_accuracies("Normal", SportsTask_ICL_SYS, constructor_kwargs={"inject_sport": None})
     if "MC" in include_evals:
         update_accuracies("MC", SportsTask_MC)
     if "Capitalized" in include_evals:
         update_accuracies("Capitalized", SportsTask_Capitalized)
     if "Dashed" in include_evals:
         update_accuracies("Dashed", SportsTask_Dashed)
+
+    if inject_label is not None:
+        if "Normal" in include_evals:
+            update_accuracies("Normal_Injected", SportsTask_ICL_SYS, constructor_kwargs={"inject_sport": inject_label}, eval_kwargs={"injected_accuracy": True})
+        if "MC" in include_evals:
+            update_accuracies("MC_Injected", SportsTask_MC, constructor_kwargs={"inject_sport": inject_label})
 
     return accuracies
 

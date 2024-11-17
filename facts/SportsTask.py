@@ -314,7 +314,7 @@ class SportsTask(Task):
         """
         Returns the average logit difference between the correct sport and the average of the logits for the other two sports.
         """
-        football_token, baseball_token, basketball_token = self.get_sports_tokens(self.tokenizer)
+        football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
 
         with torch.no_grad():
             if use_test_data:
@@ -461,32 +461,37 @@ class SportsTask(Task):
 
 
 class SportsTask_Injection(SportsTask):
-    def __init__(self, *args, inject_sport, **kwargs):
-        assert inject_sport in ["football", "baseball", "basketball", "golf", "random_with_golf", "random_without_golf"], f"{inject_sport=} not recognized"
+    def __init__(self, *args, inject_sport=None, **kwargs):
+        assert inject_sport in [None, "football", "baseball", "basketball", "golf", "random_with_golf", "random_without_golf"], f"{inject_sport=} not recognized"
         super().__init__(*args, **kwargs)
-        if inject_sport == "random_with_golf":
-            def get_random_sport(row):
-                possible_sports = ["football", "baseball", "basketball", "golf"]
-                possible_sports.remove(row["sport"])
-                return np.random.choice(possible_sports)
+        if inject_sport is None:
+            print("No injection, using original sports")
+            self.train_df["inject_sport"] = self.train_df["sport"]
+            self.test_df["inject_sport"] = self.test_df["sport"]
+        elif inject_sport == "random_with_golf":
+            # def get_random_sport(row):
+            #     possible_sports = ["football", "baseball", "basketball", "golf"]
+            #     possible_sports.remove(row["sport"])
+            #     return np.random.choice(possible_sports)
 
             # select random sport from football, baseball, basketball, golf for each example in train and test df, except for the original sport
             for df in [self.train_df, self.test_df]:
                 # set seed
-                np.random.seed(16)
-                df["inject_sport"] = df.apply(get_random_sport, axis=1)
+                # np.random.seed(16)
+                df["inject_sport"] = df["inject_sport_with_golf"]
 
         elif inject_sport == "random_without_golf":
-            def get_random_sport(row):
-                possible_sports = ["football", "baseball", "basketball"]
-                possible_sports.remove(row["sport"])
-                return np.random.choice(possible_sports)
+            # def get_random_sport(row):
+            #     possible_sports = ["football", "baseball", "basketball"]
+            #     possible_sports.remove(row["sport"])
+            #     return np.random.choice(possible_sports)
 
             # select random sport from football, baseball, basketball for each example in train and test df
             for df in [self.train_df, self.test_df]:
                 # set seed
-                np.random.seed(16)
-                df["inject_sport"] = df.apply(get_random_sport, axis=1)
+                # np.random.seed(16)
+                df["inject_sport"] = df["inject_sport_without_golf"]
+
         else:
             for df in [self.train_df, self.test_df]:
                 df["inject_sport"] = inject_sport
@@ -596,7 +601,7 @@ class SportsFactsTask(Task):
         def __len__(self):
             return len(self.sentences)
 
-    def get_sports_tokens(self, tokenizer, include_golf=False):
+    def get_sports_tokens(self, tokenizer, include_golf=True):
         # get football, baseball, basketball, golf tokens
         sports_tokens = tokenizer([" football", " baseball", " basketball", " golf"], return_tensors="pt").input_ids
         if sports_tokens.shape == (4, 1):
