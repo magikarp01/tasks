@@ -427,6 +427,8 @@ def adversarial_sports_eval_redo(model, model_type, batch_size, n_iters=5, conti
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
     elif model_type == "qwen":
         tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-4B")
+    elif model_type == "llama-3":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B")
     else:
         raise ValueError(f"Model type {model_type} not recognized")
 

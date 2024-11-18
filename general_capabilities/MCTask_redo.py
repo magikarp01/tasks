@@ -213,7 +213,7 @@ def run_general_evals(model, model_type="llama2", evals_to_include=["MMLU"], ver
     elif model_type == "llama2":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
         tokenizer.pad_token_id = tokenizer.unk_token_id
-    elif model_type == "llama3":
+    elif model_type == "llama3" or model_type == "llama-3":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
         tokenizer.pad_token_id = tokenizer.eos_token_id
     elif model_type == "pythia":

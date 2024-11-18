@@ -467,6 +467,8 @@ def run_side_effects_evals(model, evals_to_run=["Sports Answers", "Sports Famili
         model_name = "EleutherAI/pythia-2.8b"
     elif "llama_2" in model_type:
         model_name = "meta-llama/Llama-2-7b-chat-hf"
+    elif "llama-3" in model_type:
+        model_name = "meta-llama/Meta-Llama-3-8B"
     else:
         model_name = model_type
     
