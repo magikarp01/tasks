@@ -494,7 +494,7 @@ class SportsTask_Injection(SportsTask):
 
         else:
             for df in [self.train_df, self.test_df]:
-                df["inject_sport"] = inject_sport
+                df["inject_sport"] = inject_label
         self.train_dataset = SportsTask.SportsDataset(self.train_df, self.tokenizer)
         self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle)
         self.test_dataset = SportsTask.SportsDataset(self.test_df, self.tokenizer)
