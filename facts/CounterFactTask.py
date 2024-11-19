@@ -44,23 +44,31 @@ def get_token_sequence_pos(tokenizer, prompt_list, token_strs, batch_size=64):
 class CounterFactTask(Task):
     def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, 
     # forget_fact_subset=None, train_test_split=True, is_forget_dataset=None
-    forget_split=None, maintain_split=None,
+    forget_split=None, maintain_split=None
     ):
         """
         Use prefiltered CounterFact dataset (can filter for a given probability threshold).
         Arguments:
             check_full_answer (bool): Whether to check the full answer or just the first token.
         """
-        assert model_type in ["gemma_7b", "gemma2_9b", "gemma-2", "gemma_2_9b"]
-        if model_type == "gemma-2" or model_type == "gemma_2_9b":
+        assert model_type in ["gemma", "gemma_7b", "gemma2_9b", "gemma-2", "gemma_2_9b", "gemma-2-9b", "llama3_8b", "llama-3-8b", "llama-3"]
+        if model_type == "gemma" or model_type == "gemma_7b":
+            model_type = "gemma_7b"
+        elif model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma-2-9b":
             model_type = "gemma2_9b"
+        elif model_type == "llama3_8b" or model_type == "llama-3-8b" or model_type == "llama-3":
+            model_type = "llama3_8b"
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         assert self.tokenizer.padding_side == "right", "Tokenizer should be right-padded for this task"
         self.shuffle = shuffle
         self.counterfact_df = load_dataset("PhillipGuo/counterfact-with-gemma-probs", split=model_type).to_pandas()
         if min_prob_threshold is not None:
-            self.counterfact_df = self.counterfact_df[self.counterfact_df["prob_of_correct_answer"] > min_prob_threshold]
+            self.counterfact_df = self.counterfact_df[self.counterfact_df["prob_of_correct_answer"] >= min_prob_threshold]
+
+        # cut off the last 64 for few shots
+        self.few_shot_df = self.counterfact_df.iloc[-64:].copy().reset_index()
+        self.counterfact_df = self.counterfact_df.iloc[:-64].copy().reset_index()
         self.check_full_answer = check_full_answer
         self.device = device
         if criterion == "cross_entropy":
@@ -93,6 +101,7 @@ class CounterFactTask(Task):
         #     self.test_df = self.counterfact_df
         self.forget_split = forget_split
         self.maintain_split = maintain_split
+
         if forget_split is not None:
             assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split"], f"{forget_split=} and not recognized"
             new_forget_split = "_".join(forget_split.split("_")[:-1])
@@ -296,16 +305,21 @@ class CounterFactTask_MC(CounterFactTask):
         Arguments:
             check_full_answer (bool): Whether to check the full answer or just the first token.
         """
-        assert model_type in ["gemma_7b", "gemma2_9b", "gemma-2", "gemma_2_9b"]
-        if model_type == "gemma-2" or model_type == "gemma_2_9b":
+        assert model_type in ["gemma", "gemma_7b", "gemma2_9b", "gemma-2", "gemma_2_9b", "gemma-2-9b", "llama3_8b", "llama-3-8b", "llama-3"]
+        if model_type == "gemma" or model_type == "gemma_7b":
+            model_type = "gemma_7b"
+        elif model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma-2-9b":
             model_type = "gemma2_9b"
+        elif model_type == "llama3_8b" or model_type == "llama-3-8b" or model_type == "llama-3":
+            model_type = "llama3_8b"
+
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         assert self.tokenizer.padding_side == "right", "Tokenizer should be right-padded for this task"
         self.shuffle = shuffle
         self.counterfact_df = load_dataset("PhillipGuo/counterfact-with-gemma-probs", split=model_type).to_pandas()
         if min_prob_threshold is not None:
-            self.counterfact_df = self.counterfact_df[self.counterfact_df["prob_of_correct_answer"] > min_prob_threshold]
+            self.counterfact_df = self.counterfact_df[self.counterfact_df["prob_of_correct_answer"] >= min_prob_threshold]
         self.check_full_answer = check_full_answer
         self.device = device
         if criterion == "cross_entropy":
@@ -313,7 +327,7 @@ class CounterFactTask_MC(CounterFactTask):
         elif criterion == "log_1_minus_p":
             self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
         self.is_inject_task = is_inject_task
-        self.n_shots = n_shots
+        # self.n_shots = n_shots
         counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet").rename({"target_true": "target_true_mc", "targets_false": "targets_false_mc", "question": "question_mc"}, axis=1)
         # self.counterfact_df = self.counterfact_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
 
