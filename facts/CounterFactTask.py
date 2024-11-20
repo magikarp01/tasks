@@ -60,7 +60,7 @@ class CounterFactTask(Task):
             model_type = "llama3_8b"
         self.batch_size = batch_size
         self.tokenizer = tokenizer
-        assert self.tokenizer.padding_side == "right", "Tokenizer should be right-padded for this task"
+        assert self.tokenizer.padding_side == "right", f"Tokenizer should be right-padded for this task but instead is {self.tokenizer.padding_side=}"
         self.shuffle = shuffle
         self.counterfact_df = load_dataset("PhillipGuo/counterfact-with-gemma-probs", split=model_type).to_pandas()
         if min_prob_threshold is not None:
@@ -69,6 +69,7 @@ class CounterFactTask(Task):
         # cut off the last 64 for few shots
         self.few_shot_df = self.counterfact_df.iloc[-64:].copy().reset_index()
         self.counterfact_df = self.counterfact_df.iloc[:-64].copy().reset_index()
+        
         self.check_full_answer = check_full_answer
         self.device = device
         if criterion == "cross_entropy":
@@ -126,7 +127,7 @@ class CounterFactTask(Task):
                 train_df = counterfact_df.copy()
                 test_df = counterfact_df.copy()
             else:
-                print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and unlearning")
+                print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and relearning")
                 train_size = int(0.5 * len(counterfact_df))
                 train_df = counterfact_df[:train_size].copy()
                 test_df = counterfact_df[train_size:].copy()
@@ -134,7 +135,7 @@ class CounterFactTask(Task):
             assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
             counterfact_df = self.counterfact_df.drop(forget_indices)
             if maintain_split == "unsplit":
-                print("Are you sure you don't want to split the maintain set?")
+                raise NotImplementedError("Are you sure you don't want to split the maintain set?")
                 train_df = counterfact_df.copy()
                 test_df = counterfact_df.copy()
             else:
@@ -239,7 +240,7 @@ class CounterFactTask_Injection(CounterFactTask):
             return sum(accs) / len(accs)
 
 
-class CounterFactTask_Neighborhood(CounterFactTask):
+class CounterFactTask_Neighborhood(CounterFactTask_Injection):
     def __init__(self, *args, shuffle=True, **kwargs):
         super().__init__(*args, **kwargs)
         # add datapoints for neighborhood prompts
@@ -250,7 +251,7 @@ class CounterFactTask_Neighborhood(CounterFactTask):
         self.test_dataset = Dataset.from_pandas(self.test_df)
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
 
-class CounterFactTask_Paraphrase(CounterFactTask):
+class CounterFactTask_Paraphrase(CounterFactTask_Injection):
     def __init__(self, *args, shuffle=True, **kwargs):
         super().__init__(*args, **kwargs)
         # add datapoints for neighborhood prompts
@@ -286,153 +287,161 @@ def create_icl_mc_format(train_rows):
     return full_icl_format
 
 class CounterFactTask_MC(CounterFactTask):
-    # def __init__(self, *args, n_shots=0, shuffle=True, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     display(self.train_df)
-    #     counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet")
-    #     self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
-    #     self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
-
-    #     # also need to access the original train data, esp for non train data
-
-    #     self.train_dataset = Dataset.from_pandas(self.train_df)
-    #     self.test_dataset = Dataset.from_pandas(self.test_df)
-    #     self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
-    
-    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_split=None, maintain_split=None, is_inject_task=False):
-        """
-        Use prefiltered CounterFact dataset (can filter for a given probability threshold).
-        Arguments:
-            check_full_answer (bool): Whether to check the full answer or just the first token.
-        """
-        assert model_type in ["gemma", "gemma_7b", "gemma2_9b", "gemma-2", "gemma_2_9b", "gemma-2-9b", "llama3_8b", "llama-3-8b", "llama-3"]
-        if model_type == "gemma" or model_type == "gemma_7b":
-            model_type = "gemma_7b"
-        elif model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma-2-9b":
-            model_type = "gemma2_9b"
-        elif model_type == "llama3_8b" or model_type == "llama-3-8b" or model_type == "llama-3":
-            model_type = "llama3_8b"
-
-        self.batch_size = batch_size
-        self.tokenizer = tokenizer
-        assert self.tokenizer.padding_side == "right", "Tokenizer should be right-padded for this task"
-        self.shuffle = shuffle
-        self.counterfact_df = load_dataset("PhillipGuo/counterfact-with-gemma-probs", split=model_type).to_pandas()
-        if min_prob_threshold is not None:
-            self.counterfact_df = self.counterfact_df[self.counterfact_df["prob_of_correct_answer"] >= min_prob_threshold]
-        self.check_full_answer = check_full_answer
-        self.device = device
-        if criterion == "cross_entropy":
-            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
-        elif criterion == "log_1_minus_p":
-            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
-        self.is_inject_task = is_inject_task
-        # self.n_shots = n_shots
+    def __init__(self, *args, n_shots=0, shuffle=True, **kwargs):
+        super().__init__(*args, **kwargs)
         counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet").rename({"target_true": "target_true_mc", "targets_false": "targets_false_mc", "question": "question_mc"}, axis=1)
-        # self.counterfact_df = self.counterfact_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
-
-        # if is_forget_dataset is not None: 
-        #     forget_df = self.counterfact_df.copy()
-        #     if forget_fact_subset is not None: # either int or list of indices
-        #         if isinstance(forget_fact_subset, int):
-        #             forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
-        #         elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
-        #             forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
-        #         # forget_df = forget_df.iloc[forget_fact_subset]
-            
-        #     if is_forget_dataset:
-        #         self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
-        #         print("Forget dataset with ", len(self.counterfact_df), " examples")
-
-        #     else:
-        #         self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
-        #         print("Maintain dataset with ", len(self.counterfact_df), " examples")
-
-        # if train_test_split:
-        #     self.train_df = self.counterfact_df.iloc[:int(0.8*len(self.counterfact_df))]
-        #     self.test_df = self.counterfact_df.iloc[int(0.8*len(self.counterfact_df)):]
-        # else:
-        #     self.train_df = self.counterfact_df
-        #     self.test_df = self.counterfact_df
-        self.forget_split = forget_split
-        self.maintain_split = maintain_split
-        if forget_split is not None:
-            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split"], f"{forget_split=} and not recognized"
-            new_forget_split = "_".join(forget_split.split("_")[:-1])
-            if new_forget_split == "first_16":
-                forget_indices = range(16)
-            elif new_forget_split == "first_64":
-                forget_indices = range(64)
-            elif new_forget_split == "random_16":
-                torch.manual_seed(16)
-                forget_indices = torch.randperm(len(self.counterfact_df))[:16]
-            elif new_forget_split == "random_64":
-                torch.manual_seed(64)
-                forget_indices = torch.randperm(len(self.counterfact_df))[:64]
-            else:
-                raise ValueError(f"{forget_split=} and not recognized")
-            print(f"forget_indices: {forget_indices}")
-        else:
-            print("You should probably have a forget split")
-        if maintain_split is None:
-            counterfact_df = self.counterfact_df.iloc[forget_indices]
-            if forget_split.endswith("unsplit"):
-                train_df = counterfact_df.copy()
-                test_df = counterfact_df.copy()
-            else:
-                print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and unlearning")
-                train_size = int(0.5 * len(counterfact_df))
-                train_df = counterfact_df[:train_size].copy()
-                test_df = counterfact_df[train_size:].copy()
-        else:
-            assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
-            counterfact_df = self.counterfact_df.drop(forget_indices)
-            if maintain_split == "unsplit":
-                print("Are you sure you don't want to split the maintain set?")
-                train_df = counterfact_df.copy()
-                test_df = counterfact_df.copy()
-            else:
-                train_size = int(0.8 * len(counterfact_df))
-                train_df = counterfact_df[:train_size].copy()
-                test_df = counterfact_df[train_size:].copy()
-        self.train_df = train_df
-        self.test_df = test_df
-
         self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
         self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+        self.few_shot_df = self.few_shot_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+        
+        self.n_shots = n_shots
+        if n_shots > 0:
+            few_shot_df = self.few_shot_df.iloc[:n_shots]
+            self.mc_question_format = create_icl_mc_format(Dataset.from_pandas(few_shot_df).to_list()) + mc_question_format
+        else:
+            self.mc_question_format = mc_question_format
 
-        self.mc_question_format = mc_question_format
-        if self.n_shots > 0:
-            # must either use shots from train, or be a forget set and use shots from the maintain train set
-            assert is_forget_dataset is not None or train_test_split, "If you want to use ICL, the ICL examples must be from the train set (set train_test_split=True), or if this is a forget task (with no train-test-split), grab the ICL examples from the maintain set."
-            if is_forget_dataset:
-                # grab from forget_df[~forget_df.index.isin(forget_fact_subset)]
-                # print("Forget fact subset:", forget_fact_subset)
-                # icl_df = forget_df[~forget_df["prompt_id"].isin(forget_fact_subset)].iloc[:self.n_shots]
-                # print("Forget df that is not in forget_fact_subset:")
-                # display(forget_df.query("prompt_id not in @forget_fact_subset"))
-                icl_df = forget_df.query("prompt_id not in @forget_fact_subset").iloc[:self.n_shots]
-                icl_df = icl_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
-
-            else:
-                icl_df = self.train_df.iloc[:self.n_shots]
-            # print("ICL DF:")
-            # display(icl_df)
-            self.mc_question_format = create_icl_mc_format(Dataset.from_pandas(icl_df).to_list()) + self.mc_question_format
-
-        if self.n_shots > 0:
-            # print("Test DF:")
-            # display(self.test_df)
-            # print("ICL DF:")
-            # display(icl_df)
-            # there should be no overlap between the icl_df and the test_df
-            assert len(set(icl_df["prompt_id"]) & set(self.test_df["prompt_id"])) == 0, "There is overlap between the ICL examples and the test set"
+    #     # also need to access the original train data, esp for non train data
 
         self.train_dataset = Dataset.from_pandas(self.train_df)
         self.test_dataset = Dataset.from_pandas(self.test_df)
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
     
-    def format_batch(self, batch):
+    # def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, forget_split=None, maintain_split=None, is_inject_task=False):
+    #     """
+    #     Use prefiltered CounterFact dataset (can filter for a given probability threshold).
+    #     Arguments:
+    #         check_full_answer (bool): Whether to check the full answer or just the first token.
+    #     """
+    #     assert model_type in ["gemma", "gemma_7b", "gemma2_9b", "gemma-2", "gemma_2_9b", "gemma-2-9b", "llama3_8b", "llama-3-8b", "llama-3"]
+    #     if model_type == "gemma" or model_type == "gemma_7b":
+    #         model_type = "gemma_7b"
+    #     elif model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma-2-9b":
+    #         model_type = "gemma2_9b"
+    #     elif model_type == "llama3_8b" or model_type == "llama-3-8b" or model_type == "llama-3":
+    #         model_type = "llama3_8b"
+
+    #     self.batch_size = batch_size
+    #     self.tokenizer = tokenizer
+    #     assert self.tokenizer.padding_side == "right", "Tokenizer should be right-padded for this task"
+    #     self.shuffle = shuffle
+    #     self.counterfact_df = load_dataset("PhillipGuo/counterfact-with-gemma-probs", split=model_type).to_pandas()
+    #     if min_prob_threshold is not None:
+    #         self.counterfact_df = self.counterfact_df[self.counterfact_df["prob_of_correct_answer"] >= min_prob_threshold]
+    #     self.check_full_answer = check_full_answer
+    #     self.device = device
+    #     if criterion == "cross_entropy":
+    #         self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+    #     elif criterion == "log_1_minus_p":
+    #         self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
+    #     self.is_inject_task = is_inject_task
+    #     # self.n_shots = n_shots
+    #     counterfact_mc_df = pd.read_parquet("tasks/facts/data/counterfact_mc_questions.parquet").rename({"target_true": "target_true_mc", "targets_false": "targets_false_mc", "question": "question_mc"}, axis=1)
+    #     # self.counterfact_df = self.counterfact_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+
+    #     # if is_forget_dataset is not None: 
+    #     #     forget_df = self.counterfact_df.copy()
+    #     #     if forget_fact_subset is not None: # either int or list of indices
+    #     #         if isinstance(forget_fact_subset, int):
+    #     #             forget_fact_subset = forget_df.iloc[:forget_fact_subset]["prompt_id"].tolist()
+    #     #         elif isinstance(forget_fact_subset, list) and isinstance(forget_fact_subset[0], str): # list of prompts
+    #     #             forget_fact_subset = forget_df[forget_df["prompt"].isin(forget_fact_subset)]["prompt_id"].tolist()
+    #     #         # forget_df = forget_df.iloc[forget_fact_subset]
+            
+    #     #     if is_forget_dataset:
+    #     #         self.counterfact_df = forget_df.query("prompt_id in @forget_fact_subset")
+    #     #         print("Forget dataset with ", len(self.counterfact_df), " examples")
+
+    #     #     else:
+    #     #         self.counterfact_df = forget_df.query("prompt_id not in @forget_fact_subset")
+    #     #         print("Maintain dataset with ", len(self.counterfact_df), " examples")
+
+    #     # if train_test_split:
+    #     #     self.train_df = self.counterfact_df.iloc[:int(0.8*len(self.counterfact_df))]
+    #     #     self.test_df = self.counterfact_df.iloc[int(0.8*len(self.counterfact_df)):]
+    #     # else:
+    #     #     self.train_df = self.counterfact_df
+    #     #     self.test_df = self.counterfact_df
+    #     self.forget_split = forget_split
+    #     self.maintain_split = maintain_split
+    #     if forget_split is not None:
+    #         assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split"], f"{forget_split=} and not recognized"
+    #         new_forget_split = "_".join(forget_split.split("_")[:-1])
+    #         if new_forget_split == "first_16":
+    #             forget_indices = range(16)
+    #         elif new_forget_split == "first_64":
+    #             forget_indices = range(64)
+    #         elif new_forget_split == "random_16":
+    #             torch.manual_seed(16)
+    #             forget_indices = torch.randperm(len(self.counterfact_df))[:16]
+    #         elif new_forget_split == "random_64":
+    #             torch.manual_seed(64)
+    #             forget_indices = torch.randperm(len(self.counterfact_df))[:64]
+    #         else:
+    #             raise ValueError(f"{forget_split=} and not recognized")
+    #         print(f"forget_indices: {forget_indices}")
+    #     else:
+    #         print("You should probably have a forget split")
+    #     if maintain_split is None:
+    #         counterfact_df = self.counterfact_df.iloc[forget_indices]
+    #         if forget_split.endswith("unsplit"):
+    #             train_df = counterfact_df.copy()
+    #             test_df = counterfact_df.copy()
+    #         else:
+    #             print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and unlearning")
+    #             train_size = int(0.5 * len(counterfact_df))
+    #             train_df = counterfact_df[:train_size].copy()
+    #             test_df = counterfact_df[train_size:].copy()
+    #     else:
+    #         assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
+    #         counterfact_df = self.counterfact_df.drop(forget_indices)
+    #         if maintain_split == "unsplit":
+    #             print("Are you sure you don't want to split the maintain set?")
+    #             train_df = counterfact_df.copy()
+    #             test_df = counterfact_df.copy()
+    #         else:
+    #             train_size = int(0.8 * len(counterfact_df))
+    #             train_df = counterfact_df[:train_size].copy()
+    #             test_df = counterfact_df[train_size:].copy()
+    #     self.train_df = train_df
+    #     self.test_df = test_df
+
+    #     self.train_df = self.train_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+    #     self.test_df = self.test_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+
+    #     self.mc_question_format = mc_question_format
+    #     if self.n_shots > 0:
+    #         # must either use shots from train, or be a forget set and use shots from the maintain train set
+    #         assert is_forget_dataset is not None or train_test_split, "If you want to use ICL, the ICL examples must be from the train set (set train_test_split=True), or if this is a forget task (with no train-test-split), grab the ICL examples from the maintain set."
+    #         if is_forget_dataset:
+    #             # grab from forget_df[~forget_df.index.isin(forget_fact_subset)]
+    #             # print("Forget fact subset:", forget_fact_subset)
+    #             # icl_df = forget_df[~forget_df["prompt_id"].isin(forget_fact_subset)].iloc[:self.n_shots]
+    #             # print("Forget df that is not in forget_fact_subset:")
+    #             # display(forget_df.query("prompt_id not in @forget_fact_subset"))
+    #             icl_df = forget_df.query("prompt_id not in @forget_fact_subset").iloc[:self.n_shots]
+    #             icl_df = icl_df.merge(counterfact_mc_df, on="prompt_id", how="inner")
+
+    #         else:
+    #             icl_df = self.train_df.iloc[:self.n_shots]
+    #         # print("ICL DF:")
+    #         # display(icl_df)
+    #         self.mc_question_format = create_icl_mc_format(Dataset.from_pandas(icl_df).to_list()) + self.mc_question_format
+
+    #     if self.n_shots > 0:
+    #         # print("Test DF:")
+    #         # display(self.test_df)
+    #         # print("ICL DF:")
+    #         # display(icl_df)
+    #         # there should be no overlap between the icl_df and the test_df
+    #         assert len(set(icl_df["prompt_id"]) & set(self.test_df["prompt_id"])) == 0, "There is overlap between the ICL examples and the test set"
+
+    #     self.train_dataset = Dataset.from_pandas(self.train_df)
+    #     self.test_dataset = Dataset.from_pandas(self.test_df)
+    #     self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
+    
+    
+    def format_batch(self, batch, injected_accuracy=False):
         all_questions = []
         correct_labels = []
         batch_size = len(list(batch.values())[0])
@@ -440,7 +449,7 @@ class CounterFactTask_MC(CounterFactTask):
             choices = [batch["target_true_mc"][i]] + [batch["targets_false_mc"][j][i] for j in range(len(batch["targets_false_mc"]))]
             shuffled_indices = list(range(4))
             random.shuffle(shuffled_indices)
-            if self.is_inject_task:
+            if injected_accuracy:
                 correct_labels.append(" " + "ABCD"[shuffled_indices.index(1)])
             else:
                 correct_labels.append(" " + "ABCD"[shuffled_indices.index(0)])
@@ -454,28 +463,38 @@ class CounterFactTask_MC(CounterFactTask):
         return all_questions, correct_labels
 
 
-    def calculate_loss(self, model, batch):
-        """
-        Get the probability of the correct answer, either only the first token or the full answer.
-        I think first token only should be faster because doesn't require syncing.
-        """
-        if self.check_full_answer: # don't think we need this
-            # full_strings = batch["prompt"] + batch["target_true"]
-            # substring_start_positions, substring_end_positions = get_token_sequence_pos(self.tokenizer, full_strings, batch["target_true"])
-            # labels = torch.tensor(substring_end_positions)
-            raise NotImplementedError("Checking full answer not implemented, not needed for gemma")
-        else:
-            # run prompts
-            prompts, labels = self.format_batch(batch)
-            if self.tokenizer.bos_token_id in labels[0]:
-                labels = labels[:, 1]
-            else:
-                labels = labels[:, 0]
-            labels = labels.to(self.device)
-            last_logits = get_final_logits(model, self.tokenizer, prompts)
-            return self.criterion(last_logits, labels)
+    # def calculate_loss(self, model, batch):
+    #     """
+    #     Get the probability of the correct answer, either only the first token or the full answer.
+    #     I think first token only should be faster because doesn't require syncing.
+    #     """
+    #     if self.check_full_answer: # don't think we need this
+    #         # full_strings = batch["prompt"] + batch["target_true"]
+    #         # substring_start_positions, substring_end_positions = get_token_sequence_pos(self.tokenizer, full_strings, batch["target_true"])
+    #         # labels = torch.tensor(substring_end_positions)
+    #         raise NotImplementedError("Checking full answer not implemented, not needed for gemma")
+    #     else:
+    #         # run prompts
+    #         prompts, labels = self.format_batch(batch)
+    #         if self.tokenizer.bos_token_id in labels[0]:
+    #             labels = labels[:, 1]
+    #         else:
+    #             labels = labels[:, 0]
+    #         labels = labels.to(self.device)
+    #         last_logits = get_final_logits(model, self.tokenizer, prompts)
+    #         return self.criterion(last_logits, labels)
     
-    def get_test_accuracy(self, model, use_test_data=True, continuous=True, n_iters=1):
+    def get_choice_tokens(self, tokenizer):
+        choices = [" A", " B", " C", " D"]
+        mc_tokens = tokenizer(choices, return_tensors="pt").input_ids
+        if mc_tokens.shape == (4, 1):
+            return mc_tokens.squeeze().tolist()
+        elif mc_tokens.shape == (4, 2) or mc_tokens.shape == (4, 3):
+            return mc_tokens[:, -1].tolist()
+        else:
+            raise ValueError(f"mc_tokens shape is {mc_tokens.shape}, unrecognized")
+
+    def get_test_accuracy(self, model, use_test_data=True, continuous=True, check_all_logits=False, injected_accuracy=False, n_iters=1):
         """
         Get the accuracy of the model on the test set.
         """
@@ -483,39 +502,70 @@ class CounterFactTask_MC(CounterFactTask):
             accs = []
             for i in range(n_iters):
                 batch = self.get_batch(train=not use_test_data)
-                prompts, labels = self.format_batch(batch)
+                prompts, labels = self.format_batch(batch, injected_accuracy=injected_accuracy)
                 last_logits = get_final_logits(model, self.tokenizer, prompts)
-                labels = self.tokenizer(labels, return_tensors="pt", padding=True).input_ids
-                if self.tokenizer.bos_token_id in labels[0]:
-                    labels = labels[:, 1]
-                else:
-                    labels = labels[:, 0]
-                labels = labels.to(self.device)
+
+                if check_all_logits:
+                    labels = self.tokenizer(labels, return_tensors="pt", padding=True).input_ids
+                    if self.tokenizer.bos_token_id in labels[0]:
+                        labels = labels[:, 1]
+                    else:
+                        labels = labels[:, 0]
+                    labels = labels.to(self.device)
+                    
+                    if continuous:
+                        probs = torch.softmax(last_logits, dim=1)
+                        accs.append(probs[torch.arange(probs.shape[0]), labels].mean().item())
+                    else:
+                        preds = torch.argmax(last_logits, dim=1)
+                        accs.append((preds == labels).sum().item() / len(labels))
                 
-                if continuous:
-                    probs = torch.softmax(last_logits, dim=1)
-                    accs.append(probs[torch.arange(probs.shape[0]), labels].mean().item())
                 else:
-                    preds = torch.argmax(last_logits, dim=1)
-                    accs.append((preds == labels).sum().item() / len(labels))
+                    choice_tokens = self.get_choice_tokens(self.tokenizer)
+                    possible_choice_logits = last_logits[:, choice_tokens]
+                    mc_number_dict = {" A": 0, " B": 1, " C": 2, " D": 3}
+                    number_labels = torch.tensor([mc_number_dict[label] for label in labels])
+                    # print(labels)
+                    if continuous:
+                        probabilities = torch.softmax(possible_choice_logits, dim=1)
+                        probabilities /= probabilities.sum(dim=1, keepdim=True)
+                        # print(probabilities)
+                        accs.append(probabilities[torch.arange(probabilities.shape[0]), number_labels].mean().item())
+                    else:
+                        preds = torch.argmax(possible_choice_logits, dim=1)
+                        accs.append((preds == number_labels).sum().item() / len(number_labels))
             return sum(accs) / len(accs)
 
 from transformers import AutoTokenizer
 from tasks.general_capabilities.MCTask_redo import run_general_evals
 def adversarial_counterfact_eval(model, model_type, batch_size, n_iters=5, continuous=True, 
                             test_forget_maintain=True, 
-                            task_init_kwargs={},
+                            # task_init_kwargs={},
                             forget_task_init_kwargs={}, maintain_task_init_kwargs={},
-                            include_evals=["Normal", "MC", "Paraphrase", "Neighborhood", "MMLU"], general_batch_size=5, mc_batch_size=8, n_mc_shots=16, device="cuda"):
-    if model_type == "gemma-2" or model_type == "gemma_2_9b" or model_type == "gemma2_9b":
-        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b", padding_side="right")  
-    elif model_type == "gemma" or model_type == "gemma_7b" or model_type == "gemma-7b":
-        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b", padding_side="right")
+                            inject_fact=False,
+                            include_evals=["Normal", "MC", "Paraphrase", "Neighborhood", "MMLU"], 
+                            general_batch_size=5, mc_batch_size=8, n_mc_shots=16, device="cuda", check_all_logits=False):
+    if "gemma-2-9b" in model_type or "gemma2" in model_type or model_type == "gemma-2":
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-9b")
+    elif "gemma" in model_type:
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
+    elif model_type == "llama":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    elif model_type == "pythia":
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8B")
+    elif model_type == "qwen":
+        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-4B")
+    elif model_type == "llama-3":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B")
+    else:
+        raise ValueError(f"Model type {model_type} not recognized")
+
     tokenizer.pad_token_id = tokenizer.eos_token_id
+    tokenizer.padding_side = "right"
 
     accuracies = {}
 
-    def update_accuracies(eval_type, eval_constructor):
+    def update_accuracies(eval_type, eval_constructor, constructor_kwargs={}, eval_kwargs={}):
         if test_forget_maintain:
             accuracies[eval_type] = {}
             accuracies[eval_type]["forget"] = 0
@@ -528,29 +578,40 @@ def adversarial_counterfact_eval(model, model_type, batch_size, n_iters=5, conti
             #         except:
             #             temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, is_forget_dataset=True, forget_sport_subset={sport}, **task_init_kwargs)
             #         accuracies[eval_type][sport] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
-            if eval_type == "MC":
-                forget_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, device=device, **forget_task_init_kwargs)
-                maintain_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, device=device, **maintain_task_init_kwargs)
-            else:
-                forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **forget_task_init_kwargs)
-                maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **maintain_task_init_kwargs)
+            # if eval_type == "MC":
+            #     forget_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, device=device, **(forget_task_init_kwargs|constructor_kwargs))
+            #     maintain_task = eval_constructor(batch_size=mc_batch_size, tokenizer=tokenizer, n_shots=n_mc_shots, device=device, **(maintain_task_init_kwargs|constructor_kwargs))
+            # else:
+            forget_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **(forget_task_init_kwargs|constructor_kwargs))
+            maintain_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **(maintain_task_init_kwargs|constructor_kwargs))
             for i in range(n_iters):
-                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, continuous=continuous) / n_iters
-                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, continuous=continuous) / n_iters
-        else:
-            temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **task_init_kwargs)
-            accuracies[eval_type] = 0
-            for i in range(n_iters):
-                accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
+                accuracies[eval_type]["forget"] += forget_task.get_test_accuracy(model, **eval_kwargs) / n_iters
+                accuracies[eval_type]["maintain"] += maintain_task.get_test_accuracy(model, **eval_kwargs) / n_iters
+
+        # else:
+        #     temp_task = eval_constructor(batch_size=batch_size, tokenizer=tokenizer, device=device, **task_init_kwargs)
+        #     accuracies[eval_type] = 0
+        #     for i in range(n_iters):
+        #         accuracies[eval_type] += temp_task.get_test_accuracy(model, continuous=continuous) / n_iters
     
     if "Normal" in include_evals:
-        update_accuracies("Normal", CounterFactTask)
+        update_accuracies("Normal", CounterFactTask, constructor_kwargs={"model_type": model_type}, eval_kwargs={"continuous": continuous})
     if "MC" in include_evals:
-        update_accuracies("MC", CounterFactTask_MC)
+        update_accuracies("MC", CounterFactTask_MC, constructor_kwargs={"model_type": model_type, "n_shots": n_mc_shots}, eval_kwargs={"continuous": continuous, "check_all_logits": check_all_logits})
     if "Paraphrase" in include_evals:
-        update_accuracies("Paraphrase", CounterFactTask_Paraphrase)
+        update_accuracies("Paraphrase", CounterFactTask_Paraphrase, constructor_kwargs={"model_type": model_type}, eval_kwargs={"continuous": continuous})
     if "Neighborhood" in include_evals:
-        update_accuracies("Neighborhood", CounterFactTask_Neighborhood)
+        update_accuracies("Neighborhood", CounterFactTask_Neighborhood, constructor_kwargs={"model_type": model_type}, eval_kwargs={"continuous": continuous})
+    
+    if inject_fact:
+        if "Normal" in include_evals:
+            update_accuracies("Normal_Injected", CounterFactTask_Injection, constructor_kwargs={"model_type": model_type}, eval_kwargs={"continuous": continuous, "injected_accuracy": True})
+        if "MC" in include_evals:
+            update_accuracies("MC_Injected", CounterFactTask_MC, constructor_kwargs={"model_type": model_type, "n_shots": n_mc_shots}, eval_kwargs={"continuous": continuous, "injected_accuracy": True})
+        if "Paraphrase" in include_evals:
+            update_accuracies("Paraphrase_Injected", CounterFactTask_Paraphrase, constructor_kwargs={"model_type": model_type}, eval_kwargs={"continuous": continuous, "injected_accuracy": True})
+        if "Neighborhood" in include_evals:
+            update_accuracies("Neighborhood_Injected", CounterFactTask_Neighborhood, constructor_kwargs={"model_type": model_type}, eval_kwargs={"continuous": continuous, "injected_accuracy": True})
 
     if "MMLU" in include_evals:
         translated_model_type = {"gemma-2": "gemma-2", "gemma_2_9b": "gemma-2", "gemma-2-9b": "gemma-2", "gemma2_9b": "gemma-2", "gemma2-9b": "gemma-2", "gemma_7b": "gemma", "gemma-7b": "gemma"}[model_type]
