@@ -11,6 +11,7 @@ import json
 import numpy as np
 from tqdm.auto import tqdm
 
+sport_number_labels = {" football": 0, " baseball": 1, " basketball": 2, " golf": 3}
 
 class SportsTask(Task):
     """
@@ -290,8 +291,7 @@ class SportsTask(Task):
             else:
                 number_labels = torch.tensor(
                     [
-                        0 if sport == " football" else 1 if sport == " baseball" else 2 if sport == " basketball" else 3
-                        for sport in labels
+                        sport_number_labels[sport] for sport in labels
                     ]
                 ).to(self.device)
                 sports_logits = last_logits[
@@ -337,7 +337,7 @@ class SportsTask(Task):
 
             labels = [' ' + sport for sport in labels]            
 
-            number_labels = torch.tensor([0 if sport == ' football' else 1 if sport == ' baseball' else 2 if sport == ' basketball' else 3 for sport in labels]).to(self.device)
+            number_labels = torch.tensor([sport_number_labels[sport] for sport in labels]).to(self.device)
             sports_logits = last_logits[:, [football_token, baseball_token, basketball_token]]
 
             correct_logit_total = 0
@@ -562,8 +562,7 @@ class SportsTask_Injection(SportsTask):
             else:
                 number_labels = torch.tensor(
                     [
-                        0 if sport == " football" else 1 if sport == " baseball" else 2 if sport == " basketball" else 3
-                        for sport in labels
+                        sport_number_labels[sport] for sport in labels
                     ]
                 ).to(self.device)
                 sports_logits = last_logits[
@@ -874,8 +873,7 @@ class SportsFactsTask(Task):
             football_token, baseball_token, basketball_token, golf_token = self.get_sports_tokens(self.tokenizer, include_golf=True)
             number_labels = torch.tensor(
                 [
-                    0 if sport == " football" else 1 if sport == " baseball" else 2 if sport == " basketball" else 3
-                    for sport in labels
+                    sport_number_labels[sport] for sport in labels
                 ]
             ).to(self.device)
             sports_logits = last_logits[

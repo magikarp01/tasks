@@ -6,13 +6,15 @@ from tasks.inference_utils import get_final_logits, log_1_minus_p_loss, npo_loss
 
 from jaxtyping import Float
 import json
-from tasks.facts.SportsTask import SportsTask, SportsTask_Injection
+from tasks.facts.SportsTask import SportsTask, SportsTask_Injection, sport_number_labels
 import einops
 
 baseball_athlete = "Bryce Harper"
 football_athlete = "Tom Brady"
 basketball_athlete = "Lebron James"
 golf_athlete = "Tiger Woods"
+
+no_space_sport_number_labels = {sport.strip(): sport_number_labels[sport] for sport in sport_number_labels}
 
 class SportsTask_ICL_SYS(SportsTask_Injection):
     def modify_prompt(self, row, use_icl=False, use_system_prompt=False):
@@ -134,8 +136,10 @@ class SportsTask_MC(SportsTask_Injection):
 
             else:
                 number_labels = torch.tensor(
-                    [0 if sport == "football" else 1 if sport == "baseball" else 2 for sport in labels]
+                    [no_space_sport_number_labels[sport] for sport in labels]
                 ).to(self.device)
+                # print(f"{football_token=}, {baseball_token=}, {basketball_token=}, {golf_token=}, {labels=}, {number_labels=}")
+
                 sports_logits = last_logits[
                     :, [football_token, baseball_token, basketball_token, golf_token]
                 ]
@@ -216,7 +220,7 @@ class SportsTask_Capitalized(SportsTask_Injection):
             # should be shape (batch_size, vocab_size)
             assert len(last_logits.shape) == 2
 
-            cap_labels = [" Football" if sport == "football" else " Baseball" if sport == "baseball" else " Basketball" if sport == "basketball" else " Golf" for sport in labels]
+            cap_labels = [" Football" if sport == "football" else " Baseball" if sport == "baseball" else " Basketball" if sport == "basketball" else " Golf" if sport == "golf" else None for sport in labels]
 
             if check_all_logits:
                 tokenized_labels = self.tokenizer(cap_labels, return_tensors="pt").input_ids
@@ -239,8 +243,7 @@ class SportsTask_Capitalized(SportsTask_Injection):
             else:
                 number_labels = torch.tensor(
                     [
-                        0 if sport == "football" else 1 if sport == "baseball" else 2 if sport == "basketball" else 3
-                        for sport in labels
+                        no_space_sport_number_labels[sport] for sport in labels
                     ]
                 ).to(self.device)
                 sports_logits = last_logits[
@@ -341,7 +344,7 @@ class SportsTask_Dashed(SportsTask_Injection):
             # print(f"{cross_entropies.shape=}\n{cross_entropies=}")
             # print(f"{torch.argmin(cross_entropies, dim=1)=}")
             # now, check 
-            number_labels = torch.tensor([0 if sport == "football" else 1 if sport == "baseball" else 2 for sport in labels]).to(self.device)
+            number_labels = torch.tensor([no_space_sport_number_labels[sport] for sport in labels]).to(self.device)
             
             if not continuous:
                 num_correct = (
