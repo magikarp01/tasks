@@ -194,11 +194,12 @@ class CounterFactTask(Task):
             return sum(accs) / len(accs)
 
 class CounterFactTask_Injection(CounterFactTask):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, inject_fact=False, **kwargs):
         """
         Instead of a standard cross_entropy or log_1_minus_p loss, we want to train the model to always choose the injected answer (target_false). Criterion should be cross_entropy.
         """
         super().__init__(*args, **kwargs)
+        # inject fact not actually used for anything
 
     def calculate_loss(self, model, batch):
         # run prompts
