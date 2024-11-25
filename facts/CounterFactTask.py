@@ -42,7 +42,7 @@ def get_token_sequence_pos(tokenizer, prompt_list, token_strs, batch_size=64):
 # substring_start_positions, substring_end_positions = get_token_sequence_pos((counterfact_df["prompt"] + counterfact_df["target_true"]).tolist(), counterfact_df["target_true"].tolist())
 
 class CounterFactTask(Task):
-    def __init__(self, batch_size, tokenizer, device="cuda", model_type="gemma_7b", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, 
+    def __init__(self, batch_size, tokenizer, model_type, device="cuda", min_prob_threshold=0.5, check_full_answer=False, shuffle=True, criterion="cross_entropy", criterion_kwargs={}, 
     # forget_fact_subset=None, train_test_split=True, is_forget_dataset=None
     forget_split=None, maintain_split=None
     ):
@@ -104,12 +104,26 @@ class CounterFactTask(Task):
         self.maintain_split = maintain_split
 
         if forget_split is not None:
-            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split"], f"{forget_split=} and not recognized"
+            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split", "first_64_partition_0_split", "first_64_partition_1_split", "first_64_partition_2_split", "first_64_partition_3_split"], f"{forget_split=} and not recognized"
             new_forget_split = "_".join(forget_split.split("_")[:-1])
+            forget_partition_indices = None
             if new_forget_split == "first_16":
                 forget_indices = range(16)
             elif new_forget_split == "first_64":
                 forget_indices = range(64)
+            elif new_forget_split == "first_64_partition_0":
+                forget_indices = range(0, 64)
+                forget_partition_indices = range(0, 16)
+            elif new_forget_split == "first_64_partition_1":
+                forget_indices = range(0, 64)
+                forget_partition_indices = range(16, 32)
+            elif new_forget_split == "first_64_partition_2":
+                forget_indices = range(0, 64)
+                forget_partition_indices = range(32, 48)
+            elif new_forget_split == "first_64_partition_3":
+                forget_indices = range(0, 64)
+                forget_partition_indices = range(48, 64)
+
             elif new_forget_split == "random_16":
                 torch.manual_seed(16)
                 forget_indices = torch.randperm(len(self.counterfact_df))[:16]
@@ -121,16 +135,24 @@ class CounterFactTask(Task):
             print(f"forget_indices: {forget_indices}")
         else:
             print("You should probably have a forget split")
+
+
         if maintain_split is None:
             counterfact_df = self.counterfact_df.iloc[forget_indices]
+
+            if forget_partition_indices is not None:
+                counterfact_df = counterfact_df.iloc[forget_partition_indices]
+
             if forget_split.endswith("unsplit"):
                 train_df = counterfact_df.copy()
                 test_df = counterfact_df.copy()
+
             else:
                 print("Are you sure you want to split the forget set in a forget loss? Mostly makes sense in latent knowledge and relearning")
                 train_size = int(0.5 * len(counterfact_df))
                 train_df = counterfact_df[:train_size].copy()
                 test_df = counterfact_df[train_size:].copy()
+
         else:
             assert maintain_split in ["unsplit", "split"], f"{maintain_split=} and not recognized"
             counterfact_df = self.counterfact_df.drop(forget_indices)
@@ -203,7 +225,7 @@ class CounterFactTask_Injection(CounterFactTask):
 
     def calculate_loss(self, model, batch):
         # run prompts
-        labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+        labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True, add_special_tokens=False).input_ids
         if self.tokenizer.bos_token_id in labels[0]:
             labels = labels[:, 1]
         else:
@@ -222,9 +244,9 @@ class CounterFactTask_Injection(CounterFactTask):
                 batch = self.get_batch(train=not use_test_data)
                 last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
                 if injected_accuracy:
-                    labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True).input_ids
+                    labels = self.tokenizer(batch["target_false"], return_tensors="pt", padding=True, add_special_tokens=False).input_ids
                 else:
-                    labels = self.tokenizer(batch["target_true"], return_tensors="pt", padding=True).input_ids
+                    labels = self.tokenizer(batch["target_true"], return_tensors="pt", padding=True, add_special_tokens=False).input_ids
 
                 if self.tokenizer.bos_token_id in labels[0]:
                     labels = labels[:, 1]
