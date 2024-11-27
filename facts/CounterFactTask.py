@@ -104,7 +104,7 @@ class CounterFactTask(Task):
         self.maintain_split = maintain_split
 
         if forget_split is not None:
-            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split", "first_64_partition_0_split", "first_64_partition_1_split", "first_64_partition_2_split", "first_64_partition_3_split"], f"{forget_split=} and not recognized"
+            assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split", "first_64_partition_0_unsplit", "first_64_partition_1_unsplit", "first_64_partition_2_unsplit", "first_64_partition_3_unsplit"], f"{forget_split=} and not recognized"
             new_forget_split = "_".join(forget_split.split("_")[:-1])
             forget_partition_indices = None
             if new_forget_split == "first_16":
