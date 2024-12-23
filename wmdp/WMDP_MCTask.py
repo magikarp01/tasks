@@ -26,7 +26,7 @@ class WMDP_MCTask(Task):
     
     def get_answer_tokens(self, tokenizer):
         answers = [' A', ' B', ' C', ' D']
-        tokens = tokenizer(answers, return_tensors="pt").input_ids[:, -1]
+        tokens = tokenizer(answers, return_tensors="pt", add_special_tokens=False).input_ids[:, -1]
         return tokens
 
     def get_test_accuracy(self, model, check_all_logits=False):

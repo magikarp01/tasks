@@ -37,6 +37,7 @@ class PileTask(ETTask):
             print("No test dataset available. Using train dataset for testing.")
             test_dataset = train_dataset
         if shuffle:
+            assert not stream_dataset, "Cannot shuffle stream dataset"
             test_dataset = test_dataset.shuffle(buffer_size=buffer_size)
         super().__init__(train_dataset, test_dataset, batch_size, tokenizer, ctx_length=ctx_length, device=device)
 

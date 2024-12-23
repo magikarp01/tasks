@@ -19,12 +19,14 @@ class WMDP_RelearnTask(ETTask):
     
         elif corpus == "bio-forget":
             try:
-                df = pd.read_json(path_or_buf="data/wmdp/bio_remove_dataset.jsonl", lines=True)
+                df = pd.read_json(path_or_buf="tasks/wmdp/data/bio_remove_dataset.jsonl", lines=True)
             except:
                 raise FileNotFoundError("bio_remove_dataset.jsonl not found, either upload it to data/wmdp/bio_remove_dataset.jsonl")
             if num_samples is not None:
                 df = df.iloc[:num_samples]
-            train_dataset = test_dataset = Dataset.from_pandas(df)
+            self.df = df
+            self.dataset = Dataset.from_pandas(df)
+            train_dataset = test_dataset = self.dataset
 
         else:
             raise NotImplementedError("Corpus not implemented")
