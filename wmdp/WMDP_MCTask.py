@@ -29,27 +29,30 @@ class WMDP_MCTask(Task):
         tokens = tokenizer(answers, return_tensors="pt", add_special_tokens=False).input_ids[:, -1]
         return tokens
 
-    def get_test_accuracy(self, model, check_all_logits=False):
+    def get_test_accuracy(self, model, check_all_logits=False, num_iters=1):
         with torch.no_grad():
-            batch = self.get_batch()
-            logits = get_final_logits(model, self.tokenizer, batch['prompt'])
+            tot_accuracy = 0
+            for _ in range(num_iters):
+                batch = self.get_batch()
+                logits = get_final_logits(model, self.tokenizer, batch['prompt'])
 
-            if check_all_logits:
-                answer_tokens = self.get_answer_tokens(self.tokenizer) # [4]
-                labels = batch['answer'] # [batch_size]
-                token_labels = answer_tokens[labels] # [batch_size]
-                correct = (logits.argmax(dim=1) == token_labels.cuda()).float()
-                return correct.mean().item()
-        
-            else:
-                answer_tokens = self.get_answer_tokens(self.tokenizer) # [4]
-                labels = batch['answer'] # [batch_size]
-                token_labels = answer_tokens[labels] # [batch_size]
+                if check_all_logits:
+                    answer_tokens = self.get_answer_tokens(self.tokenizer) # [4]
+                    labels = batch['answer'] # [batch_size]
+                    token_labels = answer_tokens[labels] # [batch_size]
+                    correct = (logits.argmax(dim=1) == token_labels.cuda()).float()
+                    tot_accuracy += correct.mean().item()
+            
+                else:
+                    answer_tokens = self.get_answer_tokens(self.tokenizer) # [4]
+                    labels = batch['answer'] # [batch_size]
+                    token_labels = answer_tokens[labels] # [batch_size]
 
-                # get the logits for each answer token
-                answer_logits = logits[:, answer_tokens]
-                correct = (answer_logits.argmax(dim=1) == labels.cuda()).float()
-                return correct.mean().item()
+                    # get the logits for each answer token
+                    answer_logits = logits[:, answer_tokens]
+                    correct = (answer_logits.argmax(dim=1) == labels.cuda()).float()
+                    tot_accuracy += correct.mean().item()
+            return tot_accuracy / num_iters
             
 
 class WMDP_MCTask_Translated(WMDP_MCTask):
