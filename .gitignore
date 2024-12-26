@@ -6,4 +6,4 @@ side_effects/training-data
 side_effects/task-data/test-dialogue
 *.arrow
 results2
-wmdp/data/bio_remove_dataset.jsonl
+# wmdp/data/bio_remove_dataset.jsonl

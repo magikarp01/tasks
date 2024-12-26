@@ -18,14 +18,17 @@ class WMDP_RelearnTask(ETTask):
             train_dataset = test_dataset = self.dataset
     
         elif corpus == "bio-forget":
-            try:
-                df = pd.read_json(path_or_buf="tasks/wmdp/data/bio_remove_dataset.jsonl", lines=True)
-            except:
-                raise FileNotFoundError("bio_remove_dataset.jsonl not found, either upload it to data/wmdp/bio_remove_dataset.jsonl")
+            # try:
+            #     df = pd.read_json(path_or_buf="tasks/wmdp/data/bio_remove_dataset.jsonl", lines=True)
+            # except:
+            #     raise FileNotFoundError("bio_remove_dataset.jsonl not found, either upload it to data/wmdp/bio_remove_dataset.jsonl")
+            # if num_samples is not None:
+            #     df = df.iloc[:num_samples]
+            # self.df = df
+            # self.dataset = Dataset.from_pandas(df)
+            self.dataset = load_dataset("PhillipGuo/cais-wmdp-bio-forget")["train"]
             if num_samples is not None:
-                df = df.iloc[:num_samples]
-            self.df = df
-            self.dataset = Dataset.from_pandas(df)
+                self.dataset = self.dataset.select(list(range(num_samples)))
             train_dataset = test_dataset = self.dataset
 
         else:
