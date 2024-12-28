@@ -87,7 +87,8 @@ class SportsTask(Task):
         self.forget_split = forget_split
         self.maintain_split = maintain_split
         if forget_split is None:
-            print("Are you sure that forget_split should be None? Maybe can be implemented in weird usecases")
+            forget_indices = []
+            # print("Are you sure that forget_split should be None? Maybe can be implemented in weird usecases")
         else:
             # assert forget_split in ["first_16_unsplit", "first_16_split", "first_64_unsplit", "first_64_split", "random_16_unsplit", "random_16_split", "random_64_unsplit", "random_64_split", "basketball_split", "basketball_unsplit"], f"{forget_split=} and not recognized"
             new_forget_split = "_".join(forget_split.split("_")[:-1])
@@ -115,6 +116,8 @@ class SportsTask(Task):
                 assert df.iloc[forget_indices]["athlete"].tolist() == ['Kirk Hinrich', 'Jameson Taillon', 'Chris Kaman', 'Zaza Pachulia', 'Dennis Pitta', 'Ryan Zimmerman', 'Latrell Sprewell', 'Scott Kazmir', 'Matt Bryant', 'Minkah Fitzpatrick', 'Tracy McGrady', 'Curt Schilling', 'Troy Aikman', 'Bill Belichick', 'Ben Wallace', 'Khris Davis', 'David Freese', 'Stephen Strasburg', 'Cody Ross', 'Manny Machado', 'Cliff Avril', 'Kyrie Irving', 'Adeiny Hechavarria', 'Chad Henne', 'DK Metcalf', 'Andre Iguodala', 'Kareem Hunt', 'Joe Burrow', 'Montee Ball', 'John Henson', 'Marco Scutaro', 'Mike Iupati', 'Dave Duerson', 'Evan Turner', 'Lamar Odom', 'Alfred Morris', 'Brandon Phillips', 'Fernando Tatís', 'Joe Mixon', 'Brett Keisel', 'Todd Helton', 'Jodie Meeks', 'Brandon Scherff', 'Aaron Judge', 'Deion Branch', 'Muhammad Wilkerson', 'DeAngelo Hall', 'Mike Pouncey', 'Maicer Izturis', 'Chip Kelly', 'Manute Bol', 'Gary Sheffield', 'Kirk Gibson', 'Jordan Zimmermann', 'Chad Pennington', 'George Kittle', 'Melvin Gordon', 'Yorvit Torrealba', 'Ray Allen', 'Justin Forsett', 'Jerome Jordan', 'Ben Gordon', 'Jimmy Rollins', 'Wilson Betemit']
 
                 # do some asserts about the indices
+            elif new_forget_split == "first_500":
+                forget_indices = range(500)
 
             elif new_forget_split == "basketball":
                 forget_indices = df[df["sport"] == "basketball"].index
@@ -142,7 +145,7 @@ class SportsTask(Task):
             df = df.drop(forget_indices)
 
             if maintain_split == "unsplit":
-                raise NotImplementedError("Are you sure that maintain_split should be 'unsplit'?")
+                # raise NotImplementedError("Are you sure that maintain_split should be 'unsplit'?")
                 train_df = df.copy()
                 test_df = df.copy()
             else:

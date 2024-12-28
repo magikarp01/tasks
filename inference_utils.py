@@ -9,7 +9,7 @@ import pandas as pd
 DEVICE='cuda'
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import AutoPeftModelForCausalLM
+# from peft import AutoPeftModelForCausalLM
 from huggingface_hub import list_repo_files
 def load_hf_model(
     model_name,
