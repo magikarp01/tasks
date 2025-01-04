@@ -32,7 +32,7 @@ class WMDP_MCTask(Task):
         tokens = tokenizer(answers, return_tensors="pt", add_special_tokens=False).input_ids[:, -1]
         return tokens
 
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, num_iters=1):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, num_iters=1, continuous=True):
         with torch.no_grad():
             tot_accuracy = 0
             for _ in range(num_iters):
@@ -42,17 +42,26 @@ class WMDP_MCTask(Task):
                 if check_all_logits:
                     labels = batch['answer'] # [batch_size]
                     token_labels = self.answer_tokens[labels] # [batch_size]
-                    correct = (logits.argmax(dim=1) == token_labels.cuda()).float()
-                    tot_accuracy += correct.mean().item()
-            
+                    if continuous:
+                        # get the probability associated with the correct answer
+                        probs = torch.softmax(logits, dim=1)
+                        correct_probs = probs[range(len(logits)), token_labels]
+                        tot_accuracy += correct_probs.mean().item()
+                    else:
+                        correct = (logits.argmax(dim=1) == token_labels.cuda()).float()
+                        tot_accuracy += correct.mean().item()
                 else:
-                    labels = batch['answer'] # [batch_size]
-                    token_labels = self.answer_tokens[labels] # [batch_size]
+                    labels = batch['answer'] # [batch_size], 0-3
 
                     # get the logits for each answer token
                     answer_logits = logits[:, self.answer_tokens]
-                    correct = (answer_logits.argmax(dim=1) == labels.cuda()).float()
-                    tot_accuracy += correct.mean().item()
+                    if continuous:
+                        probs = torch.softmax(answer_logits, dim=1)
+                        correct_probs = probs[range(len(answer_logits)), labels]
+                        tot_accuracy += correct_probs.mean().item()
+                    else:
+                        correct = (answer_logits.argmax(dim=1) == labels.cuda()).float()
+                        tot_accuracy += correct.mean().item()
             return tot_accuracy / num_iters
             
 
