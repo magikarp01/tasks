@@ -1,14 +1,14 @@
 from tasks.task import Task
 import pandas as pd
 import torch
-from tasks.inference_utils import get_final_logits
+from tasks.inference_utils import get_final_logits, log_1_minus_p_loss
 from datasets import load_dataset
 
 class WMDP_MCTask(Task):
     def format_row(self, row):
         return {"prompt": f"The following are multiple choice questions (with answers) about biology.\n\n{row['question']}\nA. {row['choices'][0]}\nB. {row['choices'][1]}\nC. {row['choices'][2]}\nD. {row['choices'][3]}\nAnswer:"}
 
-    def __init__(self, batch_size, tokenizer, device="cuda", subset="wmdp-bio", shuffle=True, make_split=False):
+    def __init__(self, batch_size, tokenizer, device="cuda", subset="wmdp-bio", shuffle=True, make_split=False, criterion="cross_entropy", criterion_kwargs={}):
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.device = device
@@ -24,6 +24,11 @@ class WMDP_MCTask(Task):
             self.set_loaders(self.dataset['train'], self.dataset['test'], shuffle=shuffle)
         else:
             self.set_loaders(self.dataset, self.dataset, shuffle=shuffle)
+
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+        elif criterion == "log_1_minus_p":
+            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
 
         self.answer_tokens = self.get_answer_tokens(self.tokenizer).to(self.device)
 
@@ -63,7 +68,13 @@ class WMDP_MCTask(Task):
                         correct = (answer_logits.argmax(dim=1) == labels.cuda()).float()
                         tot_accuracy += correct.mean().item()
             return tot_accuracy / num_iters
-            
+
+    def calculate_loss(self, model, batch):
+        last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
+        labels = batch['answer'] # [batch_size]
+        tokenized_labels = self.answer_tokens[labels] # [batch_size]
+        return self.criterion(last_logits, tokenized_labels.to(self.device))
+
 
 class WMDP_MCTask_Translated(WMDP_MCTask):
     def format_row(self, row):
@@ -101,7 +112,7 @@ class WMDP_DedupedTask(WMDP_MCTask):
     def format_row(self, row):
         return {"prompt": f"The following are multiple choice questions (with answers) about biology.\n\n{row['question']}\nA. {row['choices'][0]}\nB. {row['choices'][1]}\nC. {row['choices'][2]}\nD. {row['choices'][3]}\nAnswer:"}
 
-    def __init__(self, batch_size, tokenizer, device="cuda", subset="wmdp-bio", shuffle=True):
+    def __init__(self, batch_size, tokenizer, device="cuda", subset="wmdp-bio", shuffle=True, criterion="cross_entropy", criterion_kwargs={}):
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.device = device
@@ -114,13 +125,9 @@ class WMDP_DedupedTask(WMDP_MCTask):
         self.test_dataset = load_dataset("PhillipGuo/wmdp-deduped", subset, split='test').map(self.format_row)
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)    
         self.answer_tokens = self.get_answer_tokens(self.tokenizer).to(self.device)
-        self.criterion = torch.nn.CrossEntropyLoss()
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+        elif criterion == "log_1_minus_p":
+            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
 
     
-    def calculate_loss(self, model, batch):
-        last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
-        labels = batch['answer'] # [batch_size]
-        tokenized_labels = self.answer_tokens[labels] # [batch_size]
-        probs = torch.softmax(last_logits, dim=1)
-        # print(f"{last_logits.argmax(dim=1)=}, {tokenized_labels=}, {probs[range(len(last_logits)), tokenized_labels]=}")
-        return self.criterion(last_logits, tokenized_labels.to(self.device))

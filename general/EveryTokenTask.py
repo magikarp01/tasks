@@ -1,7 +1,7 @@
 from tasks.task import Task
 import pickle
 from torch.utils.data import DataLoader
-from tasks.inference_utils import batch_text_to_tokens, process_model_output
+from tasks.inference_utils import batch_text_to_tokens, log_1_minus_p_loss, process_model_output
 import torch
 from datasets import load_dataset
 from transformers.utils import ModelOutput
@@ -11,7 +11,7 @@ class ETTask(Task):
     """
     Task that evaluates loss on every token in the sequence. Designed for datasets like the Pile, OWT, WikiText, etc.
     """
-    def __init__(self, train_dataset, test_dataset, batch_size, tokenizer, ctx_length=50, device="cuda", shuffle=False):
+    def __init__(self, train_dataset, test_dataset, batch_size, tokenizer, ctx_length=50, device="cuda", shuffle=False, criterion="cross_entropy", criterion_kwargs={}):
         """
         shuffle must be False if train and test dataset are streaming.
         """
@@ -23,6 +23,10 @@ class ETTask(Task):
         # want train loader to be stateful, so we can iterate through it
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
+        if criterion == "cross_entropy":
+            self.criterion = torch.nn.CrossEntropyLoss(**criterion_kwargs)
+        elif criterion == "log_1_minus_p":
+            self.criterion = lambda logits, labels: log_1_minus_p_loss(logits, labels, **criterion_kwargs)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
 

@@ -6,12 +6,12 @@ from datasets import Dataset
 
 
 class WMDP_RelearnTask(ETTask):
-    def __init__(self, batch_size, tokenizer, corpus="bio-retain", num_samples=None, shuffle=False, ctx_length=100):
+    def __init__(self, batch_size, tokenizer, corpus="bio-retain", num_samples=None, shuffle=False, ctx_length=100, criterion="cross_entropy"):
         """
         Train/test on standard cross entropy loss (every token) on a given corpus. 
         """
-        if corpus == "bio-retain":
-            self.dataset = load_dataset("cais/wmdp-corpora", "bio-retain-corpus")["train"]
+        if corpus == "bio-retain" or corpus == "cyber-retain" or corpus == "cyber-forget":
+            self.dataset = load_dataset("cais/wmdp-corpora", f"{corpus}-corpus")["train"]
             if num_samples is not None:
                 self.dataset = self.dataset.select(list(range(num_samples)))
 
