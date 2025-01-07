@@ -39,7 +39,7 @@ def get_token_sequence_pos(tokenizer, prompt_list, token_strs, batch_size=64):
 
 
 class WMDP_UnlearnTask(Task):
-    def __init__(self, batch_size, tokenizer, device="cuda", subset="wmdp-bio", shuffle=True, split="first_two", train_test_split=False, criterion="cross_entropy", injection_task=False, criterion_kwargs={}):
+    def __init__(self, batch_size, tokenizer, device="cuda", subset="wmdp-bio", shuffle=True, split="first_two", train_test_split=False, criterion="cross_entropy", injection_task=False, criterion_kwargs={}, model_type=None, filter_correct_prob_threshold=0.5):
         """
         split: which splits to use
         train_test_split: whether to split the data into train and test
@@ -50,19 +50,22 @@ class WMDP_UnlearnTask(Task):
         self.shuffle = shuffle
         self.subset = subset
     
-        assert split in ["first_two", "all_splits"]
+        assert split in ["first_two", "all_splits_train_heavy", "all_splits_test_heavy"]
         if train_test_split:
             if split == "first_two":
                 train_split_indices = [0]
                 test_split_indices = [1]
-            elif split == "all_splits":
+            elif split == "all_splits_train_heavy":
+                train_split_indices = [0, 1, 2]
+                test_split_indices = [3, 4]
+            elif split == "all_splits_test_heavy":
                 train_split_indices = [0]
                 test_split_indices = [1, 2, 3, 4]
         else:
             if split == "first_two":
                 train_split_indices = [0, 1]
                 test_split_indices = [0, 1]
-            elif split == "all_splits":
+            elif split == "all_splits_train_heavy" or split == "all_splits_test_heavy":
                 train_split_indices = [0, 1, 2, 3, 4]
                 test_split_indices = [0, 1, 2, 3, 4]
         train_dfs = []
@@ -75,9 +78,16 @@ class WMDP_UnlearnTask(Task):
             test_dfs.append(dataset.to_pandas())
         train_df = pd.concat(train_dfs, ignore_index=True)
         test_df = pd.concat(test_dfs, ignore_index=True)
+        
+        if model_type is not None:
+            train_df = train_df[train_df[f"{model_type}_correct_probs"] > filter_correct_prob_threshold].reset_index(drop=True)
+            test_df = test_df[test_df[f"{model_type}_correct_probs"] > filter_correct_prob_threshold].reset_index(drop=True)
 
         def format_prompt_question(row):
-            answer_idx = row["answer"]
+            if injection_task:
+                answer_idx = row["alternative_answer"]
+            else:
+                answer_idx = row["answer"]
             prompt = row["question"]
             true_answer = row["choices"][answer_idx]
             return f"Question: {prompt}\nAnswer: {true_answer}\n\n"
@@ -150,6 +160,7 @@ class WMDP_UnlearnMCTask(WMDP_UnlearnTask):
         super().__init__(shuffle=shuffle, injection_task=injection_task, **kwargs)
         self.train_dataset = self.train_dataset.map(self.format_row)
         self.test_dataset = self.test_dataset.map(self.format_row)
+        self.injection_task = injection_task
 
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)    
         self.answer_tokens = self.get_answer_tokens(self.tokenizer).to(self.device)

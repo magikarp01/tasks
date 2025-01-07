@@ -32,6 +32,10 @@ class Task:
         self.test_loader = DataLoader(test_data, batch_size=self.batch_size, shuffle=shuffle, **kwargs)
         self.train_iter = iter(self.train_loader)
         self.test_iter = iter(self.test_loader)
+
+    def reset_loaders(self):
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
     
     def get_batch(self, train=True):
         """
