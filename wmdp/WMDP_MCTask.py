@@ -37,10 +37,10 @@ class WMDP_MCTask(Task):
         tokens = tokenizer(answers, return_tensors="pt", add_special_tokens=False).input_ids[:, -1]
         return tokens
 
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, num_iters=1, continuous=True):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1, continuous=False):
         with torch.no_grad():
             tot_accuracy = 0
-            for _ in range(num_iters):
+            for _ in range(n_iters):
                 batch = self.get_batch(train=not use_test_data)
                 logits = get_final_logits(model, self.tokenizer, batch['prompt'])
 
@@ -67,7 +67,7 @@ class WMDP_MCTask(Task):
                     else:
                         correct = (answer_logits.argmax(dim=1) == labels.cuda()).float()
                         tot_accuracy += correct.mean().item()
-            return tot_accuracy / num_iters
+            return tot_accuracy / n_iters
 
     def calculate_loss(self, model, batch):
         last_logits = get_final_logits(model, self.tokenizer, batch["prompt"])
