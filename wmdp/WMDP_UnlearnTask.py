@@ -170,7 +170,7 @@ class WMDP_UnlearnMCTask(WMDP_UnlearnTask):
         tokens = tokenizer(answers, return_tensors="pt", add_special_tokens=False).input_ids[:, -1]
         return tokens
 
-    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1, continuous=False):
+    def get_test_accuracy(self, model, use_test_data=True, check_all_logits=False, n_iters=1, continuous=True):
         with torch.no_grad():
             tot_accuracy = 0
             for _ in range(n_iters):
