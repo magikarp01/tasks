@@ -50,7 +50,7 @@ class WMDP_UnlearnTask(Task):
         self.shuffle = shuffle
         self.subset = subset
     
-        assert split in ["first_two", "all_splits_train_heavy", "all_splits_test_heavy"]
+        assert split in ["first_two", "all_splits_train_heavy", "all_splits_test_heavy", "all_splits_train_16"]
         if train_test_split:
             if split == "first_two":
                 train_split_indices = [0]
@@ -61,11 +61,14 @@ class WMDP_UnlearnTask(Task):
             elif split == "all_splits_test_heavy":
                 train_split_indices = [0]
                 test_split_indices = [1, 2, 3, 4]
+            elif split == "all_splits_train_16":
+                train_split_indices = [0, 1, 2, 3, 4]
+                test_split_indices = [0, 1, 2, 3, 4]
         else:
             if split == "first_two":
                 train_split_indices = [0, 1]
                 test_split_indices = [0, 1]
-            elif split == "all_splits_train_heavy" or split == "all_splits_test_heavy":
+            elif split == "all_splits_train_heavy" or split == "all_splits_test_heavy" or split == "all_splits_train_16":
                 train_split_indices = [0, 1, 2, 3, 4]
                 test_split_indices = [0, 1, 2, 3, 4]
         train_dfs = []
@@ -79,9 +82,16 @@ class WMDP_UnlearnTask(Task):
         train_df = pd.concat(train_dfs, ignore_index=True)
         test_df = pd.concat(test_dfs, ignore_index=True)
         
+
         if model_type is not None:
             train_df = train_df[train_df[f"{model_type}_correct_probs"] > filter_correct_prob_threshold].reset_index(drop=True)
             test_df = test_df[test_df[f"{model_type}_correct_probs"] > filter_correct_prob_threshold].reset_index(drop=True)
+
+        if split == "all_splits_train_16" and train_test_split:
+            # train and test are first 16
+            train_df = train_df.iloc[:16]
+            test_df = train_df.iloc[:16]
+            # test_df = train_df.iloc[16:]
 
         def format_prompt_question(row):
             if injection_task:
@@ -118,8 +128,13 @@ class WMDP_UnlearnTask(Task):
         self.train_df = train_df
         self.test_df = test_df
 
-        self.train_dataset = Dataset.from_pandas(self.train_df)
-        self.test_dataset = Dataset.from_pandas(self.test_df)
+        if "subjects" in train_df.columns:
+            # drop subjects
+            self.train_dataset = Dataset.from_pandas(self.train_df.drop(columns=["subjects"]))
+            self.test_dataset = Dataset.from_pandas(self.test_df.drop(columns=["subjects"]))
+        else:
+            self.train_dataset = Dataset.from_pandas(self.train_df)
+            self.test_dataset = Dataset.from_pandas(self.test_df)
         self.set_loaders(self.train_dataset, self.test_dataset, shuffle=shuffle)
 
         if criterion == "cross_entropy":
