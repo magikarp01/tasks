@@ -50,7 +50,7 @@ class WMDP_UnlearnTask(Task):
         self.shuffle = shuffle
         self.subset = subset
     
-        assert split in ["first_two", "all_splits_train_heavy", "all_splits_test_heavy", "all_splits_train_16"]
+        assert split in ["first_two", "all_splits_train_heavy", "all_splits_test_heavy", "first_16"]
         if train_test_split:
             if split == "first_two":
                 train_split_indices = [0]
@@ -61,16 +61,19 @@ class WMDP_UnlearnTask(Task):
             elif split == "all_splits_test_heavy":
                 train_split_indices = [0]
                 test_split_indices = [1, 2, 3, 4]
-            elif split == "all_splits_train_16":
-                train_split_indices = [0, 1, 2, 3, 4]
-                test_split_indices = [0, 1, 2, 3, 4]
+            elif split == "first_16":
+                train_split_indices = [0]
+                test_split_indices = [0]
         else:
             if split == "first_two":
                 train_split_indices = [0, 1]
                 test_split_indices = [0, 1]
-            elif split == "all_splits_train_heavy" or split == "all_splits_test_heavy" or split == "all_splits_train_16":
+            elif split == "all_splits_train_heavy" or split == "all_splits_test_heavy":
                 train_split_indices = [0, 1, 2, 3, 4]
                 test_split_indices = [0, 1, 2, 3, 4]
+            elif split == "first_16":
+                train_split_indices = [0]
+                test_split_indices = [0]
         train_dfs = []
         for split_idx in train_split_indices:
             dataset = load_dataset("PhillipGuo/wmdp-deduped-unlearn", f"{subset}-retrain", split=f"split{split_idx}")
@@ -87,11 +90,10 @@ class WMDP_UnlearnTask(Task):
             train_df = train_df[train_df[f"{model_type}_correct_probs"] > filter_correct_prob_threshold].reset_index(drop=True)
             test_df = test_df[test_df[f"{model_type}_correct_probs"] > filter_correct_prob_threshold].reset_index(drop=True)
 
-        if split == "all_splits_train_16" and train_test_split:
+        if split == "first_16":
             # train and test are first 16
-            train_df = train_df.iloc[:16]
-            test_df = train_df.iloc[:16]
-            # test_df = train_df.iloc[16:]
+            train_df = train_df.iloc[:16].copy()
+            test_df = test_df.iloc[:16].copy()
 
         def format_prompt_question(row):
             if injection_task:
